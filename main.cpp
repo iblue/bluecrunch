@@ -136,7 +136,7 @@ namespace Bluecrunch {
     double time1 = wall_clock();
 
     cout << "Time: " << time1 - time0 << endl;
-    
+
     cout << "Division... " << endl;
     P = P.div(Q, p, tds).add(BigFloat(1), p);
     double time2 = wall_clock();
@@ -149,21 +149,25 @@ namespace Bluecrunch {
 }
 
 int main() {
+  // Enable threads and nested threading
   omp_set_nested(1);
   int threads = omp_get_max_threads();
 
   size_t digits = 1000000;
 
-  //  Figure out how large to make the table:
   //  Determine minimum FFT size.
-  size_t p = 2*digits / 9 + 10;
-  int k = 0;
+  size_t p      = 2*digits / 9 + 10;
+  int    k      = 0;
   size_t length = 1;
-  while (length < 3*p){
-    length <<= 1;
+
+  while(length < 3*p) {
+    length *= 2;
     k++;
   }
 
+  // Precompute FFT twiddle factors
   Bluecrunch::fft_ensure_table(k);
+
+  // Calculate e
   Bluecrunch::e(digits, threads);
 }
