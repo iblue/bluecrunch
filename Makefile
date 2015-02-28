@@ -1,6 +1,6 @@
-CPP=clang++
+CPP=icc
 STRIP=strip
-CFLAGS=-std=c++11 -Wall -Werror -msse3 -O3 -fopenmp
+CFLAGS=-std=c++11 -Wall -Werror -msse3 -O3 -fopenmp -ipo -mtune=native -march=native
 BINARY=bluecrunch
 LIBS=-lm
 
@@ -19,7 +19,7 @@ stats:
 	git ls-files | xargs wc -l
 
 .PHONY: build
-build: CFLAGS += -O6 -DNDEBUG
+build: CFLAGS += -DNDEBUG
 build: clean $(BINARY)
 
 # Build static, pack and remove traces of UPX
