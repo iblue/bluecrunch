@@ -15,37 +15,29 @@ using std::endl;
 
 #include <omp.h>
 
-#if USE_CHRONO
 #include <chrono>
-#else
-#include <time.h>
-#endif
 
 #include "fft.h"
 #include "bigfloat.h"
 
 namespace Bluecrunch {
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-//  Helpers
-double wall_clock(){
-    //  Get the clock in seconds.
-#if USE_CHRONO
+  ////////////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////////
+  //  Helpers
+  double wall_clock() {
     auto ratio_object = std::chrono::high_resolution_clock::period();
     double ratio = (double)ratio_object.num / ratio_object.den;
     return std::chrono::high_resolution_clock::now().time_since_epoch().count() * ratio;
-#else
-    return (double)clock() / CLOCKS_PER_SEC;
-#endif
-}
+  }
+
 void dump_to_file(const char *path,const std::string &str){
-    //  Dump a string to a file.
-
     FILE *file = fopen(path,"wb");
-    if (file == NULL)
-        throw "Cannot Create File";
 
-    fwrite(str.c_str(),1,str.size(),file);
+    if (file == NULL) {
+      throw "Cannot Create File";
+    }
+
+    fwrite(str.c_str(), 1, str.size(), file);
     fclose(file);
 }
 

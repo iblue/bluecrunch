@@ -1,6 +1,6 @@
 CPP=icc
 STRIP=strip
-CFLAGS=-std=c++11 -Wall -Werror -msse3 -O3 -fopenmp -ipo -mtune=native -march=native
+CFLAGS=-std=c++11 -Wall -Werror -O3 -fopenmp -ipo -mtune=native -march=native
 BINARY=bluecrunch
 LIBS=-lm
 
