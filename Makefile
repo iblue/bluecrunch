@@ -4,15 +4,15 @@ CFLAGS=-std=c++11 -Wall -Werror -msse3 -O3 -fopenmp
 BINARY=bluecrunch
 LIBS=-lm
 
-$(BINARY): main.o
-	$(CPP) $(CFLAGS) -o $(BINARY) main.o $(LIBS)
+$(BINARY): main.o fft.o
+	$(CPP) $(CFLAGS) -o $(BINARY) main.o fft.o $(LIBS)
 
 .cpp.o: $(HEADERS)
 	$(CPP) $(CFLAGS) -c $< -o $@
 
 .PHONY: clean
 clean:
-	rm -f $(BINARY) main.o
+	rm -f $(BINARY) main.o fft.o
 
 .PHONY: stats
 stats:
