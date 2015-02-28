@@ -1,4 +1,4 @@
-CPP=g++
+CPP=clang++
 STRIP=strip
 CFLAGS=-std=c++11 -Wall -Werror -msse3 -O3 -fopenmp
 BINARY=bluecrunch
