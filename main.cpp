@@ -153,17 +153,19 @@ int main() {
   omp_set_nested(1);
   int threads = omp_get_max_threads();
 
-  size_t digits = 1000000;
+  size_t digits = 250000000;
 
   //  Determine minimum FFT size.
   size_t p      = 2*digits / 9 + 10;
-  int    k      = 0;
+  size_t k      = 0;
   size_t length = 1;
 
   while(length < 5*p) {
     length *= 2;
     k++;
   }
+
+  printf("Bulding tables until size 2^%ld\n", k);
 
   // Precompute FFT twiddle factors
   Bluecrunch::fft_ensure_table(k);
