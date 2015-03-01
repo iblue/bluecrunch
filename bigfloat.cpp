@@ -499,7 +499,7 @@ BigFloat BigFloat::mul(const BigFloat &x,size_t p,int tds) const{
     //  Determine minimum FFT size.
     int k = 0;
     size_t length = 1;
-    while (length < 3*z.L){
+    while (length < 5*z.L){
         length <<= 1;
         k++;
     }
@@ -507,12 +507,13 @@ BigFloat BigFloat::mul(const BigFloat &x,size_t p,int tds) const{
     //  Perform a convolution using FFT.
     //  Yeah, this is slow for small sizes, but it's asympotically optimal.
 
+    // FIXME: Comment incorrect. 2 digits per point!
     //  3 digits per point is small enough to not encounter round-off error
     //  until a transform size of 2^30.
     //  A transform length of 2^29 allows for the maximum product size to be
     //  2^29 * 3 = 1,610,612,736 decimal digits.
-    if (k > 29)
-        throw "FFT size limit exceeded.";
+    /*if (k > 29)
+        throw "FFT size limit exceeded.";*/
 
     //  Allocate FFT arrays
     SIMD_delete deletor;
@@ -524,16 +525,43 @@ BigFloat BigFloat::mul(const BigFloat &x,size_t p,int tds) const{
         throw "Table is not large enough.";
 
     int_to_fft(Ta.get(),k,AT,AL);           //  Convert 1st operand
+#ifdef DEBUG
+    for(size_t c = 0; c < AL; c++) {
+      printf("AT[%ld] = %d\n", c, AT[c]);
+    }
+    for(size_t c = 0; c < length; c++) {
+      printf("Ta[%ld] = {%f, %f}\n", c, ((double*) Ta.get())[2*c], ((double*) Ta.get())[2*c+1]);
+    }
+#endif
     int_to_fft(Tb.get(),k,BT,BL);           //  Convert 2nd operand
+#ifdef DEBUG
+    for(size_t c = 0; c < BL; c++) {
+      printf("BT[%ld] = %d\n", c, BT[c]);
+    }
+    for(size_t c = 0; c < length; c++) {
+      printf("Tb[%ld] = {%f, %f}\n", c, ((double*) Tb.get())[2*c], ((double*) Tb.get())[2*c+1]);
+    }
+#endif
     fft_forward(Ta.get(),k,tds);            //  Transform 1st operand
     fft_forward(Tb.get(),k,tds);            //  Transform 2nd operand
     fft_pointwise(Ta.get(),Tb.get(),k);     //  Pointwise multiply
     fft_inverse(Ta.get(),k);                //  Perform inverse transform.
+#ifdef DEBUG
+    for(size_t c = 0; c < length; c++) {
+      printf("Tc[%ld] = {%f, %f}\n", c, ((double*) Ta.get())[2*c], ((double*) Ta.get())[2*c+1]);
+    }
+#endif
     fft_to_int(Ta.get(),k,z.T.get(),z.L);   //  Convert back to word array.
 
     //  Check top word and correct length.
     if (z.T[z.L - 1] == 0)
         z.L--;
+#ifdef DEBUG
+    for(size_t c = 0; c < z.L; c++) {
+      printf("CT[%ld] = %d\n", c, (z.T.get())[c]);
+    }
+    printf("\n");
+#endif
 
     return z;
 }

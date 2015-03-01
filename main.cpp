@@ -160,7 +160,7 @@ int main() {
   int    k      = 0;
   size_t length = 1;
 
-  while(length < 3*p) {
+  while(length < 5*p) {
     length *= 2;
     k++;
   }
