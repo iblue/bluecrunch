@@ -6,13 +6,12 @@ struct SIMD_delete{
   }
 };
 
-struct my_complex{
+typedef struct my_complex{
   double r;
   double i;
-  my_complex(double _r,double _i) : r(_r), i(_i) {};
-};
+} my_complex_t;
 
-extern std::vector<std::vector<my_complex>> twiddle_table;
+extern my_complex* twiddle_table[32];
 
 void fft_ensure_table(int k);
 void fft_forward(__m128d *T,int k,int tds = 1);
