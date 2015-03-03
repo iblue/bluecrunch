@@ -32,14 +32,15 @@ namespace Bluecrunch {
     return (double)t.tv_sec + 1.0e-9*t.tv_nsec;
   }
 
-  void dump_to_file(const char *path,const std::string &str){
-      FILE *file = fopen(path,"wb");
+  void dump_to_file(const char *path, const char* str, size_t len){
+      FILE *file = fopen(path, "wb");
 
       if (file == NULL) {
-        throw "Cannot Create File";
+        fprintf(stderr, "Cannot create file\n");
+        abort();
       }
 
-      fwrite(str.c_str(), 1, str.size(), file);
+      fwrite(str, 1, len, file);
       fclose(file);
   }
 
@@ -145,7 +146,9 @@ namespace Bluecrunch {
     cout << "Time: " << time2 - time1 << endl;
 
 
-    dump_to_file("e.txt",P.to_string(digits));
+    std::string out = P.to_string(digits);
+
+    dump_to_file("e.txt", out.c_str(), out.size());
   }
 }
 
