@@ -168,7 +168,7 @@ int main() {
   printf("Bulding tables until size 2^%ld\n", k);
 
   // Precompute FFT twiddle factors
-  Bluecrunch::fft_ensure_table(k);
+  fft_ensure_table(k);
 
   double time2 = Bluecrunch::wall_clock();
   cout << "Time: " << time2 - time1 << endl;
