@@ -2,10 +2,7 @@
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <string>
-#include <vector>
-#include <memory>
-#include <iostream>
+#include <string.h>
 #include <malloc.h>
 #include <pmmintrin.h>
 #include <omp.h>
@@ -15,15 +12,16 @@
 #define M_PI       3.14159265358979323846
 #endif
 
-my_complex* twiddle_table[32];
+my_complex_t* twiddle_table[32];
+int twiddle_table_size = 0;
 
 void fft_ensure_table(int k) {
   //  Makes sure the twiddle factor table is large enough to handle an FFT of
   //  size 2^k.
 
   //  Do one level at a time
-  if (k - 1 > 0){
-      fft_ensure_table(k - 1);
+  if (k - 1 > 0) {
+    fft_ensure_table(k - 1);
   }
 
   size_t length = 1 << k;
@@ -44,6 +42,7 @@ void fft_ensure_table(int k) {
 
   //  Push into main table.
   twiddle_table[k] = sub_table;
+  twiddle_table_size = k+1;
 }
 
 void fft_forward(__m128d *T,int k,int tds){
@@ -74,7 +73,7 @@ void fft_forward(__m128d *T,int k,int tds){
   size_t half_length = length / 2;
 
   //  Get local twiddle table.
-  my_complex_t *local_table = twiddle_table[k];
+  my_complex_t* local_table = twiddle_table[k];
 
   //  Perform FFT reduction into two halves.
   for (size_t c = 0; c < half_length; c++){
@@ -103,8 +102,8 @@ void fft_forward(__m128d *T,int k,int tds){
 
   if (tds < 2){
     //  No more threads.
-    fft_forward(T,k - 1);
-    fft_forward(T + half_length,k - 1);
+    fft_forward(T, k - 1, 1);
+    fft_forward(T + half_length, k - 1, 1);
   }else{
     //  Run sub-recursions in parallel.
     int tds0 = tds / 2;
@@ -151,8 +150,8 @@ void fft_inverse(__m128d *T,int k,int tds){
 
   if (tds < 2){
       //  No more threads.
-      fft_inverse(T,k - 1);
-      fft_inverse(T + half_length,k - 1);
+      fft_inverse(T,k - 1,1);
+      fft_inverse(T + half_length,k - 1,1);
   }else{
       //  Run sub-recursions in parallel.
       int tds0 = tds / 2;
@@ -230,8 +229,9 @@ void int_to_fft(__m128d *T,int k,const uint32_t *A,size_t AL){
   //  Since there are 9 digits per word and we want to put 2 digits per
   //  point, the length of the transform must be at least 4.5 times the word
   //  length of the input.
-  if (fft_length < 5*AL)
-      throw "FFT length is too small.";
+  if (fft_length < 5*AL) {
+    abort();
+  }
 
   //  Convert
   for (size_t c = 0; c < AL/2; c++){
@@ -296,8 +296,9 @@ void fft_to_int(__m128d *T,int k,uint32_t *A,size_t AL){
   //  Since there are 9 digits per word and we want to put 3 digits per
   //  point, the length of the transform must be at least 3 times the word
   //  length of the input.
-  if (fft_length < 5*AL)
-      throw "FFT length is too small.";
+  if(fft_length < 5*AL) {
+    abort();
+  }
 
   //  Round and carry out.
   uint64_t carry = 0;

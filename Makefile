@@ -1,13 +1,17 @@
 CPP=icc
 STRIP=strip
-CFLAGS=-std=c++11 -Wall -Werror -ggdb -O3 -fopenmp -ipo -mtune=native -march=native
+CPPFLAGS=-std=c++11 -Wall -Werror -ggdb -O3 -fopenmp -ipo -mtune=native -march=native
+CFLAGS=-std=c11 -Wall -Werror -ggdb -O3 -fopenmp -ipo -mtune=native -march=native
 BINARY=bluecrunch
 LIBS=-lm
 
 $(BINARY): main.o fft.o bigfloat.o
-	$(CPP) $(CFLAGS) -o $(BINARY) main.o fft.o bigfloat.o $(LIBS)
+	$(CPP) $(CPPFLAGS) -o $(BINARY) main.o fft.o bigfloat.o $(LIBS)
 
 .cpp.o: $(HEADERS)
+	$(CPP) $(CPPFLAGS) -c $< -o $@
+
+.c.o: $(HEADERS)
 	$(CPP) $(CFLAGS) -c $< -o $@
 
 .PHONY: clean

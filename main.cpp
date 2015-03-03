@@ -17,7 +17,9 @@ using std::endl;
 
 #include <chrono>
 
-#include "fft.h"
+extern "C" {
+  #include "fft.h"
+}
 #include "bigfloat.h"
 
 namespace Bluecrunch {

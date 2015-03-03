@@ -13,8 +13,16 @@ using std::endl;
 #include <malloc.h>
 #include <pmmintrin.h>
 
+struct SIMD_delete{
+  void operator()(__m128d *p){
+    _mm_free(p);
+  }
+};
+
 #include <omp.h>
-#include "fft.h"
+extern "C" {
+  #include "fft.h"
+}
 #include "bigfloat.h"
 
 namespace Bluecrunch {
@@ -521,8 +529,9 @@ BigFloat BigFloat::mul(const BigFloat &x,size_t p,int tds) const{
     auto Tb = std::unique_ptr<__m128d[],SIMD_delete>((__m128d*)_mm_malloc(length * sizeof(__m128d),16),deletor);
 
     //  Make sure the twiddle table is big enough.
-    if ((int)twiddle_table.size() - 1 < k)
-        throw "Table is not large enough.";
+    if (twiddle_table_size - 1 < k) {
+      throw "Table is not large enough.";
+    }
 
     int_to_fft(Ta.get(),k,AT,AL);           //  Convert 1st operand
 #ifdef DEBUG
@@ -545,7 +554,7 @@ BigFloat BigFloat::mul(const BigFloat &x,size_t p,int tds) const{
     fft_forward(Ta.get(),k,tds);            //  Transform 1st operand
     fft_forward(Tb.get(),k,tds);            //  Transform 2nd operand
     fft_pointwise(Ta.get(),Tb.get(),k);     //  Pointwise multiply
-    fft_inverse(Ta.get(),k);                //  Perform inverse transform.
+    fft_inverse(Ta.get(),k,tds);            //  Perform inverse transform.
 #ifdef DEBUG
     for(size_t c = 0; c < length; c++) {
       printf("Tc[%ld] = {%f, %f}\n", c, ((double*) Ta.get())[2*c], ((double*) Ta.get())[2*c+1]);
