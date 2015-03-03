@@ -270,34 +270,6 @@ void bigfloat_negate(BigFloat& num) {
   num.sign = !num.sign;
 }
 
-BigFloat BigFloat::mul(uint32_t x) const{
-    //  Multiply by a 32-bit unsigned integer.
-
-    if (L == 0 || x == 0)
-        return BigFloat();
-
-    //  Compute basic fields.
-    BigFloat z;
-    z.sign = sign;
-    z.exp  = exp;
-    z.L    = L;
-
-    //  Allocate mantissa
-    z.T = (uint32_t*)malloc(sizeof(uint32_t)*(z.L + 1));
-
-    uint64_t carry = 0;
-    for (size_t c = 0; c < L; c++){
-        carry += (uint64_t)T[c] * x;                //  Multiply and add to carry
-        z.T[c] = (uint32_t)(carry % 1000000000);    //  Store bottom 9 digits
-        carry /= 1000000000;                        //  Shift down the carry
-    }
-
-    //  Carry out
-    if (carry != 0)
-        z.T[z.L++] = (uint32_t)carry;
-
-    return z;
-}
 BigFloat BigFloat::uadd(const BigFloat &x,size_t p) const{
     //  Perform addition ignoring the sign of the two operands.
 
