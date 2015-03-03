@@ -247,12 +247,14 @@ int BigFloat::ucmp(const BigFloat &x) const{
 }
 ////////////////////////////////////////////////////////////////////////////////
 //  Arithmetic
-void BigFloat::negate(){
-    //  Negate this number.
-    if (L == 0)
-        return;
-    sign = !sign;
+void bigfloat_negate(BigFloat& num) {
+  if(num.L == 0) {
+    return;
+  }
+
+  num.sign = !num.sign;
 }
+
 BigFloat BigFloat::mul(uint32_t x) const{
     //  Multiply by a 32-bit unsigned integer.
 
@@ -412,7 +414,7 @@ BigFloat BigFloat::add(const BigFloat &x,size_t p) const{
 
     //  this < x
     BigFloat z = x.usub(*this,p);
-    z.negate();
+    bigfloat_negate(z);
     return z;
 }
 BigFloat BigFloat::sub(const BigFloat &x,size_t p) const{
@@ -432,7 +434,7 @@ BigFloat BigFloat::sub(const BigFloat &x,size_t p) const{
 
     //  this < x
     BigFloat z = x.usub(*this,p);
-    z.negate();
+    bigfloat_negate(z);
     return z;
 }
 BigFloat BigFloat::mul(const BigFloat &x,size_t p,int tds) const{
