@@ -27,9 +27,9 @@ namespace Bluecrunch {
   ////////////////////////////////////////////////////////////////////////////////
   //  Helpers
   double wall_clock() {
-    auto ratio_object = std::chrono::high_resolution_clock::period();
-    double ratio = (double)ratio_object.num / ratio_object.den;
-    return std::chrono::high_resolution_clock::now().time_since_epoch().count() * ratio;
+    struct timespec t = {0,0};
+    clock_gettime(CLOCK_MONOTONIC, &t);
+    return (double)t.tv_sec + 1.0e-9*t.tv_nsec;
   }
 
   void dump_to_file(const char *path,const std::string &str){
