@@ -10,8 +10,6 @@ namespace Bluecrunch {
 
       std::string to_string    (size_t digits = 0) const;
       std::string to_string_sci(size_t digits = 0) const;
-      size_t get_precision() const;
-      int64_t get_exponent() const;
       uint32_t word_at(int64_t mag) const;
 
       void negate();

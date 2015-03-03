@@ -207,16 +207,6 @@ std::string BigFloat::to_string_sci(size_t digits) const{
 }
 ////////////////////////////////////////////////////////////////////////////////
 //  Getters
-size_t BigFloat::get_precision() const{
-    //  Returns the precision of the number in words.
-    //  Note that each word is 9 decimal digits.
-    return L;
-}
-int64_t BigFloat::get_exponent() const{
-    //  Returns the exponent of the number in words.
-    //  Note that each word is 9 decimal digits.
-    return exp;
-}
 uint32_t BigFloat::word_at(int64_t mag) const{
     //  Returns the word at the mag'th digit place.
     //  This is useful for additions where you need to access a specific "digit place"
