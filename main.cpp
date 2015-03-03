@@ -80,8 +80,10 @@ void e_BSR(BigFloat &P, BigFloat &Q, uint32_t a, uint32_t b, int tds = 1) {
   //  Binary Splitting recursion for exp(1).
 
   if (b - a == 1){
-    P = BigFloat(1);
-    Q = BigFloat(b);
+    P = BigFloat();
+    bigfloat_set(P, 1, true);
+    Q = BigFloat();
+    bigfloat_set(Q, b, true);
     return;
   }
 
@@ -140,7 +142,9 @@ void e(size_t digits, int tds){
   cout << "Time: " << time1 - time0 << endl;
 
   cout << "Division... " << endl;
-  P = P.div(Q, p, tds).add(BigFloat(1), p);
+  BigFloat one = BigFloat();
+  bigfloat_set(one, 1, 1);
+  P = P.div(Q, p, tds).add(one, p);
   double time2 = wall_clock();
   cout << "Time: " << time2 - time1 << endl;
 

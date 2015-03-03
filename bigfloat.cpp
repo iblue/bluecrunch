@@ -30,6 +30,7 @@ BigFloat::BigFloat(BigFloat &&x)
     x.L     = 0;
     x.T     = NULL;
 }
+
 BigFloat& BigFloat::operator=(BigFloat &&x){
     sign    = x.sign;
     exp     = x.exp;
@@ -49,28 +50,34 @@ BigFloat::BigFloat()
     : sign(true)
     , exp(0)
     , L(0)
+    , T(NULL)
 {}
 
-BigFloat::BigFloat(uint32_t x,bool sign_)
-    : sign(true)
-    , exp(0)
-    , L(1)
-{
-    //  Construct a BigFloat with a value of x and the specified sign.
+void bigfloat_set(BigFloat &target, uint32_t x, bool sign_) {
+  target.exp  = 0;
 
-    if (x == 0){
-        L = 0;
-        return;
-    }
-    sign = sign_;
+  if (x == 0) {
+      target.L    = 0;
+      target.sign = true;
+      target.T    = NULL;
+      return;
+  }
 
-    T = (uint32_t*) malloc(sizeof(uint32_t));
-    T[0] = x;
+  target.sign = sign_;
+
+  if(target.T != NULL) {
+    free(target.T);
+  }
+  target.T = (uint32_t*) malloc(sizeof(uint32_t));
+  target.T[0] = x;
+  target.L    = 1;
 }
+
 // iblue: Destructor
 BigFloat::~BigFloat() {
   if(T != NULL) {
     free(T);
+    T = NULL;
   }
 }
 ////////////////////////////////////////////////////////////////////////////////
@@ -606,7 +613,9 @@ BigFloat BigFloat::rcp(size_t p,int tds) const{
     BigFloat T = rcp(s,tds);
 
     //  r1 = r0 - (r0 * x - 1) * r0
-    return T.sub(this->mul(T,p,tds).sub(BigFloat(1),p).mul(T,p,tds),p);
+    BigFloat one = BigFloat();
+    bigfloat_set(one, 1, 1);
+    return T.sub(this->mul(T,p,tds).sub(one,p).mul(T,p,tds),p);
 }
 BigFloat BigFloat::div(const BigFloat &x,size_t p,int tds) const{
     //  Division

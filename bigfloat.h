@@ -6,7 +6,6 @@ public:
     ~BigFloat();
 
     BigFloat();
-    BigFloat(uint32_t x,bool sign = true);
 
     std::string to_string    (size_t digits = 0) const;
     std::string to_string_sci(size_t digits = 0) const;
@@ -36,3 +35,4 @@ private:
 BigFloat invsqrt(uint32_t x,size_t p);
 
 void bigfloat_negate(BigFloat& num);
+void bigfloat_set(BigFloat &target, uint32_t x, bool sign_);
