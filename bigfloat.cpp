@@ -17,7 +17,6 @@ extern "C" {
 }
 #include "bigfloat.h"
 
-namespace Bluecrunch {
 ////////////////////////////////////////////////////////////////////////////////
 //  Move operators
 BigFloat::BigFloat(BigFloat &&x)
@@ -612,5 +611,4 @@ BigFloat BigFloat::rcp(size_t p,int tds) const{
 BigFloat BigFloat::div(const BigFloat &x,size_t p,int tds) const{
     //  Division
     return this->mul(x.rcp(p,tds),p,tds);
-}
 }
