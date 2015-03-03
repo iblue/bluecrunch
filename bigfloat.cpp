@@ -24,21 +24,23 @@ BigFloat::BigFloat(BigFloat &&x)
     : sign(x.sign)
     , exp(x.exp)
     , L(x.L)
-    , T(std::move(x.T))
+    , T(x.T)
 {
     x.sign  = true;
     x.exp   = 0;
     x.L     = 0;
+    x.T     = NULL;
 }
 BigFloat& BigFloat::operator=(BigFloat &&x){
     sign    = x.sign;
     exp     = x.exp;
     L       = x.L;
-    T       = std::move(x.T);
+    T       = x.T;
 
     x.sign  = true;
     x.exp   = 0;
     x.L     = 0;
+    x.T     = 0;
 
     return *this;
 }
@@ -63,8 +65,14 @@ BigFloat::BigFloat(uint32_t x,bool sign_)
     }
     sign = sign_;
 
-    T = std::unique_ptr<uint32_t[]>(new uint32_t[1]);
+    T = (uint32_t*) malloc(sizeof(uint32_t));
     T[0] = x;
+}
+// iblue: Destructor
+BigFloat::~BigFloat() {
+  if(T != NULL) {
+    free(T);
+  }
 }
 ////////////////////////////////////////////////////////////////////////////////
 //  String Conversion
@@ -83,7 +91,7 @@ int64_t BigFloat::to_string_trimmed(size_t digits,std::string &str) const{
     //  Collect operands
     int64_t exponent = exp;
     size_t length = L;
-    uint32_t *ptr = T.get();
+    uint32_t *ptr = T;
 
     if (digits == 0){
         //  Use all digits.
@@ -268,7 +276,7 @@ BigFloat BigFloat::mul(uint32_t x) const{
     z.L    = L;
 
     //  Allocate mantissa
-    z.T = std::unique_ptr<uint32_t[]>(new uint32_t[z.L + 1]);
+    z.T = (uint32_t*)malloc(sizeof(uint32_t)*(z.L + 1));
 
     uint64_t carry = 0;
     for (size_t c = 0; c < L; c++){
@@ -316,7 +324,7 @@ BigFloat BigFloat::uadd(const BigFloat &x,size_t p) const{
     z.L     = (uint32_t)TL;
 
     //  Allocate mantissa
-    z.T = std::unique_ptr<uint32_t[]>(new uint32_t[z.L + 1]);
+    z.T = (uint32_t*) malloc(sizeof(uint32_t)*(z.L + 1));
 
     //  Add
     uint32_t carry = 0;
@@ -372,7 +380,7 @@ BigFloat BigFloat::usub(const BigFloat &x,size_t p) const{
     z.L     = (uint32_t)TL;
 
     //  Allocate mantissa
-    z.T = std::unique_ptr<uint32_t[]>(new uint32_t[z.L]);
+    z.T = (uint32_t*) malloc(sizeof(uint32_t)*(z.L + 1));
 
     //  Subtract
     int32_t carry = 0;
@@ -392,7 +400,8 @@ BigFloat BigFloat::usub(const BigFloat &x,size_t p) const{
     if (z.L == 0){
         z.exp = 0;
         z.sign = true;
-        z.T.reset();
+        free(z.T);
+        z.T = NULL;
     }
 
     return z;
@@ -461,8 +470,8 @@ BigFloat BigFloat::mul(const BigFloat &x,size_t p,int tds) const{
     int64_t Bexp = x.exp;
     size_t AL = L;
     size_t BL = x.L;
-    uint32_t *AT = T.get();
-    uint32_t *BT = x.T.get();
+    uint32_t *AT = T;
+    uint32_t *BT = x.T;
 
     //  Perform precision truncation.
     if (AL > p){
@@ -485,7 +494,7 @@ BigFloat BigFloat::mul(const BigFloat &x,size_t p,int tds) const{
     z.L    = AL + BL;           //  Add the lenghts for now. May need to correct later.
 
     //  Allocate mantissa
-    z.T = std::unique_ptr<uint32_t[]>(new uint32_t[z.L]);
+    z.T = (uint32_t*)malloc(sizeof(uint32_t)*(z.L));
 
     //  Perform multiplication.
 
@@ -518,45 +527,18 @@ BigFloat BigFloat::mul(const BigFloat &x,size_t p,int tds) const{
     }
 
     int_to_fft(Ta,k,AT,AL);           //  Convert 1st operand
-#ifdef DEBUG
-    for(size_t c = 0; c < AL; c++) {
-      printf("AT[%ld] = %d\n", c, AT[c]);
-    }
-    for(size_t c = 0; c < length; c++) {
-      printf("Ta[%ld] = {%f, %f}\n", c, ((double*) Ta.get())[2*c], ((double*) Ta.get())[2*c+1]);
-    }
-#endif
     int_to_fft(Tb,k,BT,BL);           //  Convert 2nd operand
-#ifdef DEBUG
-    for(size_t c = 0; c < BL; c++) {
-      printf("BT[%ld] = %d\n", c, BT[c]);
-    }
-    for(size_t c = 0; c < length; c++) {
-      printf("Tb[%ld] = {%f, %f}\n", c, ((double*) Tb)[2*c], ((double*) Tb)[2*c+1]);
-    }
-#endif
     fft_forward(Ta,k,tds); //  Transform 1st operand
     fft_forward(Tb,k,tds); //  Transform 2nd operand
     fft_pointwise(Ta,Tb,k);//  Pointwise multiply
     fft_inverse(Ta,k,tds); //  Perform inverse transform.
-#ifdef DEBUG
-    for(size_t c = 0; c < length; c++) {
-      printf("Tc[%ld] = {%f, %f}\n", c, ((double*) Ta))[2*c], ((double*) Ta)[2*c+1]);
-    }
-#endif
-    fft_to_int(Ta,k,z.T.get(),z.L);   //  Convert back to word array.
+    fft_to_int(Ta,k,z.T,z.L);   //  Convert back to word array.
     _mm_free(Ta);
     _mm_free(Tb);
 
     //  Check top word and correct length.
     if (z.T[z.L - 1] == 0)
         z.L--;
-#ifdef DEBUG
-    for(size_t c = 0; c < z.L; c++) {
-      printf("CT[%ld] = %d\n", c, (z.T.get())[c]);
-    }
-    printf("\n");
-#endif
 
     return z;
 }
@@ -571,7 +553,7 @@ BigFloat BigFloat::rcp(size_t p,int tds) const{
     //  Collect operand
     int64_t Aexp = exp;
     size_t AL = L;
-    uint32_t *AT = T.get();
+    uint32_t *AT = T;
 
     //  End of recursion. Generate starting point.
     if (p == 0){
@@ -607,7 +589,7 @@ BigFloat BigFloat::rcp(size_t p,int tds) const{
         BigFloat out;
         out.sign = sign;
 
-        out.T = std::unique_ptr<uint32_t[]>(new uint32_t[2]);
+        out.T = (uint32_t*)malloc(sizeof(uint32_t)*2);
         out.T[0] = (uint32_t)(val64 % 1000000000);
         out.T[1] = (uint32_t)(val64 / 1000000000);
         out.L = 2;

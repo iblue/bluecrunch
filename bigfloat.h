@@ -4,6 +4,7 @@ namespace Bluecrunch {
   public:
       BigFloat(BigFloat &&x);
       BigFloat& operator=(BigFloat &&x);
+      ~BigFloat();
 
       BigFloat();
       BigFloat(uint32_t x,bool sign = true);
@@ -22,7 +23,7 @@ namespace Bluecrunch {
       bool sign;      //  true = positive or zero, false = negative
       int64_t exp;    //  Exponent
       size_t L;       //  Length
-      std::unique_ptr<uint32_t[]> T;
+      uint32_t* T;
 
   private:
       //  Internal helpers
