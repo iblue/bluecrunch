@@ -6,8 +6,6 @@
 #include <vector>
 #include <memory>
 #include <iostream>
-using std::cout;
-using std::endl;
 
 //  SIMD
 #include <malloc.h>
@@ -51,6 +49,7 @@ BigFloat::BigFloat()
     , exp(0)
     , L(0)
 {}
+
 BigFloat::BigFloat(uint32_t x,bool sign_)
     : sign(true)
     , exp(0)
