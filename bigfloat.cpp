@@ -322,25 +322,25 @@ void _bigfloat_uadd(BigFloat &target, const BigFloat &a, const BigFloat &b, size
     }
 }
 
-BigFloat BigFloat::usub(const BigFloat &x,size_t p) const{
+void _bigfloat_usub(BigFloat &target, const BigFloat &a, const BigFloat &b, size_t p) {
     //  Perform subtraction ignoring the sign of the two operands.
 
     //  "this" must be greater than or equal to x. Otherwise, the behavior
     //  is undefined.
 
     //  Magnitude
-    int64_t magA = exp + L;
-    int64_t magB = x.exp + x.L;
-    int64_t top = std::max(magA,magB);
-    int64_t bot = std::min(exp,x.exp);
+    int64_t magA = a.exp + a.L;
+    int64_t magB = b.exp + b.L;
+    int64_t top = std::max(magA, magB);
+    int64_t bot = std::min(a.exp, b.exp);
 
     //  Truncate precision
     int64_t TL = top - bot;
 
-    if (p == 0){
+    if (p == 0) {
         //  Default value. No trunction.
         p = (size_t)TL;
-    }else{
+    } else {
         //  Increase precision
         p += YCL_BIGFLOAT_EXTRA_PRECISION;
     }
@@ -351,37 +351,34 @@ BigFloat BigFloat::usub(const BigFloat &x,size_t p) const{
     }
 
     //  Compute basic fields.
-    BigFloat z;
-    z.sign  = sign;
-    z.exp   = bot;
-    z.L     = (uint32_t)TL;
+    target.sign  = a.sign;
+    target.exp   = bot;
+    target.L     = (uint32_t)TL;
 
     //  Allocate mantissa
-    z.T = (uint32_t*) malloc(sizeof(uint32_t)*(z.L + 1));
+    target.T = (uint32_t*) malloc(sizeof(uint32_t)*(TL + 1));
 
     //  Subtract
     int32_t carry = 0;
-    for (size_t c = 0; bot < top; bot++, c++){
-        int32_t word = (int32_t)_bigfloat_word_at(*this, bot) - (int32_t)_bigfloat_word_at(x, bot) - carry;
+    for (size_t c = 0; bot < top; bot++, c++) {
+        int32_t word = (int32_t)_bigfloat_word_at(a, bot) - (int32_t)_bigfloat_word_at(b, bot) - carry;
         carry = 0;
         if (word < 0){
             word += 1000000000;
             carry = 1;
         }
-        z.T[c] = word;
+        target.T[c] = word;
     }
 
     //  Strip leading zeros
-    while (z.L > 0 && z.T[z.L - 1] == 0)
-        z.L--;
-    if (z.L == 0){
-        z.exp = 0;
-        z.sign = true;
-        free(z.T);
-        z.T = NULL;
+    while (target.L > 0 && target.T[target.L - 1] == 0)
+        target.L--;
+    if (target.L == 0){
+        target.exp = 0;
+        target.sign = true;
+        free(target.T);
+        target.T = NULL;
     }
-
-    return z;
 }
 BigFloat BigFloat::add(const BigFloat &x,size_t p) const{
     //  Addition
@@ -398,11 +395,15 @@ BigFloat BigFloat::add(const BigFloat &x,size_t p) const{
     }
 
     //  this > x
-    if (_bigfloat_ucmp(*this, x) > 0)
-        return usub(x,p);
+    if (_bigfloat_ucmp(*this, x) > 0) {
+      BigFloat z;
+      _bigfloat_usub(z, *this, x, p);
+      return z;
+    }
 
     //  this < x
-    BigFloat z = x.usub(*this,p);
+    BigFloat z;
+    _bigfloat_usub(z, x, *this, p);
     bigfloat_negate(z);
     return z;
 }
@@ -421,11 +422,15 @@ BigFloat BigFloat::sub(const BigFloat &x,size_t p) const{
     }
 
     //  this > x
-    if (_bigfloat_ucmp(*this, x) > 0)
-        return usub(x,p);
+    if (_bigfloat_ucmp(*this, x) > 0) {
+      BigFloat z;
+      _bigfloat_usub(z, *this, x, p);
+      return z;
+    }
 
     //  this < x
-    BigFloat z = x.usub(*this,p);
+    BigFloat z;
+    _bigfloat_usub(z, x, *this, p);
     bigfloat_negate(z);
     return z;
 }

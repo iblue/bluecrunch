@@ -25,7 +25,6 @@ public:
 private:
     //  Internal helpers
     int64_t to_string_trimmed(size_t digits,std::string &str) const;
-    BigFloat usub(const BigFloat &x,size_t p) const;
 
     friend BigFloat invsqrt(uint32_t x,size_t p,int threads);
 };
