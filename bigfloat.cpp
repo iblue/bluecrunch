@@ -220,20 +220,21 @@ std::string BigFloat::to_string_sci(size_t digits) const{
 }
 ////////////////////////////////////////////////////////////////////////////////
 //  Getters
-uint32_t BigFloat::word_at(int64_t mag) const{
-    //  Returns the word at the mag'th digit place.
-    //  This is useful for additions where you need to access a specific "digit place"
-    //  of the operand without having to worry if it's out-of-bounds.
+uint32_t _bigfloat_word_at(const BigFloat &target, int64_t mag) {
+  //  Returns the word at the mag'th digit place.
+  //  This is useful for additions where you need to access a specific "digit place"
+  //  of the operand without having to worry if it's out-of-bounds.
 
-    //  This function is mathematically equal to:
-    //      (return value) = floor(this * (10^9)^-mag) % 10^9
+  //  This function is mathematically equal to:
+  //      (return value) = floor(this * (10^9)^-mag) % 10^9
 
-    if (mag < exp)
-        return 0;
-    if (mag >= exp + (int64_t)L)
-        return 0;
-    return T[(size_t)(mag - exp)];
+  if (mag < target.exp)
+      return 0;
+  if (mag >= target.exp + (int64_t)target.L)
+      return 0;
+  return target.T[(size_t)(mag - target.exp)];
 }
+
 int BigFloat::ucmp(const BigFloat &x) const{
     //  Compare function that ignores the sign.
     //  This is needed to determine which direction subtractions will go.
@@ -249,8 +250,8 @@ int BigFloat::ucmp(const BigFloat &x) const{
     //  Compare
     int64_t mag = magA;
     while (mag >= exp || mag >= x.exp){
-        uint32_t wordA = word_at(mag);
-        uint32_t wordB = x.word_at(mag);
+        uint32_t wordA = _bigfloat_word_at(*this, mag);
+        uint32_t wordB = _bigfloat_word_at(x, mag);
         if (wordA < wordB)
             return -1;
         if (wordA > wordB)
@@ -335,7 +336,7 @@ BigFloat BigFloat::uadd(const BigFloat &x,size_t p) const{
     //  Add
     uint32_t carry = 0;
     for (size_t c = 0; bot < top; bot++, c++){
-        uint32_t word = word_at(bot) + x.word_at(bot) + carry;
+        uint32_t word = _bigfloat_word_at(*this, bot) + _bigfloat_word_at(x, bot) + carry;
         carry = 0;
         if (word >= 1000000000){
             word -= 1000000000;
@@ -391,7 +392,7 @@ BigFloat BigFloat::usub(const BigFloat &x,size_t p) const{
     //  Subtract
     int32_t carry = 0;
     for (size_t c = 0; bot < top; bot++, c++){
-        int32_t word = (int32_t)word_at(bot) - (int32_t)x.word_at(bot) - carry;
+        int32_t word = (int32_t)_bigfloat_word_at(*this, bot) - (int32_t)_bigfloat_word_at(x, bot) - carry;
         carry = 0;
         if (word < 0){
             word += 1000000000;

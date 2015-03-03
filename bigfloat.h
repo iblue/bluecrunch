@@ -36,3 +36,4 @@ BigFloat invsqrt(uint32_t x,size_t p);
 
 void bigfloat_negate(BigFloat& num);
 void bigfloat_set(BigFloat &target, uint32_t x, bool sign_);
+uint32_t _bigfloat_word_at(const BigFloat &target, int64_t mag);
