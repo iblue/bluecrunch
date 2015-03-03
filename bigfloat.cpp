@@ -13,12 +13,6 @@ using std::endl;
 #include <malloc.h>
 #include <pmmintrin.h>
 
-struct SIMD_delete{
-  void operator()(__m128d *p){
-    _mm_free(p);
-  }
-};
-
 #include <omp.h>
 extern "C" {
   #include "fft.h"
@@ -524,16 +518,15 @@ BigFloat BigFloat::mul(const BigFloat &x,size_t p,int tds) const{
         throw "FFT size limit exceeded.";*/
 
     //  Allocate FFT arrays
-    SIMD_delete deletor;
-    auto Ta = std::unique_ptr<__m128d[],SIMD_delete>((__m128d*)_mm_malloc(length * sizeof(__m128d),16),deletor);
-    auto Tb = std::unique_ptr<__m128d[],SIMD_delete>((__m128d*)_mm_malloc(length * sizeof(__m128d),16),deletor);
+    __m128d *Ta = (__m128d*)_mm_malloc(length * sizeof(__m128d), 16);
+    __m128d *Tb = (__m128d*)_mm_malloc(length * sizeof(__m128d), 16);
 
     //  Make sure the twiddle table is big enough.
     if (twiddle_table_size - 1 < k) {
       throw "Table is not large enough.";
     }
 
-    int_to_fft(Ta.get(),k,AT,AL);           //  Convert 1st operand
+    int_to_fft(Ta,k,AT,AL);           //  Convert 1st operand
 #ifdef DEBUG
     for(size_t c = 0; c < AL; c++) {
       printf("AT[%ld] = %d\n", c, AT[c]);
@@ -542,25 +535,27 @@ BigFloat BigFloat::mul(const BigFloat &x,size_t p,int tds) const{
       printf("Ta[%ld] = {%f, %f}\n", c, ((double*) Ta.get())[2*c], ((double*) Ta.get())[2*c+1]);
     }
 #endif
-    int_to_fft(Tb.get(),k,BT,BL);           //  Convert 2nd operand
+    int_to_fft(Tb,k,BT,BL);           //  Convert 2nd operand
 #ifdef DEBUG
     for(size_t c = 0; c < BL; c++) {
       printf("BT[%ld] = %d\n", c, BT[c]);
     }
     for(size_t c = 0; c < length; c++) {
-      printf("Tb[%ld] = {%f, %f}\n", c, ((double*) Tb.get())[2*c], ((double*) Tb.get())[2*c+1]);
+      printf("Tb[%ld] = {%f, %f}\n", c, ((double*) Tb)[2*c], ((double*) Tb)[2*c+1]);
     }
 #endif
-    fft_forward(Ta.get(),k,tds);            //  Transform 1st operand
-    fft_forward(Tb.get(),k,tds);            //  Transform 2nd operand
-    fft_pointwise(Ta.get(),Tb.get(),k);     //  Pointwise multiply
-    fft_inverse(Ta.get(),k,tds);            //  Perform inverse transform.
+    fft_forward(Ta,k,tds); //  Transform 1st operand
+    fft_forward(Tb,k,tds); //  Transform 2nd operand
+    fft_pointwise(Ta,Tb,k);//  Pointwise multiply
+    fft_inverse(Ta,k,tds); //  Perform inverse transform.
 #ifdef DEBUG
     for(size_t c = 0; c < length; c++) {
-      printf("Tc[%ld] = {%f, %f}\n", c, ((double*) Ta.get())[2*c], ((double*) Ta.get())[2*c+1]);
+      printf("Tc[%ld] = {%f, %f}\n", c, ((double*) Ta))[2*c], ((double*) Ta)[2*c+1]);
     }
 #endif
-    fft_to_int(Ta.get(),k,z.T.get(),z.L);   //  Convert back to word array.
+    fft_to_int(Ta,k,z.T.get(),z.L);   //  Convert back to word array.
+    _mm_free(Ta);
+    _mm_free(Tb);
 
     //  Check top word and correct length.
     if (z.T[z.L - 1] == 0)
