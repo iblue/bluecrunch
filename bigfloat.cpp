@@ -235,13 +235,13 @@ uint32_t _bigfloat_word_at(const BigFloat &target, int64_t mag) {
   return target.T[(size_t)(mag - target.exp)];
 }
 
-int BigFloat::ucmp(const BigFloat &x) const{
+int _bigfloat_ucmp(const BigFloat &a, const BigFloat &b) {
     //  Compare function that ignores the sign.
     //  This is needed to determine which direction subtractions will go.
 
     //  Magnitude
-    int64_t magA = exp + L;
-    int64_t magB = x.exp + x.L;
+    int64_t magA = a.exp + a.L;
+    int64_t magB = b.exp + b.L;
     if (magA > magB)
         return 1;
     if (magA < magB)
@@ -249,9 +249,9 @@ int BigFloat::ucmp(const BigFloat &x) const{
 
     //  Compare
     int64_t mag = magA;
-    while (mag >= exp || mag >= x.exp){
-        uint32_t wordA = _bigfloat_word_at(*this, mag);
-        uint32_t wordB = _bigfloat_word_at(x, mag);
+    while (mag >= a.exp || mag >= b.exp){
+        uint32_t wordA = _bigfloat_word_at(a, mag);
+        uint32_t wordB = _bigfloat_word_at(b, mag);
         if (wordA < wordB)
             return -1;
         if (wordA > wordB)
@@ -425,7 +425,7 @@ BigFloat BigFloat::add(const BigFloat &x,size_t p) const{
         return uadd(x,p);
 
     //  this > x
-    if (ucmp(x) > 0)
+    if (_bigfloat_ucmp(*this, x) > 0)
         return usub(x,p);
 
     //  this < x
@@ -445,7 +445,7 @@ BigFloat BigFloat::sub(const BigFloat &x,size_t p) const{
         return uadd(x,p);
 
     //  this > x
-    if (ucmp(x) > 0)
+    if (_bigfloat_ucmp(*this, x) > 0)
         return usub(x,p);
 
     //  this < x
