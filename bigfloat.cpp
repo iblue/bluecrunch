@@ -270,22 +270,22 @@ void bigfloat_negate(BigFloat& num) {
   num.sign = !num.sign;
 }
 
-BigFloat BigFloat::uadd(const BigFloat &x,size_t p) const{
+void _bigfloat_uadd(BigFloat &target, const BigFloat &a, const BigFloat &b, size_t p) {
     //  Perform addition ignoring the sign of the two operands.
 
     //  Magnitude
-    int64_t magA = exp + L;
-    int64_t magB = x.exp + x.L;
-    int64_t top = std::max(magA,magB);
-    int64_t bot = std::min(exp,x.exp);
+    int64_t magA = a.exp + a.L;
+    int64_t magB = b.exp + b.L;
+    int64_t top = std::max(magA, magB);
+    int64_t bot = std::min(a.exp, b.exp);
 
     //  Target length
     int64_t TL = top - bot;
 
-    if (p == 0){
+    if (p == 0) {
         //  Default value. No trunction.
         p = (size_t)TL;
-    }else{
+    } else {
         //  Increase precision
         p += YCL_BIGFLOAT_EXTRA_PRECISION;
     }
@@ -297,33 +297,31 @@ BigFloat BigFloat::uadd(const BigFloat &x,size_t p) const{
     }
 
     //  Compute basic fields.
-    BigFloat z;
-    z.sign  = sign;
-    z.exp   = bot;
-    z.L     = (uint32_t)TL;
+    target.sign  = a.sign;
+    target.exp   = bot;
+    target.L     = (uint32_t)TL;
 
     //  Allocate mantissa
-    z.T = (uint32_t*) malloc(sizeof(uint32_t)*(z.L + 1));
+    target.T = (uint32_t*) malloc(sizeof(uint32_t)*(TL + 1));
 
     //  Add
     uint32_t carry = 0;
     for (size_t c = 0; bot < top; bot++, c++){
-        uint32_t word = _bigfloat_word_at(*this, bot) + _bigfloat_word_at(x, bot) + carry;
-        carry = 0;
-        if (word >= 1000000000){
-            word -= 1000000000;
-            carry = 1;
-        }
-        z.T[c] = word;
+      uint32_t word = _bigfloat_word_at(a, bot) + _bigfloat_word_at(b, bot) + carry;
+      carry = 0;
+      if (word >= 1000000000){
+          word -= 1000000000;
+          carry = 1;
+      }
+      target.T[c] = word;
     }
 
     //  Carry out
-    if (carry != 0){
-        z.T[z.L++] = 1;
+    if (carry != 0) {
+        target.T[target.L++] = 1;
     }
-
-    return z;
 }
+
 BigFloat BigFloat::usub(const BigFloat &x,size_t p) const{
     //  Perform subtraction ignoring the sign of the two operands.
 
@@ -393,8 +391,11 @@ BigFloat BigFloat::add(const BigFloat &x,size_t p) const{
     //  at maximum precision with no data loss.
 
     //  Same sign. Add.
-    if (sign == x.sign)
-        return uadd(x,p);
+    if (sign == x.sign) {
+      BigFloat z;
+      _bigfloat_uadd(z, *this, x, p);
+      return z;
+    }
 
     //  this > x
     if (_bigfloat_ucmp(*this, x) > 0)
@@ -413,8 +414,11 @@ BigFloat BigFloat::sub(const BigFloat &x,size_t p) const{
     //  at maximum precision with no data loss.
 
     //  Different sign. Add.
-    if (sign != x.sign)
-        return uadd(x,p);
+    if (sign != x.sign) {
+      BigFloat z;
+      _bigfloat_uadd(z, *this, x, p);
+      return z;
+    }
 
     //  this > x
     if (_bigfloat_ucmp(*this, x) > 0)
