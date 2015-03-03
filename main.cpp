@@ -142,7 +142,6 @@ namespace Bluecrunch {
     double time2 = wall_clock();
     cout << "Time: " << time2 - time1 << endl;
 
-    cout << "Total Time = " << time2 - time0 << endl << endl;
 
     dump_to_file("e.txt",P.to_string(digits));
   }
@@ -153,7 +152,7 @@ int main() {
   omp_set_nested(1);
   int threads = omp_get_max_threads();
 
-  size_t digits = 250000000;
+  size_t digits = 10000000;
 
   //  Determine minimum FFT size.
   size_t p      = 2*digits / 9 + 10;
@@ -165,11 +164,18 @@ int main() {
     k++;
   }
 
+  double time1 = Bluecrunch::wall_clock();
   printf("Bulding tables until size 2^%ld\n", k);
 
   // Precompute FFT twiddle factors
   Bluecrunch::fft_ensure_table(k);
 
+  double time2 = Bluecrunch::wall_clock();
+  cout << "Time: " << time2 - time1 << endl;
+
   // Calculate e
   Bluecrunch::e(digits, threads);
+  double time3 = Bluecrunch::wall_clock();
+
+  cout << "Total Time = " << time3 - time1 << endl << endl;
 }
