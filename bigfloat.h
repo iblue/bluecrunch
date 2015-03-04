@@ -11,8 +11,6 @@ public:
     std::string to_string_sci(size_t digits = 0) const;
     uint32_t word_at(int64_t mag) const;
 
-    BigFloat rcp(size_t p,int threads = 0) const;
-
     bool sign;      //  true = positive or zero, false = negative
     int64_t exp;    //  Exponent
     size_t L;       //  Length
@@ -34,3 +32,4 @@ void bigfloat_add(BigFloat &target, const BigFloat &a, const BigFloat &b, size_t
 void bigfloat_sub(BigFloat &target, const BigFloat &a, const BigFloat &b, size_t p);
 void bigfloat_mul(BigFloat &target, const BigFloat &a, const BigFloat &b, size_t p, int tds);
 void bigfloat_div(BigFloat &target, const BigFloat &a, const BigFloat &b, size_t p, int tds);
+void bigfloat_rcp(BigFloat &target, const BigFloat &a, size_t p, int tds);

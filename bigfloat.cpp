@@ -522,18 +522,20 @@ void bigfloat_mul(BigFloat &target, const BigFloat &a, const BigFloat &b, size_t
         target.L--;
 }
 
-BigFloat BigFloat::rcp(size_t p,int tds) const{
+void bigfloat_rcp(BigFloat &target, const BigFloat &a, size_t p, int tds) {
     //  Compute reciprocal using Newton's Method.
 
     //  r1 = r0 - (r0 * x - 1) * r0
 
-    if (L == 0)
-        throw "Divide by Zero";
+    if (a.L == 0) {
+      fprintf(stderr, "Divide by Zero\n");
+      abort();
+    }
 
     //  Collect operand
-    int64_t Aexp = exp;
-    size_t AL = L;
-    uint32_t *AT = T;
+    int64_t Aexp = a.exp;
+    size_t AL = a.L;
+    uint32_t *AT = a.T;
 
     //  End of recursion. Generate starting point.
     if (p == 0){
@@ -566,16 +568,15 @@ BigFloat BigFloat::rcp(size_t p,int tds) const{
         //  Rebuild a BigFloat.
         uint64_t val64 = (uint64_t)val;
 
-        BigFloat out;
-        out.sign = sign;
+        target.sign = a.sign;
 
-        out.T = (uint32_t*)malloc(sizeof(uint32_t)*2);
-        out.T[0] = (uint32_t)(val64 % 1000000000);
-        out.T[1] = (uint32_t)(val64 / 1000000000);
-        out.L = 2;
-        out.exp = Aexp;
+        target.T = (uint32_t*)malloc(sizeof(uint32_t)*2);
+        target.T[0] = (uint32_t)(val64 % 1000000000);
+        target.T[1] = (uint32_t)(val64 / 1000000000);
+        target.L = 2;
+        target.exp = Aexp;
 
-        return out;
+        return;
     }
 
     //  Half the precision
@@ -584,23 +585,24 @@ BigFloat BigFloat::rcp(size_t p,int tds) const{
     if (p == 2) s = 1;
 
     //  Recurse at half the precision
-    BigFloat T = rcp(s,tds);
+    BigFloat T;
+    bigfloat_rcp(T, a, s, tds);
 
     //  r1 = r0 - (r0 * x - 1) * r0
     BigFloat one = BigFloat();
     bigfloat_set(one, 1, 1);
     BigFloat tmp;
-    bigfloat_mul(tmp, *this, T, p, tds);
+    bigfloat_mul(tmp, a, T, p, tds);
     BigFloat tmp2;
     bigfloat_sub(tmp2, tmp, one, p);
     BigFloat tmp3;
     bigfloat_mul(tmp3, tmp2, T, p, tds);
-    BigFloat tmp4;
-    bigfloat_sub(tmp4, T, tmp3, p);
-    return tmp4;
+    bigfloat_sub(target, T, tmp3, p);
 }
 
 void bigfloat_div(BigFloat &target, const BigFloat &a, const BigFloat &b, size_t p, int tds) {
   //  Division
-  bigfloat_mul(target, a, b.rcp(p, tds), p, tds);
+  BigFloat rcp;
+  bigfloat_rcp(rcp, b, p, tds);
+  bigfloat_mul(target, a, rcp, p, tds);
 }
