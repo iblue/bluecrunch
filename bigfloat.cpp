@@ -17,41 +17,12 @@ extern "C" {
 }
 #include "bigfloat.h"
 
-////////////////////////////////////////////////////////////////////////////////
-//  Move operators
-BigFloat::BigFloat(BigFloat &&x)
-    : sign(x.sign)
-    , exp(x.exp)
-    , L(x.L)
-    , T(x.T)
-{
-    x.sign  = true;
-    x.exp   = 0;
-    x.L     = 0;
-    x.T     = NULL;
+void bigfloat_new(BigFloat &target) {
+  target.sign = true;
+  target.exp  = 0;
+  target.L    = 0;
+  target.T    = NULL;
 }
-
-BigFloat& BigFloat::operator=(BigFloat &&x){
-    sign    = x.sign;
-    exp     = x.exp;
-    L       = x.L;
-    T       = x.T;
-
-    x.sign  = true;
-    x.exp   = 0;
-    x.L     = 0;
-    x.T     = 0;
-
-    return *this;
-}
-////////////////////////////////////////////////////////////////////////////////
-//  Constructors
-BigFloat::BigFloat()
-    : sign(true)
-    , exp(0)
-    , L(0)
-    , T(NULL)
-{}
 
 void bigfloat_set(BigFloat &target, uint32_t x, bool sign_) {
   bigfloat_free(target);
@@ -76,14 +47,6 @@ void bigfloat_free(BigFloat &target) {
   if(target.T != NULL) {
     free(target.T);
     target.T = NULL;
-  }
-}
-
-// iblue: Destructor
-BigFloat::~BigFloat() {
-  if(T != NULL) {
-    fprintf(stderr, "BigFloat not freed\n");
-    abort();
   }
 }
 
@@ -411,7 +374,7 @@ void bigfloat_mul(BigFloat &target, const BigFloat &a, const BigFloat &b, size_t
 
     //  Either operand is zero.
     if (a.L == 0 || b.L == 0) {
-      target = BigFloat();
+      bigfloat_new(target);
       return;
     }
 
@@ -565,16 +528,21 @@ void bigfloat_rcp(BigFloat &target, const BigFloat &a, size_t p, int tds) {
 
     //  Recurse at half the precision
     BigFloat T;
+    bigfloat_new(T);
     bigfloat_rcp(T, a, s, tds);
 
     //  r1 = r0 - (r0 * x - 1) * r0
-    BigFloat one = BigFloat();
+    BigFloat one;
+    bigfloat_new(one);
     bigfloat_set(one, 1, 1);
     BigFloat tmp;
+    bigfloat_new(tmp);
     bigfloat_mul(tmp, a, T, p, tds);
     BigFloat tmp2;
+    bigfloat_new(tmp2);
     bigfloat_sub(tmp2, tmp, one, p);
     BigFloat tmp3;
+    bigfloat_new(tmp3);
     bigfloat_mul(tmp3, tmp2, T, p, tds);
     bigfloat_sub(target, T, tmp3, p);
 
@@ -588,6 +556,7 @@ void bigfloat_rcp(BigFloat &target, const BigFloat &a, size_t p, int tds) {
 void bigfloat_div(BigFloat &target, const BigFloat &a, const BigFloat &b, size_t p, int tds) {
   //  Division
   BigFloat rcp;
+  bigfloat_new(rcp);
   bigfloat_rcp(rcp, b, p, tds);
   bigfloat_mul(target, a, rcp, p, tds);
   bigfloat_free(rcp);

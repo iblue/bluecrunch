@@ -80,9 +80,7 @@ void e_BSR(BigFloat &P, BigFloat &Q, uint32_t a, uint32_t b, int tds = 1) {
   //  Binary Splitting recursion for exp(1).
 
   if (b - a == 1){
-    P = BigFloat();
     bigfloat_set(P, 1, true);
-    Q = BigFloat();
     bigfloat_set(Q, b, true);
     return;
   }
@@ -90,6 +88,10 @@ void e_BSR(BigFloat &P, BigFloat &Q, uint32_t a, uint32_t b, int tds = 1) {
   uint32_t m = (a + b) / 2;
 
   BigFloat P0, Q0, P1, Q1;
+  bigfloat_new(P0);
+  bigfloat_new(Q0);
+  bigfloat_new(P1);
+  bigfloat_new(Q1);
 
   if (b - a < 1000 || tds < 2) {
     //  No more threads.
@@ -114,6 +116,7 @@ void e_BSR(BigFloat &P, BigFloat &Q, uint32_t a, uint32_t b, int tds = 1) {
   }
 
   BigFloat tmp;
+  bigfloat_new(tmp);
   bigfloat_mul(tmp, P0, Q1, 0, tds);
   bigfloat_add(P, tmp, P1, 0);
   bigfloat_mul(Q, Q0, Q1, 0, tds);
@@ -143,6 +146,8 @@ void e(size_t digits, int tds){
   cout << "Summing Series... " << terms << " terms" << endl;
 
   BigFloat P, Q;
+  bigfloat_new(P);
+  bigfloat_new(Q);
   e_BSR(P, Q, 0, (uint32_t)terms, tds);
   double time1 = wall_clock();
 
@@ -150,8 +155,10 @@ void e(size_t digits, int tds){
 
   cout << "Division... " << endl;
   BigFloat one = BigFloat();
+  bigfloat_new(one);
   bigfloat_set(one, 1, 1);
   BigFloat tmp;
+  bigfloat_new(tmp);
   bigfloat_div(tmp, P, Q, p, tds);
   bigfloat_add(P, tmp, one, p);
   bigfloat_free(tmp);

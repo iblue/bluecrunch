@@ -1,11 +1,6 @@
 #define YCL_BIGFLOAT_EXTRA_PRECISION    2
 class BigFloat{
 public:
-    BigFloat(BigFloat &&x);
-    BigFloat& operator=(BigFloat &&x);
-    ~BigFloat();
-
-    BigFloat();
 
     bool sign;      //  true = positive or zero, false = negative
     int64_t exp;    //  Exponent
@@ -24,3 +19,4 @@ void bigfloat_div(BigFloat &target, const BigFloat &a, const BigFloat &b, size_t
 void bigfloat_rcp(BigFloat &target, const BigFloat &a, size_t p, int tds);
 std::string bigfloat_to_string(const BigFloat& value, size_t digits);
 void bigfloat_free(BigFloat &target);
+void bigfloat_new(BigFloat &target);
