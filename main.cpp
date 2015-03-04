@@ -113,7 +113,7 @@ void e_BSR(BigFloat &P, BigFloat &Q, uint32_t a, uint32_t b, int tds = 1) {
     }
   }
 
-  P = P0.mul(Q1, 0, tds).add(P1);
+  bigfloat_add(P, P0.mul(Q1, 0, tds), P1, 0);
   Q = Q0.mul(Q1, 0, tds);
 }
 
@@ -144,7 +144,7 @@ void e(size_t digits, int tds){
   cout << "Division... " << endl;
   BigFloat one = BigFloat();
   bigfloat_set(one, 1, 1);
-  P = P.div(Q, p, tds).add(one, p);
+  bigfloat_add(P, P.div(Q, p, tds), one, p);
   double time2 = wall_clock();
   cout << "Time: " << time2 - time1 << endl;
 

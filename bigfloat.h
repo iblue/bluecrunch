@@ -11,7 +11,6 @@ public:
     std::string to_string_sci(size_t digits = 0) const;
     uint32_t word_at(int64_t mag) const;
 
-    BigFloat add(const BigFloat &x,size_t p = 0) const;
     BigFloat sub(const BigFloat &x,size_t p = 0) const;
     BigFloat mul(const BigFloat &x,size_t p = 0,int threads = 0) const;
     BigFloat rcp(size_t p,int threads = 0) const;
@@ -34,3 +33,4 @@ void bigfloat_negate(BigFloat& num);
 void bigfloat_set(BigFloat &target, uint32_t x, bool sign_);
 uint32_t _bigfloat_word_at(const BigFloat &target, int64_t mag);
 int _bigfloat_ucmp(const BigFloat &a, const BigFloat &b);
+void bigfloat_add(BigFloat &target, const BigFloat &a, const BigFloat &b, size_t p);

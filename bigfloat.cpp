@@ -380,7 +380,8 @@ void _bigfloat_usub(BigFloat &target, const BigFloat &a, const BigFloat &b, size
         target.T = NULL;
     }
 }
-BigFloat BigFloat::add(const BigFloat &x,size_t p) const{
+
+void bigfloat_add(BigFloat &target, const BigFloat &a, const BigFloat &b, size_t p) {
     //  Addition
 
     //  The target precision is p.
@@ -388,25 +389,19 @@ BigFloat BigFloat::add(const BigFloat &x,size_t p) const{
     //  at maximum precision with no data loss.
 
     //  Same sign. Add.
-    if (sign == x.sign) {
-      BigFloat z;
-      _bigfloat_uadd(z, *this, x, p);
-      return z;
+    if (a.sign == b.sign) {
+      _bigfloat_uadd(target, a, b, p);
+    } else { // Differing signs. Subtract.
+      //  this > x
+      if (_bigfloat_ucmp(a, b) > 0) {
+        _bigfloat_usub(target, a, b, p);
+      } else { //  this < x
+        _bigfloat_usub(target, b, a, p);
+        bigfloat_negate(target);
+      }
     }
-
-    //  this > x
-    if (_bigfloat_ucmp(*this, x) > 0) {
-      BigFloat z;
-      _bigfloat_usub(z, *this, x, p);
-      return z;
-    }
-
-    //  this < x
-    BigFloat z;
-    _bigfloat_usub(z, x, *this, p);
-    bigfloat_negate(z);
-    return z;
 }
+
 BigFloat BigFloat::sub(const BigFloat &x,size_t p) const{
     //  Subtraction
 
