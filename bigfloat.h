@@ -12,7 +12,6 @@ public:
     uint32_t word_at(int64_t mag) const;
 
     BigFloat rcp(size_t p,int threads = 0) const;
-    BigFloat div(const BigFloat &x,size_t p,int threads = 0) const;
 
     bool sign;      //  true = positive or zero, false = negative
     int64_t exp;    //  Exponent
@@ -34,3 +33,4 @@ int _bigfloat_ucmp(const BigFloat &a, const BigFloat &b);
 void bigfloat_add(BigFloat &target, const BigFloat &a, const BigFloat &b, size_t p);
 void bigfloat_sub(BigFloat &target, const BigFloat &a, const BigFloat &b, size_t p);
 void bigfloat_mul(BigFloat &target, const BigFloat &a, const BigFloat &b, size_t p, int tds);
+void bigfloat_div(BigFloat &target, const BigFloat &a, const BigFloat &b, size_t p, int tds);

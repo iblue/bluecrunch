@@ -146,7 +146,9 @@ void e(size_t digits, int tds){
   cout << "Division... " << endl;
   BigFloat one = BigFloat();
   bigfloat_set(one, 1, 1);
-  bigfloat_add(P, P.div(Q, p, tds), one, p);
+  BigFloat tmp;
+  bigfloat_div(tmp, P, Q, p, tds);
+  bigfloat_add(P, tmp, one, p);
   double time2 = wall_clock();
   cout << "Time: " << time2 - time1 << endl;
 

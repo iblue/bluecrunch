@@ -599,9 +599,8 @@ BigFloat BigFloat::rcp(size_t p,int tds) const{
     bigfloat_sub(tmp4, T, tmp3, p);
     return tmp4;
 }
-BigFloat BigFloat::div(const BigFloat &x,size_t p,int tds) const{
-    //  Division
-    BigFloat ret;
-    bigfloat_mul(ret, *this, x.rcp(p, tds), p, tds);
-    return ret;
+
+void bigfloat_div(BigFloat &target, const BigFloat &a, const BigFloat &b, size_t p, int tds) {
+  //  Division
+  bigfloat_mul(target, a, b.rcp(p, tds), p, tds);
 }
