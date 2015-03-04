@@ -151,8 +151,10 @@ std::string bigfloat_to_string(const BigFloat& value, size_t digits) {
     int64_t mag = value.exp + value.L;
 
     //  Use scientific notation of out of range.
-    if (mag > 1 || mag < 0)
-        return value.to_string_sci();
+    if (mag > 1 || mag < 0) {
+      fprintf(stderr, "Scientific notation required\n");
+      abort();
+    }
 
     //  Convert
     std::string str;
@@ -187,39 +189,7 @@ std::string bigfloat_to_string(const BigFloat& value, size_t digits) {
         return std::string("-") + before_decimal + "." + after_decimal;
     }
 }
-std::string BigFloat::to_string_sci(size_t digits) const{
-    //  Convert to string in scientific notation.
-    if (L == 0)
-        return "0.";
 
-    //  Convert
-    std::string str;
-    int64_t exponent = bigfloat_to_string_trimmed(*this, digits,str);
-
-    //  Strip leading zeros.
-    {
-        size_t leading_zeros = 0;
-        while (str[leading_zeros] == '0')
-            leading_zeros++;
-        str = &str[leading_zeros];
-    }
-
-    //  Insert decimal place
-    exponent += str.size() - 1;
-    str = str.substr(0,1) + "." + &str[1];
-
-    //  Add exponent
-    if (exponent != 0){
-        str += " * 10^";
-        str += std::to_string(exponent);
-    }
-
-    //  Add sign
-    if (!sign)
-        str = std::string("-") + str;
-
-    return str;
-}
 ////////////////////////////////////////////////////////////////////////////////
 //  Getters
 uint32_t _bigfloat_word_at(const BigFloat &target, int64_t mag) {

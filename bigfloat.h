@@ -7,18 +7,11 @@ public:
 
     BigFloat();
 
-    std::string to_string_sci(size_t digits = 0) const;
-
     bool sign;      //  true = positive or zero, false = negative
     int64_t exp;    //  Exponent
     size_t L;       //  Length
     uint32_t* T;
-
-private:
-    //  Internal helpers
-    friend BigFloat invsqrt(uint32_t x,size_t p,int threads);
 };
-BigFloat invsqrt(uint32_t x,size_t p);
 
 void bigfloat_negate(BigFloat& num);
 void bigfloat_set(BigFloat &target, uint32_t x, bool sign_);
