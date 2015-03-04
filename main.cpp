@@ -117,6 +117,11 @@ void e_BSR(BigFloat &P, BigFloat &Q, uint32_t a, uint32_t b, int tds = 1) {
   bigfloat_mul(tmp, P0, Q1, 0, tds);
   bigfloat_add(P, tmp, P1, 0);
   bigfloat_mul(Q, Q0, Q1, 0, tds);
+  bigfloat_free(P0);
+  bigfloat_free(P1);
+  bigfloat_free(Q0);
+  bigfloat_free(Q1);
+  bigfloat_free(tmp);
 }
 
 void e(size_t digits, int tds){
@@ -149,13 +154,17 @@ void e(size_t digits, int tds){
   BigFloat tmp;
   bigfloat_div(tmp, P, Q, p, tds);
   bigfloat_add(P, tmp, one, p);
+  bigfloat_free(tmp);
+  bigfloat_free(one);
+  bigfloat_free(Q);
   double time2 = wall_clock();
   cout << "Time: " << time2 - time1 << endl;
-
 
   std::string out = bigfloat_to_string(P, digits);
 
   dump_to_file("e.txt", out.c_str(), out.size());
+
+  bigfloat_free(P);
 }
 
 int main() {

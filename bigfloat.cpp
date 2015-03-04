@@ -54,6 +54,8 @@ BigFloat::BigFloat()
 {}
 
 void bigfloat_set(BigFloat &target, uint32_t x, bool sign_) {
+  bigfloat_free(target);
+
   target.exp  = 0;
 
   if (x == 0) {
@@ -65,21 +67,26 @@ void bigfloat_set(BigFloat &target, uint32_t x, bool sign_) {
 
   target.sign = sign_;
 
-  if(target.T != NULL) {
-    free(target.T);
-  }
   target.T = (uint32_t*) malloc(sizeof(uint32_t));
   target.T[0] = x;
   target.L    = 1;
 }
 
+void bigfloat_free(BigFloat &target) {
+  if(target.T != NULL) {
+    free(target.T);
+    target.T = NULL;
+  }
+}
+
 // iblue: Destructor
 BigFloat::~BigFloat() {
   if(T != NULL) {
-    free(T);
-    T = NULL;
+    fprintf(stderr, "BigFloat not freed\n");
+    abort();
   }
 }
+
 ////////////////////////////////////////////////////////////////////////////////
 //  String Conversion
 int64_t bigfloat_to_string_trimmed(const BigFloat &value, size_t digits, std::string & str) {
@@ -570,6 +577,12 @@ void bigfloat_rcp(BigFloat &target, const BigFloat &a, size_t p, int tds) {
     BigFloat tmp3;
     bigfloat_mul(tmp3, tmp2, T, p, tds);
     bigfloat_sub(target, T, tmp3, p);
+
+    bigfloat_free(tmp);
+    bigfloat_free(tmp2);
+    bigfloat_free(tmp3);
+    bigfloat_free(T);
+    bigfloat_free(one);
 }
 
 void bigfloat_div(BigFloat &target, const BigFloat &a, const BigFloat &b, size_t p, int tds) {
@@ -577,4 +590,5 @@ void bigfloat_div(BigFloat &target, const BigFloat &a, const BigFloat &b, size_t
   BigFloat rcp;
   bigfloat_rcp(rcp, b, p, tds);
   bigfloat_mul(target, a, rcp, p, tds);
+  bigfloat_free(rcp);
 }
