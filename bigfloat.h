@@ -9,7 +9,6 @@ public:
 
     std::string to_string    (size_t digits = 0) const;
     std::string to_string_sci(size_t digits = 0) const;
-    uint32_t word_at(int64_t mag) const;
 
     bool sign;      //  true = positive or zero, false = negative
     int64_t exp;    //  Exponent
