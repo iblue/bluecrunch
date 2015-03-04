@@ -16,6 +16,6 @@ void bigfloat_sub(BigFloat &target, const BigFloat &a, const BigFloat &b, size_t
 void bigfloat_mul(BigFloat &target, const BigFloat &a, const BigFloat &b, size_t p, int tds);
 void bigfloat_div(BigFloat &target, const BigFloat &a, const BigFloat &b, size_t p, int tds);
 void bigfloat_rcp(BigFloat &target, const BigFloat &a, size_t p, int tds);
-std::string bigfloat_to_string(const BigFloat& value, size_t digits);
+size_t bigfloat_to_string(char* string, const BigFloat& value, size_t digits);
 void bigfloat_free(BigFloat &target);
 void bigfloat_new(BigFloat &target);

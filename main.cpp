@@ -162,11 +162,11 @@ void e(size_t digits, int tds){
   double time2 = wall_clock();
   printf("Time: %f\n", time2 - time1);
 
-  std::string out = bigfloat_to_string(P, digits);
-
-  dump_to_file("e.txt", out.c_str(), out.size());
-
+  char *out;
+  size_t len = bigfloat_to_string(out, P, digits);
   bigfloat_free(P);
+
+  dump_to_file("e.txt", out, len);
 }
 
 int main() {

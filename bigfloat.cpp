@@ -112,10 +112,13 @@ int64_t bigfloat_to_string_trimmed(const BigFloat &value, size_t digits, std::st
     return exponent;
 }
 
-std::string bigfloat_to_string(const BigFloat& value, size_t digits) {
+size_t bigfloat_to_string(char* string, const BigFloat& value, size_t digits) {
     //  Convert this number to a string. Auto-select format type.
     if (value.L == 0) {
-        return "0.";
+      string = (char*)malloc(2);
+      string[0] = '0';
+      string[1] = '\0';
+      return 2;
     }
 
     int64_t mag = value.exp + value.L;
@@ -132,10 +135,15 @@ std::string bigfloat_to_string(const BigFloat& value, size_t digits) {
 
     //  Less than 1
     if (mag == 0){
-        if (value.sign)
-            return std::string("0.") + str;
-        else
-            return std::string("-0.") + str;
+      std::string ret;
+      if (value.sign) {
+        ret = std::string("0.") + str;
+      } else {
+        ret = std::string("-0.") + str;
+      }
+
+      string = (char*) ret.c_str();
+      return ret.size();
     }
 
     //  Get a string with the digits before the decimal place.
@@ -143,21 +151,29 @@ std::string bigfloat_to_string(const BigFloat& value, size_t digits) {
 
     //  Nothing after the decimal place.
     if (exponent >= 0){
+      std::string ret;
         if (value.sign){
-            return before_decimal + ".";
+            ret = before_decimal + ".";
         }else{
-            return std::string("-") + before_decimal + ".";
+            ret = std::string("-") + before_decimal + ".";
         }
+
+      string = (char*) ret.c_str();
+      return ret.size();
     }
 
     //  Get digits after the decimal place.
     std::string after_decimal = str.substr((size_t)(str.size() + exponent),(size_t)-exponent);
 
+    std::string ret;
     if (value.sign){
-        return before_decimal + "." + after_decimal;
+        ret = before_decimal + "." + after_decimal;
     }else{
-        return std::string("-") + before_decimal + "." + after_decimal;
+        ret = std::string("-") + before_decimal + "." + after_decimal;
     }
+
+    string = (char*) ret.c_str();
+    return ret.size();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
