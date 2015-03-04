@@ -113,8 +113,10 @@ void e_BSR(BigFloat &P, BigFloat &Q, uint32_t a, uint32_t b, int tds = 1) {
     }
   }
 
-  bigfloat_add(P, P0.mul(Q1, 0, tds), P1, 0);
-  Q = Q0.mul(Q1, 0, tds);
+  BigFloat tmp;
+  bigfloat_mul(tmp, P0, Q1, 0, tds);
+  bigfloat_add(P, tmp, P1, 0);
+  bigfloat_mul(Q, Q0, Q1, 0, tds);
 }
 
 void e(size_t digits, int tds){

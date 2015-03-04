@@ -34,3 +34,4 @@ uint32_t _bigfloat_word_at(const BigFloat &target, int64_t mag);
 int _bigfloat_ucmp(const BigFloat &a, const BigFloat &b);
 void bigfloat_add(BigFloat &target, const BigFloat &a, const BigFloat &b, size_t p);
 void bigfloat_sub(BigFloat &target, const BigFloat &a, const BigFloat &b, size_t p);
+void bigfloat_mul(BigFloat &target, const BigFloat &a, const BigFloat &b, size_t p, int tds);

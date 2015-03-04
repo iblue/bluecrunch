@@ -423,7 +423,7 @@ void bigfloat_sub(BigFloat &target, const BigFloat &a, const BigFloat &b, size_t
   }
 }
 
-BigFloat BigFloat::mul(const BigFloat &x,size_t p,int tds) const{
+void bigfloat_mul(BigFloat &target, const BigFloat &a, const BigFloat &b, size_t p, int tds) {
     //  Multiplication
 
     //  The target precision is p.
@@ -431,33 +431,35 @@ BigFloat BigFloat::mul(const BigFloat &x,size_t p,int tds) const{
     //  at maximum precision with no data loss.
 
     //  Either operand is zero.
-    if (L == 0 || x.L == 0)
-        return BigFloat();
+    if (a.L == 0 || b.L == 0) {
+      target = BigFloat();
+      return;
+    }
 
-    if (p == 0){
+    if (p == 0) {
         //  Default value. No trunction.
-        p = L + x.L;
-    }else{
+        p = a.L + b.L;
+    } else {
         //  Increase precision
         p += YCL_BIGFLOAT_EXTRA_PRECISION;
     }
 
     //  Collect operands.
-    int64_t Aexp = exp;
-    int64_t Bexp = x.exp;
-    size_t AL = L;
-    size_t BL = x.L;
-    uint32_t *AT = T;
-    uint32_t *BT = x.T;
+    int64_t Aexp = a.exp;
+    int64_t Bexp = b.exp;
+    size_t AL = a.L;
+    size_t BL = b.L;
+    uint32_t *AT = a.T;
+    uint32_t *BT = b.T;
 
     //  Perform precision truncation.
-    if (AL > p){
+    if (AL > p) {
         size_t chop = AL - p;
         AL = p;
         Aexp += chop;
         AT += chop;
     }
-    if (BL > p){
+    if (BL > p) {
         size_t chop = BL - p;
         BL = p;
         Bexp += chop;
@@ -465,20 +467,22 @@ BigFloat BigFloat::mul(const BigFloat &x,size_t p,int tds) const{
     }
 
     //  Compute basic fields.
-    BigFloat z;
-    z.sign = sign == z.sign;    //  Sign is positive if signs are equal.
-    z.exp  = Aexp + Bexp;       //  Add the exponents.
-    z.L    = AL + BL;           //  Add the lenghts for now. May need to correct later.
+    target.sign = a.sign == b.sign;  //  Sign is positive if signs are equal.
+    target.exp  = Aexp + Bexp;       //  Add the exponents.
+    target.L    = AL + BL;           //  Add the lenghts for now. May need to correct later.
 
     //  Allocate mantissa
-    z.T = (uint32_t*)malloc(sizeof(uint32_t)*(z.L));
+    if(target.T != NULL) {
+      free(target.T);
+    }
+    target.T = (uint32_t*)malloc(sizeof(uint32_t)*(target.L));
 
     //  Perform multiplication.
 
     //  Determine minimum FFT size.
     int k = 0;
     size_t length = 1;
-    while (length < 5*z.L){
+    while (length < 5*target.L) {
         length <<= 1;
         k++;
     }
@@ -509,16 +513,15 @@ BigFloat BigFloat::mul(const BigFloat &x,size_t p,int tds) const{
     fft_forward(Tb,k,tds); //  Transform 2nd operand
     fft_pointwise(Ta,Tb,k);//  Pointwise multiply
     fft_inverse(Ta,k,tds); //  Perform inverse transform.
-    fft_to_int(Ta,k,z.T,z.L);   //  Convert back to word array.
+    fft_to_int(Ta,k,target.T,target.L);   //  Convert back to word array.
     _mm_free(Ta);
     _mm_free(Tb);
 
     //  Check top word and correct length.
-    if (z.T[z.L - 1] == 0)
-        z.L--;
-
-    return z;
+    if (target.T[target.L - 1] == 0)
+        target.L--;
 }
+
 BigFloat BigFloat::rcp(size_t p,int tds) const{
     //  Compute reciprocal using Newton's Method.
 
@@ -586,16 +589,19 @@ BigFloat BigFloat::rcp(size_t p,int tds) const{
     //  r1 = r0 - (r0 * x - 1) * r0
     BigFloat one = BigFloat();
     bigfloat_set(one, 1, 1);
-    BigFloat tmp = this->mul(T, p, tds);
+    BigFloat tmp;
+    bigfloat_mul(tmp, *this, T, p, tds);
     BigFloat tmp2;
     bigfloat_sub(tmp2, tmp, one, p);
     BigFloat tmp3;
-    tmp3 = tmp2.mul(T,p,tds);
+    bigfloat_mul(tmp3, tmp2, T, p, tds);
     BigFloat tmp4;
     bigfloat_sub(tmp4, T, tmp3, p);
     return tmp4;
 }
 BigFloat BigFloat::div(const BigFloat &x,size_t p,int tds) const{
     //  Division
-    return this->mul(x.rcp(p,tds),p,tds);
+    BigFloat ret;
+    bigfloat_mul(ret, *this, x.rcp(p, tds), p, tds);
+    return ret;
 }
