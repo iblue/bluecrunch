@@ -153,7 +153,7 @@ void e(size_t digits, int tds){
   cout << "Time: " << time2 - time1 << endl;
 
 
-  std::string out = P.to_string(digits);
+  std::string out = bigfloat_to_string(P, digits);
 
   dump_to_file("e.txt", out.c_str(), out.size());
 }

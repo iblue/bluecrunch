@@ -82,22 +82,22 @@ BigFloat::~BigFloat() {
 }
 ////////////////////////////////////////////////////////////////////////////////
 //  String Conversion
-int64_t BigFloat::to_string_trimmed(size_t digits,std::string &str) const{
+int64_t bigfloat_to_string_trimmed(const BigFloat &value, size_t digits, std::string & str) {
     //  Converts this object to a string with "digits" significant figures.
 
     //  After calling this function, the following expression is equal to the
     //  numeric value of this object. (after truncation of precision)
     //      str + " * 10^" + (return value)
 
-    if (L == 0){
+    if (value.L == 0){
         str = "0";
         return 0;
     }
 
     //  Collect operands
-    int64_t exponent = exp;
-    size_t length = L;
-    uint32_t *ptr = T;
+    int64_t exponent = value.exp;
+    size_t length = value.L;
+    uint32_t *ptr = value.T;
 
     if (digits == 0){
         //  Use all digits.
@@ -141,35 +141,37 @@ int64_t BigFloat::to_string_trimmed(size_t digits,std::string &str) const{
 
     return exponent;
 }
-std::string BigFloat::to_string(size_t digits) const{
-    //  Convert this number to a string. Auto-select format type.
-    if (L == 0)
-        return "0.";
 
-    int64_t mag = exp + L;
+std::string bigfloat_to_string(const BigFloat& value, size_t digits) {
+    //  Convert this number to a string. Auto-select format type.
+    if (value.L == 0) {
+        return "0.";
+    }
+
+    int64_t mag = value.exp + value.L;
 
     //  Use scientific notation of out of range.
     if (mag > 1 || mag < 0)
-        return to_string_sci();
+        return value.to_string_sci();
 
     //  Convert
     std::string str;
-    int64_t exponent = to_string_trimmed(digits,str);
+    int64_t exponent = bigfloat_to_string_trimmed(value, digits,str);
 
     //  Less than 1
     if (mag == 0){
-        if (sign)
+        if (value.sign)
             return std::string("0.") + str;
         else
             return std::string("-0.") + str;
     }
 
     //  Get a string with the digits before the decimal place.
-    std::string before_decimal = std::to_string((long long)T[L - 1]);
+    std::string before_decimal = std::to_string((long long)value.T[value.L - 1]);
 
     //  Nothing after the decimal place.
     if (exponent >= 0){
-        if (sign){
+        if (value.sign){
             return before_decimal + ".";
         }else{
             return std::string("-") + before_decimal + ".";
@@ -179,7 +181,7 @@ std::string BigFloat::to_string(size_t digits) const{
     //  Get digits after the decimal place.
     std::string after_decimal = str.substr((size_t)(str.size() + exponent),(size_t)-exponent);
 
-    if (sign){
+    if (value.sign){
         return before_decimal + "." + after_decimal;
     }else{
         return std::string("-") + before_decimal + "." + after_decimal;
@@ -192,7 +194,7 @@ std::string BigFloat::to_string_sci(size_t digits) const{
 
     //  Convert
     std::string str;
-    int64_t exponent = to_string_trimmed(digits,str);
+    int64_t exponent = bigfloat_to_string_trimmed(*this, digits,str);
 
     //  Strip leading zeros.
     {

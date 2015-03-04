@@ -7,7 +7,6 @@ public:
 
     BigFloat();
 
-    std::string to_string    (size_t digits = 0) const;
     std::string to_string_sci(size_t digits = 0) const;
 
     bool sign;      //  true = positive or zero, false = negative
@@ -17,8 +16,6 @@ public:
 
 private:
     //  Internal helpers
-    int64_t to_string_trimmed(size_t digits,std::string &str) const;
-
     friend BigFloat invsqrt(uint32_t x,size_t p,int threads);
 };
 BigFloat invsqrt(uint32_t x,size_t p);
@@ -32,3 +29,4 @@ void bigfloat_sub(BigFloat &target, const BigFloat &a, const BigFloat &b, size_t
 void bigfloat_mul(BigFloat &target, const BigFloat &a, const BigFloat &b, size_t p, int tds);
 void bigfloat_div(BigFloat &target, const BigFloat &a, const BigFloat &b, size_t p, int tds);
 void bigfloat_rcp(BigFloat &target, const BigFloat &a, size_t p, int tds);
+std::string bigfloat_to_string(const BigFloat& value, size_t digits);
