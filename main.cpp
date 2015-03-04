@@ -1,21 +1,13 @@
-#define _USE_MATH_DEFINES
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <string>
-#include <vector>
-#include <memory>
-#include <iostream>
-using std::cout;
-using std::endl;
-
-//  SIMD
+#include <time.h>
 #include <malloc.h>
 #include <pmmintrin.h>
 
 #include <omp.h>
 
-#include <chrono>
+#include <string>
 
 extern "C" {
   #include "fft.h"
@@ -135,15 +127,17 @@ void e(size_t digits, int tds){
   size_t terms = e_terms(p);
 
   //  Limit Exceeded
-  if ((uint32_t)terms != terms)
-      throw "Limit Exceeded";
+  if ((uint32_t)terms != terms) {
+    fprintf(stderr, "Limit Exceeded");
+    abort();
+  }
 
-  cout << "Computing e..." << endl;
-  cout << "Algorithm: Taylor Series of exp(1)" << endl << endl;
+  printf("Computing e...\n");
+  printf("Algorithm: Taylor Series of exp(1)\n\n");
 
   double time0 = wall_clock();
 
-  cout << "Summing Series... " << terms << " terms" << endl;
+  printf("Summing Series... %ld terms\n", terms);
 
   BigFloat P, Q;
   bigfloat_new(P);
@@ -151,9 +145,10 @@ void e(size_t digits, int tds){
   e_BSR(P, Q, 0, (uint32_t)terms, tds);
   double time1 = wall_clock();
 
-  cout << "Time: " << time1 - time0 << endl;
+  printf("Time: %f\n", time1 - time0);
 
-  cout << "Division... " << endl;
+  printf("Division...\n");
+
   BigFloat one = BigFloat();
   bigfloat_new(one);
   bigfloat_set(one, 1, 1);
@@ -165,7 +160,7 @@ void e(size_t digits, int tds){
   bigfloat_free(one);
   bigfloat_free(Q);
   double time2 = wall_clock();
-  cout << "Time: " << time2 - time1 << endl;
+  printf("Time: %f\n", time2 - time1);
 
   std::string out = bigfloat_to_string(P, digits);
 
@@ -198,11 +193,11 @@ int main() {
   fft_ensure_table(k);
 
   double time2 = wall_clock();
-  cout << "Time: " << time2 - time1 << endl;
+  printf("Time: %f\n", time2 - time1);
 
   // Calculate e
   e(digits, threads);
   double time3 = wall_clock();
 
-  cout << "Total Time = " << time3 - time1 << endl << endl;
+  printf("Total Time = %f \n\n", time3 - time1);
 }
