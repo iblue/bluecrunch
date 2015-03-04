@@ -11,7 +11,6 @@ public:
     std::string to_string_sci(size_t digits = 0) const;
     uint32_t word_at(int64_t mag) const;
 
-    BigFloat mul(const BigFloat &x,size_t p = 0,int threads = 0) const;
     BigFloat rcp(size_t p,int threads = 0) const;
     BigFloat div(const BigFloat &x,size_t p,int threads = 0) const;
 
