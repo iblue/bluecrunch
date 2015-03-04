@@ -587,10 +587,13 @@ BigFloat BigFloat::rcp(size_t p,int tds) const{
     BigFloat one = BigFloat();
     bigfloat_set(one, 1, 1);
     BigFloat tmp = this->mul(T, p, tds);
-    bigfloat_sub(tmp, tmp, one, p);
-    tmp = tmp.mul(T,p,tds);
-    bigfloat_sub(tmp, T, tmp, p);
-    return tmp;
+    BigFloat tmp2;
+    bigfloat_sub(tmp2, tmp, one, p);
+    BigFloat tmp3;
+    tmp3 = tmp2.mul(T,p,tds);
+    BigFloat tmp4;
+    bigfloat_sub(tmp4, T, tmp3, p);
+    return tmp4;
 }
 BigFloat BigFloat::div(const BigFloat &x,size_t p,int tds) const{
     //  Division
