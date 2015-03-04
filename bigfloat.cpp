@@ -402,33 +402,27 @@ void bigfloat_add(BigFloat &target, const BigFloat &a, const BigFloat &b, size_t
     }
 }
 
-BigFloat BigFloat::sub(const BigFloat &x,size_t p) const{
-    //  Subtraction
+void bigfloat_sub(BigFloat &target, const BigFloat &a, const BigFloat &b, size_t p) {
+  //  Subtraction
 
-    //  The target precision is p.
-    //  If (p = 0), then no truncation is done. The entire operation is done
-    //  at maximum precision with no data loss.
+  //  The target precision is p.
+  //  If (p = 0), then no truncation is done. The entire operation is done
+  //  at maximum precision with no data loss.
 
-    //  Different sign. Add.
-    if (sign != x.sign) {
-      BigFloat z;
-      _bigfloat_uadd(z, *this, x, p);
-      return z;
-    }
-
+  //  Different sign. Add.
+  if (a.sign != b.sign) {
+    _bigfloat_uadd(target, a, b, p);
+  } else { // Differing signs. Subtract.
     //  this > x
-    if (_bigfloat_ucmp(*this, x) > 0) {
-      BigFloat z;
-      _bigfloat_usub(z, *this, x, p);
-      return z;
+    if (_bigfloat_ucmp(a, b) > 0) {
+      _bigfloat_usub(target, a, b, p);
+    } else { //  this < x
+      _bigfloat_usub(target, b, a, p);
+      bigfloat_negate(target);
     }
-
-    //  this < x
-    BigFloat z;
-    _bigfloat_usub(z, x, *this, p);
-    bigfloat_negate(z);
-    return z;
+  }
 }
+
 BigFloat BigFloat::mul(const BigFloat &x,size_t p,int tds) const{
     //  Multiplication
 
@@ -592,7 +586,11 @@ BigFloat BigFloat::rcp(size_t p,int tds) const{
     //  r1 = r0 - (r0 * x - 1) * r0
     BigFloat one = BigFloat();
     bigfloat_set(one, 1, 1);
-    return T.sub(this->mul(T,p,tds).sub(one,p).mul(T,p,tds),p);
+    BigFloat tmp = this->mul(T, p, tds);
+    bigfloat_sub(tmp, tmp, one, p);
+    tmp = tmp.mul(T,p,tds);
+    bigfloat_sub(tmp, T, tmp, p);
+    return tmp;
 }
 BigFloat BigFloat::div(const BigFloat &x,size_t p,int tds) const{
     //  Division
