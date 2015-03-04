@@ -1,12 +1,11 @@
 #define YCL_BIGFLOAT_EXTRA_PRECISION    2
-class BigFloat{
-public:
 
+typedef struct __BigFloat {
     bool sign;      //  true = positive or zero, false = negative
     int64_t exp;    //  Exponent
     size_t L;       //  Length
     uint32_t* T;
-};
+} BigFloat;
 
 void bigfloat_negate(BigFloat& num);
 void bigfloat_set(BigFloat &target, uint32_t x, bool sign_);
