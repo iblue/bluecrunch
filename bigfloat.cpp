@@ -17,57 +17,57 @@ extern "C" {
 }
 #include "bigfloat.h"
 
-void bigfloat_new(BigFloat &target) {
-  target.sign = true;
-  target.exp  = 0;
-  target.L    = 0;
-  target.T    = NULL;
+void bigfloat_new(BigFloat target) {
+  target->sign = true;
+  target->exp  = 0;
+  target->L    = 0;
+  target->T    = NULL;
 }
 
-void bigfloat_set(BigFloat &target, uint32_t x, bool sign_) {
+void bigfloat_set(BigFloat target, uint32_t x, bool sign_) {
   bigfloat_free(target);
 
-  target.exp  = 0;
+  target->exp  = 0;
 
   if (x == 0) {
-      target.L    = 0;
-      target.sign = true;
-      target.T    = NULL;
+      target->L    = 0;
+      target->sign = true;
+      target->T    = NULL;
       return;
   }
 
-  target.sign = sign_;
+  target->sign = sign_;
 
-  target.T = (uint32_t*) malloc(sizeof(uint32_t));
-  target.T[0] = x;
-  target.L    = 1;
+  target->T = (uint32_t*) malloc(sizeof(uint32_t));
+  target->T[0] = x;
+  target->L    = 1;
 }
 
-void bigfloat_free(BigFloat &target) {
-  if(target.T != NULL) {
-    free(target.T);
-    target.T = NULL;
+void bigfloat_free(BigFloat target) {
+  if(target->T != NULL) {
+    free(target->T);
+    target->T = NULL;
   }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 //  String Conversion
-int64_t bigfloat_to_string_trimmed(const BigFloat &value, size_t digits, std::string & str) {
+int64_t bigfloat_to_string_trimmed(const BigFloat value, size_t digits, std::string& str) {
     //  Converts this object to a string with "digits" significant figures.
 
     //  After calling this function, the following expression is equal to the
     //  numeric value of this object. (after truncation of precision)
     //      str + " * 10^" + (return value)
 
-    if (value.L == 0){
+    if (value->L == 0){
         str = "0";
         return 0;
     }
 
     //  Collect operands
-    int64_t exponent = value.exp;
-    size_t length = value.L;
-    uint32_t *ptr = value.T;
+    int64_t exponent = value->exp;
+    size_t length = value->L;
+    uint32_t *ptr = value->T;
 
     if (digits == 0){
         //  Use all digits.
@@ -112,16 +112,16 @@ int64_t bigfloat_to_string_trimmed(const BigFloat &value, size_t digits, std::st
     return exponent;
 }
 
-size_t bigfloat_to_string(char* string, const BigFloat& value, size_t digits) {
+size_t bigfloat_to_string(char* string, const BigFloat value, size_t digits) {
     //  Convert this number to a string. Auto-select format type.
-    if (value.L == 0) {
+    if (value->L == 0) {
       string = (char*)malloc(2);
       string[0] = '0';
       string[1] = '\0';
       return 2;
     }
 
-    int64_t mag = value.exp + value.L;
+    int64_t mag = value->exp + value->L;
 
     //  Use scientific notation of out of range.
     if (mag > 1 || mag < 0) {
@@ -131,12 +131,12 @@ size_t bigfloat_to_string(char* string, const BigFloat& value, size_t digits) {
 
     //  Convert
     std::string str;
-    int64_t exponent = bigfloat_to_string_trimmed(value, digits,str);
+    int64_t exponent = bigfloat_to_string_trimmed(value, digits, str);
 
     //  Less than 1
     if (mag == 0){
       std::string ret;
-      if (value.sign) {
+      if (value->sign) {
         ret = std::string("0.") + str;
       } else {
         ret = std::string("-0.") + str;
@@ -147,12 +147,12 @@ size_t bigfloat_to_string(char* string, const BigFloat& value, size_t digits) {
     }
 
     //  Get a string with the digits before the decimal place.
-    std::string before_decimal = std::to_string((long long)value.T[value.L - 1]);
+    std::string before_decimal = std::to_string((long long)value->T[value->L - 1]);
 
     //  Nothing after the decimal place.
     if (exponent >= 0){
       std::string ret;
-        if (value.sign){
+        if (value->sign){
             ret = before_decimal + ".";
         }else{
             ret = std::string("-") + before_decimal + ".";
@@ -166,7 +166,7 @@ size_t bigfloat_to_string(char* string, const BigFloat& value, size_t digits) {
     std::string after_decimal = str.substr((size_t)(str.size() + exponent),(size_t)-exponent);
 
     std::string ret;
-    if (value.sign){
+    if (value->sign){
         ret = before_decimal + "." + after_decimal;
     }else{
         ret = std::string("-") + before_decimal + "." + after_decimal;
@@ -178,7 +178,7 @@ size_t bigfloat_to_string(char* string, const BigFloat& value, size_t digits) {
 
 ////////////////////////////////////////////////////////////////////////////////
 //  Getters
-uint32_t _bigfloat_word_at(const BigFloat &target, int64_t mag) {
+uint32_t _bigfloat_word_at(const BigFloat target, int64_t mag) {
   //  Returns the word at the mag'th digit place.
   //  This is useful for additions where you need to access a specific "digit place"
   //  of the operand without having to worry if it's out-of-bounds.
@@ -186,20 +186,20 @@ uint32_t _bigfloat_word_at(const BigFloat &target, int64_t mag) {
   //  This function is mathematically equal to:
   //      (return value) = floor(this * (10^9)^-mag) % 10^9
 
-  if (mag < target.exp)
+  if (mag < target->exp)
       return 0;
-  if (mag >= target.exp + (int64_t)target.L)
+  if (mag >= target->exp + (int64_t)target->L)
       return 0;
-  return target.T[(size_t)(mag - target.exp)];
+  return target->T[(size_t)(mag - target->exp)];
 }
 
-int _bigfloat_ucmp(const BigFloat &a, const BigFloat &b) {
+int _bigfloat_ucmp(const BigFloat a, const BigFloat b) {
     //  Compare function that ignores the sign.
     //  This is needed to determine which direction subtractions will go.
 
     //  Magnitude
-    int64_t magA = a.exp + a.L;
-    int64_t magB = b.exp + b.L;
+    int64_t magA = a->exp + a->L;
+    int64_t magB = b->exp + b->L;
     if (magA > magB)
         return 1;
     if (magA < magB)
@@ -207,7 +207,7 @@ int _bigfloat_ucmp(const BigFloat &a, const BigFloat &b) {
 
     //  Compare
     int64_t mag = magA;
-    while (mag >= a.exp || mag >= b.exp){
+    while (mag >= a->exp || mag >= b->exp){
         uint32_t wordA = _bigfloat_word_at(a, mag);
         uint32_t wordB = _bigfloat_word_at(b, mag);
         if (wordA < wordB)
@@ -220,22 +220,22 @@ int _bigfloat_ucmp(const BigFloat &a, const BigFloat &b) {
 }
 ////////////////////////////////////////////////////////////////////////////////
 //  Arithmetic
-void bigfloat_negate(BigFloat& num) {
-  if(num.L == 0) {
+void bigfloat_negate(BigFloat num) {
+  if(num->L == 0) {
     return;
   }
 
-  num.sign = !num.sign;
+  num->sign = !num->sign;
 }
 
-void _bigfloat_uadd(BigFloat &target, const BigFloat &a, const BigFloat &b, size_t p) {
+void _bigfloat_uadd(BigFloat target, const BigFloat a, const BigFloat b, size_t p) {
     //  Perform addition ignoring the sign of the two operands.
 
     //  Magnitude
-    int64_t magA = a.exp + a.L;
-    int64_t magB = b.exp + b.L;
+    int64_t magA = a->exp + a->L;
+    int64_t magB = b->exp + b->L;
     int64_t top = std::max(magA, magB);
-    int64_t bot = std::min(a.exp, b.exp);
+    int64_t bot = std::min(a->exp, b->exp);
 
     //  Target length
     int64_t TL = top - bot;
@@ -255,12 +255,12 @@ void _bigfloat_uadd(BigFloat &target, const BigFloat &a, const BigFloat &b, size
     }
 
     //  Compute basic fields.
-    target.sign  = a.sign;
-    target.exp   = bot;
-    target.L     = (uint32_t)TL;
+    target->sign  = a->sign;
+    target->exp   = bot;
+    target->L     = (uint32_t)TL;
 
     //  Allocate mantissa
-    target.T = (uint32_t*) malloc(sizeof(uint32_t)*(TL + 1));
+    target->T = (uint32_t*) malloc(sizeof(uint32_t)*(TL + 1));
 
     //  Add
     uint32_t carry = 0;
@@ -271,26 +271,26 @@ void _bigfloat_uadd(BigFloat &target, const BigFloat &a, const BigFloat &b, size
           word -= 1000000000;
           carry = 1;
       }
-      target.T[c] = word;
+      target->T[c] = word;
     }
 
     //  Carry out
     if (carry != 0) {
-        target.T[target.L++] = 1;
+        target->T[target->L++] = 1;
     }
 }
 
-void _bigfloat_usub(BigFloat &target, const BigFloat &a, const BigFloat &b, size_t p) {
+void _bigfloat_usub(BigFloat target, const BigFloat a, const BigFloat b, size_t p) {
     //  Perform subtraction ignoring the sign of the two operands.
 
     //  "this" must be greater than or equal to x. Otherwise, the behavior
     //  is undefined.
 
     //  Magnitude
-    int64_t magA = a.exp + a.L;
-    int64_t magB = b.exp + b.L;
+    int64_t magA = a->exp + a->L;
+    int64_t magB = b->exp + b->L;
     int64_t top = std::max(magA, magB);
-    int64_t bot = std::min(a.exp, b.exp);
+    int64_t bot = std::min(a->exp, b->exp);
 
     //  Truncate precision
     int64_t TL = top - bot;
@@ -309,12 +309,12 @@ void _bigfloat_usub(BigFloat &target, const BigFloat &a, const BigFloat &b, size
     }
 
     //  Compute basic fields.
-    target.sign  = a.sign;
-    target.exp   = bot;
-    target.L     = (uint32_t)TL;
+    target->sign  = a->sign;
+    target->exp   = bot;
+    target->L     = (uint32_t)TL;
 
     //  Allocate mantissa
-    target.T = (uint32_t*) malloc(sizeof(uint32_t)*(TL + 1));
+    target->T = (uint32_t*) malloc(sizeof(uint32_t)*(TL + 1));
 
     //  Subtract
     int32_t carry = 0;
@@ -325,21 +325,21 @@ void _bigfloat_usub(BigFloat &target, const BigFloat &a, const BigFloat &b, size
             word += 1000000000;
             carry = 1;
         }
-        target.T[c] = word;
+        target->T[c] = word;
     }
 
     //  Strip leading zeros
-    while (target.L > 0 && target.T[target.L - 1] == 0)
-        target.L--;
-    if (target.L == 0){
-        target.exp = 0;
-        target.sign = true;
-        free(target.T);
-        target.T = NULL;
+    while (target->L > 0 && target->T[target->L - 1] == 0)
+        target->L--;
+    if (target->L == 0){
+        target->exp = 0;
+        target->sign = true;
+        free(target->T);
+        target->T = NULL;
     }
 }
 
-void bigfloat_add(BigFloat &target, const BigFloat &a, const BigFloat &b, size_t p) {
+void bigfloat_add(BigFloat target, const BigFloat a, const BigFloat b, size_t p) {
     //  Addition
 
     //  The target precision is p.
@@ -347,7 +347,7 @@ void bigfloat_add(BigFloat &target, const BigFloat &a, const BigFloat &b, size_t
     //  at maximum precision with no data loss.
 
     //  Same sign. Add.
-    if (a.sign == b.sign) {
+    if (a->sign == b->sign) {
       _bigfloat_uadd(target, a, b, p);
     } else { // Differing signs. Subtract.
       //  this > x
@@ -360,7 +360,7 @@ void bigfloat_add(BigFloat &target, const BigFloat &a, const BigFloat &b, size_t
     }
 }
 
-void bigfloat_sub(BigFloat &target, const BigFloat &a, const BigFloat &b, size_t p) {
+void bigfloat_sub(BigFloat target, const BigFloat a, const BigFloat b, size_t p) {
   //  Subtraction
 
   //  The target precision is p.
@@ -368,7 +368,7 @@ void bigfloat_sub(BigFloat &target, const BigFloat &a, const BigFloat &b, size_t
   //  at maximum precision with no data loss.
 
   //  Different sign. Add.
-  if (a.sign != b.sign) {
+  if (a->sign != b->sign) {
     _bigfloat_uadd(target, a, b, p);
   } else { // Differing signs. Subtract.
     //  this > x
@@ -381,7 +381,7 @@ void bigfloat_sub(BigFloat &target, const BigFloat &a, const BigFloat &b, size_t
   }
 }
 
-void bigfloat_mul(BigFloat &target, const BigFloat &a, const BigFloat &b, size_t p, int tds) {
+void bigfloat_mul(BigFloat target, const BigFloat a, const BigFloat b, size_t p, int tds) {
     //  Multiplication
 
     //  The target precision is p.
@@ -389,26 +389,26 @@ void bigfloat_mul(BigFloat &target, const BigFloat &a, const BigFloat &b, size_t
     //  at maximum precision with no data loss.
 
     //  Either operand is zero.
-    if (a.L == 0 || b.L == 0) {
+    if (a->L == 0 || b->L == 0) {
       bigfloat_new(target);
       return;
     }
 
     if (p == 0) {
         //  Default value. No trunction.
-        p = a.L + b.L;
+        p = a->L + b->L;
     } else {
         //  Increase precision
         p += YCL_BIGFLOAT_EXTRA_PRECISION;
     }
 
     //  Collect operands.
-    int64_t Aexp = a.exp;
-    int64_t Bexp = b.exp;
-    size_t AL = a.L;
-    size_t BL = b.L;
-    uint32_t *AT = a.T;
-    uint32_t *BT = b.T;
+    int64_t Aexp = a->exp;
+    int64_t Bexp = b->exp;
+    size_t AL = a->L;
+    size_t BL = b->L;
+    uint32_t *AT = a->T;
+    uint32_t *BT = b->T;
 
     //  Perform precision truncation.
     if (AL > p) {
@@ -425,22 +425,22 @@ void bigfloat_mul(BigFloat &target, const BigFloat &a, const BigFloat &b, size_t
     }
 
     //  Compute basic fields.
-    target.sign = a.sign == b.sign;  //  Sign is positive if signs are equal.
-    target.exp  = Aexp + Bexp;       //  Add the exponents.
-    target.L    = AL + BL;           //  Add the lenghts for now. May need to correct later.
+    target->sign = a->sign == b->sign;  //  Sign is positive if signs are equal.
+    target->exp  = Aexp + Bexp;       //  Add the exponents.
+    target->L    = AL + BL;           //  Add the lenghts for now. May need to correct later.
 
     //  Allocate mantissa
-    if(target.T != NULL) {
-      free(target.T);
+    if(target->T != NULL) {
+      free(target->T);
     }
-    target.T = (uint32_t*)malloc(sizeof(uint32_t)*(target.L));
+    target->T = (uint32_t*)malloc(sizeof(uint32_t)*(target->L));
 
     //  Perform multiplication.
 
     //  Determine minimum FFT size.
     int k = 0;
     size_t length = 1;
-    while (length < 5*target.L) {
+    while (length < 5*target->L) {
         length <<= 1;
         k++;
     }
@@ -471,29 +471,29 @@ void bigfloat_mul(BigFloat &target, const BigFloat &a, const BigFloat &b, size_t
     fft_forward(Tb,k,tds); //  Transform 2nd operand
     fft_pointwise(Ta,Tb,k);//  Pointwise multiply
     fft_inverse(Ta,k,tds); //  Perform inverse transform.
-    fft_to_int(Ta,k,target.T,target.L);   //  Convert back to word array.
+    fft_to_int(Ta,k,target->T,target->L);   //  Convert back to word array.
     _mm_free(Ta);
     _mm_free(Tb);
 
     //  Check top word and correct length.
-    if (target.T[target.L - 1] == 0)
-        target.L--;
+    if (target->T[target->L - 1] == 0)
+        target->L--;
 }
 
-void bigfloat_rcp(BigFloat &target, const BigFloat &a, size_t p, int tds) {
+void bigfloat_rcp(BigFloat target, const BigFloat a, size_t p, int tds) {
     //  Compute reciprocal using Newton's Method.
 
     //  r1 = r0 - (r0 * x - 1) * r0
 
-    if (a.L == 0) {
+    if (a->L == 0) {
       fprintf(stderr, "Divide by Zero\n");
       abort();
     }
 
     //  Collect operand
-    int64_t Aexp = a.exp;
-    size_t AL = a.L;
-    uint32_t *AT = a.T;
+    int64_t Aexp = a->exp;
+    size_t AL = a->L;
+    uint32_t *AT = a->T;
 
     //  End of recursion. Generate starting point.
     if (p == 0){
@@ -526,13 +526,13 @@ void bigfloat_rcp(BigFloat &target, const BigFloat &a, size_t p, int tds) {
         //  Rebuild a BigFloat.
         uint64_t val64 = (uint64_t)val;
 
-        target.sign = a.sign;
+        target->sign = a->sign;
 
-        target.T = (uint32_t*)malloc(sizeof(uint32_t)*2);
-        target.T[0] = (uint32_t)(val64 % 1000000000);
-        target.T[1] = (uint32_t)(val64 / 1000000000);
-        target.L = 2;
-        target.exp = Aexp;
+        target->T = (uint32_t*)malloc(sizeof(uint32_t)*2);
+        target->T[0] = (uint32_t)(val64 % 1000000000);
+        target->T[1] = (uint32_t)(val64 / 1000000000);
+        target->L = 2;
+        target->exp = Aexp;
 
         return;
     }
@@ -569,7 +569,7 @@ void bigfloat_rcp(BigFloat &target, const BigFloat &a, size_t p, int tds) {
     bigfloat_free(one);
 }
 
-void bigfloat_div(BigFloat &target, const BigFloat &a, const BigFloat &b, size_t p, int tds) {
+void bigfloat_div(BigFloat target, const BigFloat a, const BigFloat b, size_t p, int tds) {
   //  Division
   BigFloat rcp;
   bigfloat_new(rcp);

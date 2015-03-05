@@ -149,7 +149,7 @@ void e(size_t digits, int tds){
 
   printf("Division...\n");
 
-  BigFloat one = BigFloat();
+  BigFloat one;
   bigfloat_new(one);
   bigfloat_set(one, 1, 1);
   BigFloat tmp;
