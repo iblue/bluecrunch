@@ -51,148 +51,65 @@ void bigfloat_free(BigFloat target) {
   }
 }
 
-////////////////////////////////////////////////////////////////////////////////
-//  String Conversion
-char* bigfloat_to_string_trimmed(const BigFloat value, size_t digits, int64_t* ret_exp) {
-    //  Converts this object to a string with "digits" significant figures.
-
-    //  After calling this function, the following expression is equal to the
-    //  numeric value of this object. (after truncation of precision)
-    //      str + " * 10^" + (return value)
-
-    char* str;
-
-    // Handle zero
-    if (value->L == 0) {
-      *ret_exp = 0;
-      str = (char*) malloc(2);
-      str[0] = '0';
-      str[1] = '\0';
-      return str;
-    }
-
-    //  Collect operands
-    int64_t exponent = value->exp;
-    size_t length = value->L;
-    uint32_t *ptr = value->T;
-
-    if (digits == 0){
-        //  Use all digits.
-        digits = length * 9;
-    } else {
-        //  Truncate precision
-        size_t words = (digits + 17) / 9;
-        if (words < length){
-            size_t chop = length - words;
-            exponent += chop;
-            length = words;
-            ptr += chop;
-        }
-    }
-    exponent *= 9;
-
-    //  Build string
-    size_t c = length;
-    str = (char*)malloc(9*length+1);
-    while (c-- > 0){
-      uint32_t word = ptr[c];
-
-      for (int i = 8; i >= 0; i--){
-          str[9*c+i] = word % 10 + '0';
-          word /= 10;
-      }
-    }
-
-    //  Count leading zeros
-    size_t leading_zeros = 0;
-    while (str[leading_zeros] == '0') {
-      leading_zeros++;
-    }
-    digits += leading_zeros;
-
-    //  Truncate
-    if (digits < strlen(str)){
-      exponent += strlen(str) - digits;
-      str[digits] = '\0';
-    }
-
-    *ret_exp = exponent;
-    return str;
+size_t int_to_str(uint32_t val, char* str) {
+  for (int i=8;i>=0;i--){
+    str[i] = val % 10 + '0';
+    val   /= 10;
+  }
+  return 9;
 }
 
+// Skipps leading zeros
+size_t int_to_str_trimmed(uint32_t val, char* str) {
+  if(val == 2) {
+    str[0] = '2';
+    return 1;
+  } else {
+    fprintf(stderr, "Not implemented\n");
+    abort();
+  }
+}
+
+// Returns length of string, fills char* string with value
 size_t bigfloat_to_string(char* string, const BigFloat value, size_t digits) {
-    //  Convert this number to a string. Auto-select format type.
-    if (value->L == 0) {
-      string = (char*)malloc(2);
-      string[0] = '0';
-      string[1] = '\0';
-      return 2;
-    }
+  char* initial_string = string;
+  if(value->L == 0) {
+    string[0] = '0';
+    string[1] = '\0';
+    return 1;
+  }
 
-    int64_t mag = value->exp + value->L;
+  int mag = value->L + value->exp;
 
-    //  Use scientific notation of out of range.
-    if (mag > 1 || mag < 0) {
-      fprintf(stderr, "Scientific notation required\n");
-      abort();
-    }
+  size_t c = value->L-1;
 
-    //  Convert
-    int64_t exponent;
-    char * str = bigfloat_to_string_trimmed(value, digits, &exponent);
+  if(mag == 1) {
+    string += int_to_str_trimmed(value->T[c], string);
+  }
 
-    //  Less than 1
-    /*
-    if (mag == 0){
-      std::string ret;
-      if (value->sign) {
-        ret = std::string("0.") + str;
-      } else {
-        ret = std::string("-0.") + str;
-      }
+  *string++ = '.';
 
-      string = (char*) ret.c_str();
-      return ret.size();
-    }
-    */
-    if (mag == 0) {
-      fprintf(stderr, "Not implemented\n");
-      abort();
-    }
+  size_t min_c;
 
-    //  Get a string with the digits before the decimal place.
-    char before_decimal[10];
-    sprintf(before_decimal, "%d", value->T[value->L - 1]);
+  if(value->L > digits/9) {
+    min_c = value->L-digits/9-1;
+  } else {
+    min_c = 0;
+  }
 
-    //  Nothing after the decimal place.
-    if (exponent >= 0){
-      /*
-      std::string ret;
-        if (value->sign){
-            ret = before_decimal + ".";
-        }else{
-            ret = std::string("-") + before_decimal + ".";
-        }
+  while(c-->min_c) {
+    string += int_to_str(value->T[c], string);
+  }
 
-      string = (char*) ret.c_str();
-      return ret.size();
-      */
-      fprintf(stderr, "Not implemented\n");
-      abort();
-    }
+  *string++ = '\0';
 
-    //  Get digits after the decimal place.
-    std::string after_decimal = str.substr((size_t)(strlen(str) + exponent),(size_t)-exponent);
+  // Truncate if required
+  if(string - initial_string > digits) {
+    initial_string[digits+1] = '\0';
+    return digits;
+  }
 
-    std::string ret;
-    if (value->sign){
-        ret = before_decimal + "." + after_decimal;
-    }else{
-        ret = std::string("-") + before_decimal + "." + after_decimal;
-    }
-
-    string = (char*) ret.c_str();
-    return ret.size();
+  return string - initial_string-1;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

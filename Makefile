@@ -26,6 +26,11 @@ stats:
 build: CFLAGS += -DNDEBUG
 build: clean $(BINARY)
 
+.PHONY: debug
+debug: CFLAGS := $(filter-out -O3,$(CFLAGS)) -DDEBUG -O0
+debug: CPPFLAGS := $(filter-out -O3,$(CPPFLAGS)) -DDEBUG -O0
+debug: clean $(BINARY)
+
 # Build static, pack and remove traces of UPX
 release: CFLAGS += -static
 release: build

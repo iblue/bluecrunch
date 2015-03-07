@@ -162,8 +162,9 @@ void e(size_t digits, int tds){
   double time2 = wall_clock();
   printf("Time: %f\n", time2 - time1);
 
-  char *out;
-  size_t len = bigfloat_to_string(out, P, digits);
+  size_t output_len = digits+2; // comma, first '2'
+  char *out = (char*) malloc(output_len+1);
+  size_t len = bigfloat_to_string(out, P, output_len);
   bigfloat_free(P);
 
   dump_to_file("e.txt", out, len);
@@ -172,9 +173,14 @@ void e(size_t digits, int tds){
 int main() {
   // Enable threads and nested threading
   omp_set_nested(1);
-  int threads = omp_get_max_threads();
 
-  size_t digits = 10000000;
+  #ifdef DEBUG
+  int threads = 1;
+  #else
+  int threads = omp_get_max_threads();
+  #endif
+
+  size_t digits = 100000;
 
   //  Determine minimum FFT size.
   size_t p      = 2*digits / 9 + 10;
