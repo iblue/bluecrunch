@@ -369,11 +369,11 @@ void bigfloat_mul(BigFloat target, const BigFloat a, const BigFloat b, size_t p,
     target->T = (uint32_t*)malloc(sizeof(uint32_t)*(target->L));
 
     //  Perform multiplication.
-    int digits_per_point = 3;
+    int digits_per_point = 4;
 
     int points_per_word = 9/digits_per_point;
     if(9%digits_per_point) {
-      digits_per_point++;
+      points_per_word++;
     }
 
     //  Determine minimum FFT size.
@@ -416,6 +416,21 @@ void bigfloat_mul(BigFloat target, const BigFloat a, const BigFloat b, size_t p,
     fft_to_int(Ta,k,target->T,target->L, digits_per_point);   //  Convert back to word array.
     _mm_free(Ta);
     _mm_free(Tb);
+
+    #ifdef DEBUG
+    for(size_t i=AL;i-->0;) {
+      printf("%09d", AT[i]);
+    }
+    printf(",");
+    for(size_t i=BL;i-->0;) {
+      printf("%09d", BT[i]);
+    }
+    printf(",");
+    for(size_t i=target->L;i-->0;) {
+      printf("%09d", target->T[i]);
+    }
+    printf("\n");
+    #endif
 
     //  Check top word and correct length.
     if (target->T[target->L - 1] == 0)

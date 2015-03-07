@@ -180,7 +180,7 @@ int main() {
   #endif
 
   #ifdef DEBUG
-  size_t digits = 100000;
+  size_t digits = 100;
   #else
   size_t digits = 10000000;
   #endif
@@ -190,7 +190,7 @@ int main() {
   size_t k      = 0;
   size_t length = 1;
 
-  while(length < 5*p) {
+  while(length < 3*p) { // FIXME: Adjust to digits/point
     length *= 2;
     k++;
   }
