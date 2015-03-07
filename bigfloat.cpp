@@ -18,6 +18,9 @@ extern "C" {
 }
 #include "bigfloat.h"
 
+#define max(a,b) ({ typeof(a) _a = (a); typeof(b) _b = (b); _a > _b ? _a : _b; })
+#define min(a,b) ({ typeof(a) _a = (a); typeof(b) _b = (b); _a < _b ? _a : _b; })
+
 void bigfloat_new(BigFloat target) {
   target->sign = true;
   target->exp  = 0;
@@ -170,8 +173,8 @@ void _bigfloat_uadd(BigFloat target, const BigFloat a, const BigFloat b, size_t 
     //  Magnitude
     int64_t magA = a->exp + a->L;
     int64_t magB = b->exp + b->L;
-    int64_t top = std::max(magA, magB);
-    int64_t bot = std::min(a->exp, b->exp);
+    int64_t top = max(magA, magB);
+    int64_t bot = min(a->exp, b->exp);
 
     //  Target length
     int64_t TL = top - bot;
@@ -225,8 +228,8 @@ void _bigfloat_usub(BigFloat target, const BigFloat a, const BigFloat b, size_t 
     //  Magnitude
     int64_t magA = a->exp + a->L;
     int64_t magB = b->exp + b->L;
-    int64_t top = std::max(magA, magB);
-    int64_t bot = std::min(a->exp, b->exp);
+    int64_t top = max(magA, magB);
+    int64_t bot = min(a->exp, b->exp);
 
     //  Truncate precision
     int64_t TL = top - bot;
