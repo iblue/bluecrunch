@@ -10,6 +10,7 @@
 //  SIMD
 #include <malloc.h>
 #include <pmmintrin.h>
+#include <string.h>
 
 #include <omp.h>
 extern "C" {
@@ -52,16 +53,22 @@ void bigfloat_free(BigFloat target) {
 
 ////////////////////////////////////////////////////////////////////////////////
 //  String Conversion
-int64_t bigfloat_to_string_trimmed(const BigFloat value, size_t digits, std::string& str) {
+char* bigfloat_to_string_trimmed(const BigFloat value, size_t digits, int64_t* ret_exp) {
     //  Converts this object to a string with "digits" significant figures.
 
     //  After calling this function, the following expression is equal to the
     //  numeric value of this object. (after truncation of precision)
     //      str + " * 10^" + (return value)
 
-    if (value->L == 0){
-        str = "0";
-        return 0;
+    char* str;
+
+    // Handle zero
+    if (value->L == 0) {
+      *ret_exp = 0;
+      str = (char*) malloc(2);
+      str[0] = '0';
+      str[1] = '\0';
+      return str;
     }
 
     //  Collect operands
@@ -72,7 +79,7 @@ int64_t bigfloat_to_string_trimmed(const BigFloat value, size_t digits, std::str
     if (digits == 0){
         //  Use all digits.
         digits = length * 9;
-    }else{
+    } else {
         //  Truncate precision
         size_t words = (digits + 17) / 9;
         if (words < length){
@@ -85,31 +92,32 @@ int64_t bigfloat_to_string_trimmed(const BigFloat value, size_t digits, std::str
     exponent *= 9;
 
     //  Build string
-    char buffer[] = "012345678";
-    str.clear();
     size_t c = length;
+    str = (char*)malloc(9*length+1);
     while (c-- > 0){
-        uint32_t word = ptr[c];
-        for (int i = 8; i >= 0; i--){
-            buffer[i] = word % 10 + '0';
-            word /= 10;
-        }
-        str += buffer;
+      uint32_t word = ptr[c];
+
+      for (int i = 8; i >= 0; i--){
+          str[9*c+i] = word % 10 + '0';
+          word /= 10;
+      }
     }
 
     //  Count leading zeros
     size_t leading_zeros = 0;
-    while (str[leading_zeros] == '0')
-        leading_zeros++;
+    while (str[leading_zeros] == '0') {
+      leading_zeros++;
+    }
     digits += leading_zeros;
 
     //  Truncate
-    if (digits < str.size()){
-        exponent += str.size() - digits;
-        str.resize(digits);
+    if (digits < strlen(str)){
+      exponent += strlen(str) - digits;
+      str[digits] = '\0';
     }
 
-    return exponent;
+    *ret_exp = exponent;
+    return str;
 }
 
 size_t bigfloat_to_string(char* string, const BigFloat value, size_t digits) {
@@ -130,10 +138,11 @@ size_t bigfloat_to_string(char* string, const BigFloat value, size_t digits) {
     }
 
     //  Convert
-    std::string str;
-    int64_t exponent = bigfloat_to_string_trimmed(value, digits, str);
+    int64_t exponent;
+    char * str = bigfloat_to_string_trimmed(value, digits, &exponent);
 
     //  Less than 1
+    /*
     if (mag == 0){
       std::string ret;
       if (value->sign) {
@@ -145,12 +154,19 @@ size_t bigfloat_to_string(char* string, const BigFloat value, size_t digits) {
       string = (char*) ret.c_str();
       return ret.size();
     }
+    */
+    if (mag == 0) {
+      fprintf(stderr, "Not implemented\n");
+      abort();
+    }
 
     //  Get a string with the digits before the decimal place.
-    std::string before_decimal = std::to_string((long long)value->T[value->L - 1]);
+    char before_decimal[10];
+    sprintf(before_decimal, "%d", value->T[value->L - 1]);
 
     //  Nothing after the decimal place.
     if (exponent >= 0){
+      /*
       std::string ret;
         if (value->sign){
             ret = before_decimal + ".";
@@ -160,10 +176,13 @@ size_t bigfloat_to_string(char* string, const BigFloat value, size_t digits) {
 
       string = (char*) ret.c_str();
       return ret.size();
+      */
+      fprintf(stderr, "Not implemented\n");
+      abort();
     }
 
     //  Get digits after the decimal place.
-    std::string after_decimal = str.substr((size_t)(str.size() + exponent),(size_t)-exponent);
+    std::string after_decimal = str.substr((size_t)(strlen(str) + exponent),(size_t)-exponent);
 
     std::string ret;
     if (value->sign){
