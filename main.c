@@ -1,12 +1,13 @@
+#define _POSIX_C_SOURCE 199309L
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <time.h>
 #include <malloc.h>
 #include <pmmintrin.h>
 
 #include <omp.h>
 
+#include <time.h>
 #include "fft.h"
 #include "bigfloat.h"
 
@@ -14,11 +15,9 @@
 ////////////////////////////////////////////////////////////////////////////////
 //  Helpers
 double wall_clock() {
-  /*
   struct timespec t;
   clock_gettime(CLOCK_MONOTONIC, &t);
-  return (double)t.tv_sec + 1.0e-9*t.tv_nsec;*/
-  return 0.0; // FIXME: icc is a broken piece of shit
+  return (double)t.tv_sec + 1.0e-9*t.tv_nsec;
 }
 
 void dump_to_file(const char *path, const char* str, size_t len){
@@ -178,7 +177,11 @@ int main() {
   int threads = omp_get_max_threads();
   #endif
 
+  #ifdef DEBUG
+  size_t digits = 100000;
+  #else
   size_t digits = 10000000;
+  #endif
 
   //  Determine minimum FFT size.
   size_t p      = 2*digits / 9 + 10;

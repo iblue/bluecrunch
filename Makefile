@@ -1,8 +1,14 @@
-CC=icc
+#CC=icc
+CC=gcc
+#CC=clang
 STRIP=strip
-CFLAGS=-std=c11 -Wall -Werror -ggdb -O3 -fopenmp -ipo -mtune=native -march=native
+CFLAGS=-std=c11 -Wall -Werror -ggdb -O3 -fopenmp -mtune=native -march=native
 BINARY=bluecrunch
 LIBS=-lm
+ifeq ($(CC),icc)
+	CFLAGS += -ipo
+endif
+
 
 $(BINARY): main.o fft.o bigfloat.o
 	$(CC) $(CFLAGS) -o $(BINARY) main.o fft.o bigfloat.o $(LIBS)
@@ -24,6 +30,9 @@ build: clean $(BINARY)
 
 .PHONY: debug
 debug: CFLAGS := $(filter-out -O3,$(CFLAGS)) -DDEBUG -O0
+ifeq ($(CC),gcc)
+debug: CFLAGS += -fsanitize=address
+endif
 debug: clean $(BINARY)
 
 # Build static, pack and remove traces of UPX
