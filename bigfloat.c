@@ -369,11 +369,17 @@ void bigfloat_mul(BigFloat target, const BigFloat a, const BigFloat b, size_t p,
     target->T = (uint32_t*)malloc(sizeof(uint32_t)*(target->L));
 
     //  Perform multiplication.
+    int digits_per_point = 3;
+
+    int points_per_word = 9/digits_per_point;
+    if(9%digits_per_point) {
+      digits_per_point++;
+    }
 
     //  Determine minimum FFT size.
     int k = 0;
     size_t length = 1;
-    while (length < 5*target->L) {
+    while (length < points_per_word*target->L) {
         length <<= 1;
         k++;
     }
@@ -386,8 +392,10 @@ void bigfloat_mul(BigFloat target, const BigFloat a, const BigFloat b, size_t p,
     //  until a transform size of 2^30.
     //  A transform length of 2^29 allows for the maximum product size to be
     //  2^29 * 3 = 1,610,612,736 decimal digits.
-    /*if (k > 29)
-        throw "FFT size limit exceeded.";*/
+    if (k > 29) {
+      fprintf(stderr, "FFT size too large\n");
+      abort();
+    }
 
     //  Allocate FFT arrays
     __m128d *Ta = (__m128d*)_mm_malloc(length * sizeof(__m128d), 16);
@@ -399,13 +407,13 @@ void bigfloat_mul(BigFloat target, const BigFloat a, const BigFloat b, size_t p,
       abort();
     }
 
-    int_to_fft(Ta,k,AT,AL);           //  Convert 1st operand
-    int_to_fft(Tb,k,BT,BL);           //  Convert 2nd operand
+    int_to_fft(Ta,k,AT,AL, digits_per_point);           //  Convert 1st operand
+    int_to_fft(Tb,k,BT,BL, digits_per_point);           //  Convert 2nd operand
     fft_forward(Ta,k,tds); //  Transform 1st operand
     fft_forward(Tb,k,tds); //  Transform 2nd operand
     fft_pointwise(Ta,Tb,k);//  Pointwise multiply
     fft_inverse(Ta,k,tds); //  Perform inverse transform.
-    fft_to_int(Ta,k,target->T,target->L);   //  Convert back to word array.
+    fft_to_int(Ta,k,target->T,target->L, digits_per_point);   //  Convert back to word array.
     _mm_free(Ta);
     _mm_free(Tb);
 

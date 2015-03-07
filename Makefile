@@ -2,7 +2,7 @@
 CC=gcc
 #CC=clang
 STRIP=strip
-CFLAGS=-std=c11 -Wall -Werror -ggdb -O3 -fopenmp -mtune=native -march=native
+CFLAGS=-std=c11 -Wall -Werror -ggdb -O3 -fopenmp -msse3
 BINARY=bluecrunch
 LIBS=-lm
 ifeq ($(CC),icc)

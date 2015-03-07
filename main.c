@@ -129,12 +129,10 @@ void e(size_t digits, int tds){
     abort();
   }
 
-  printf("Computing e...\n");
-  printf("Algorithm: Taylor Series of exp(1)\n\n");
-
   double time0 = wall_clock();
 
-  printf("Summing Series... %ld terms\n", terms);
+  printf("Summing (%ld terms)...", terms);
+  fflush(stdout);
 
   BigFloat P, Q;
   bigfloat_new(P);
@@ -142,9 +140,10 @@ void e(size_t digits, int tds){
   e_BSR(P, Q, 0, (uint32_t)terms, tds);
   double time1 = wall_clock();
 
-  printf("Time: %f\n", time1 - time0);
+  printf("ok [%f seconds]\n", time1 - time0);
 
-  printf("Division...\n");
+  printf("Dividing...");
+  fflush(stdout);
 
   BigFloat one;
   bigfloat_new(one);
@@ -157,14 +156,17 @@ void e(size_t digits, int tds){
   bigfloat_free(one);
   bigfloat_free(Q);
   double time2 = wall_clock();
-  printf("Time: %f\n", time2 - time1);
+  printf("ok [%f seconds]\n", time2 - time1);
 
+  printf("Writing digits...");
+  fflush(stdout);
   size_t output_len = digits+2; // comma, first '2'
   char *out = (char*) malloc(output_len+1);
   size_t len = bigfloat_to_string(out, P, output_len);
   bigfloat_free(P);
-
   dump_to_file("e.txt", out, len);
+  double time3 = wall_clock();
+  printf("ok [%f seconds]\n", time3 - time2);
 }
 
 int main() {
@@ -193,18 +195,23 @@ int main() {
     k++;
   }
 
+  printf("Configuration:\n");
+  printf("Digits:       %ld\n", digits);
+  printf("Threads:      %d\n", threads);
+  printf("CPU Features: Using SSE3\n");
+  printf("Output File:  ./e.txt\n");
+  printf("\n");
+
   double time1 = wall_clock();
-  printf("Bulding tables until size 2^%ld\n", k);
-
-  // Precompute FFT twiddle factors
+  printf("Bulding FFT tables of size 2^%ld...", k);
+  fflush(stdout);
   fft_ensure_table(k);
-
   double time2 = wall_clock();
-  printf("Time: %f\n", time2 - time1);
+  printf("ok [%f seconds]\n", time2 - time1);
 
   // Calculate e
   e(digits, threads);
   double time3 = wall_clock();
 
-  printf("Total Time = %f \n\n", time3 - time1);
+  printf("\nCalculation complete [%f seconds]\n", time3 - time1);
 }
