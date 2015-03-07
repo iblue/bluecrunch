@@ -2,10 +2,6 @@
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <string>
-#include <vector>
-#include <memory>
-#include <iostream>
 
 //  SIMD
 #include <malloc.h>
