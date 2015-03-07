@@ -1,7 +1,7 @@
 #define YCL_BIGFLOAT_EXTRA_PRECISION    2
 
 typedef struct {
-    bool sign;      //  true = positive or zero, false = negative
+    int sign;       //  1 = positive or zero, 0 = negative
     int64_t exp;    //  Exponent
     size_t L;       //  Length
     uint32_t* T;
@@ -10,7 +10,7 @@ typedef struct {
 typedef _bigfloat_struct BigFloat[1];
 
 void bigfloat_negate(BigFloat num);
-void bigfloat_set(BigFloat target, uint32_t x, bool sign_);
+void bigfloat_set(BigFloat target, uint32_t x, int sign_);
 uint32_t _bigfloat_word_at(const BigFloat target, int64_t mag);
 int _bigfloat_ucmp(const BigFloat a, const BigFloat b);
 void bigfloat_add(BigFloat target, const BigFloat a, const BigFloat b, size_t p);

@@ -7,20 +7,18 @@
 
 #include <omp.h>
 
-#include <string>
-
-extern "C" {
-  #include "fft.h"
-}
+#include "fft.h"
 #include "bigfloat.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 //  Helpers
 double wall_clock() {
-  struct timespec t = {0,0};
+  /*
+  struct timespec t;
   clock_gettime(CLOCK_MONOTONIC, &t);
-  return (double)t.tv_sec + 1.0e-9*t.tv_nsec;
+  return (double)t.tv_sec + 1.0e-9*t.tv_nsec;*/
+  return 0.0; // FIXME: icc is a broken piece of shit
 }
 
 void dump_to_file(const char *path, const char* str, size_t len){
@@ -68,12 +66,12 @@ size_t e_terms(size_t p) {
   return b + 2;
 }
 
-void e_BSR(BigFloat &P, BigFloat &Q, uint32_t a, uint32_t b, int tds = 1) {
+void e_BSR(BigFloat P, BigFloat Q, uint32_t a, uint32_t b, int tds) {
   //  Binary Splitting recursion for exp(1).
 
   if (b - a == 1){
-    bigfloat_set(P, 1, true);
-    bigfloat_set(Q, b, true);
+    bigfloat_set(P, 1, 1);
+    bigfloat_set(Q, b, 1);
     return;
   }
 
@@ -87,8 +85,8 @@ void e_BSR(BigFloat &P, BigFloat &Q, uint32_t a, uint32_t b, int tds = 1) {
 
   if (b - a < 1000 || tds < 2) {
     //  No more threads.
-    e_BSR(P0, Q0, a, m);
-    e_BSR(P1, Q1, m, b);
+    e_BSR(P0, Q0, a, m, 1);
+    e_BSR(P1, Q1, m, b, 1);
   } else {
     //  Run sub-recursions in parallel.
     int tds0 = tds / 2;
@@ -180,7 +178,7 @@ int main() {
   int threads = omp_get_max_threads();
   #endif
 
-  size_t digits = 100000;
+  size_t digits = 10000000;
 
   //  Determine minimum FFT size.
   size_t p      = 2*digits / 9 + 10;

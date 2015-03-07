@@ -9,29 +9,27 @@
 #include <string.h>
 
 #include <omp.h>
-extern "C" {
-  #include "fft.h"
-}
+#include "fft.h"
 #include "bigfloat.h"
 
 #define max(a,b) ({ typeof(a) _a = (a); typeof(b) _b = (b); _a > _b ? _a : _b; })
 #define min(a,b) ({ typeof(a) _a = (a); typeof(b) _b = (b); _a < _b ? _a : _b; })
 
 void bigfloat_new(BigFloat target) {
-  target->sign = true;
+  target->sign = 1;
   target->exp  = 0;
   target->L    = 0;
   target->T    = NULL;
 }
 
-void bigfloat_set(BigFloat target, uint32_t x, bool sign_) {
+void bigfloat_set(BigFloat target, uint32_t x, int sign_) {
   bigfloat_free(target);
 
   target->exp  = 0;
 
   if (x == 0) {
       target->L    = 0;
-      target->sign = true;
+      target->sign = 1;
       target->T    = NULL;
       return;
   }
@@ -268,7 +266,7 @@ void _bigfloat_usub(BigFloat target, const BigFloat a, const BigFloat b, size_t 
         target->L--;
     if (target->L == 0){
         target->exp = 0;
-        target->sign = true;
+        target->sign = 1;
         free(target->T);
         target->T = NULL;
     }
@@ -397,7 +395,8 @@ void bigfloat_mul(BigFloat target, const BigFloat a, const BigFloat b, size_t p,
 
     //  Make sure the twiddle table is big enough.
     if (twiddle_table_size - 1 < k) {
-      throw "Table is not large enough.";
+      fprintf(stderr, "Table is not large enough\n");
+      abort();
     }
 
     int_to_fft(Ta,k,AT,AL);           //  Convert 1st operand
