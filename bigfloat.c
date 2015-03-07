@@ -368,55 +368,79 @@ void bigfloat_mul(BigFloat target, const BigFloat a, const BigFloat b, size_t p,
     }
     target->T = (uint32_t*)malloc(sizeof(uint32_t)*(target->L));
 
-    //  Perform multiplication.
-    int digits_per_point = 4;
+    if(target->L == 2) {
+      #ifdef DEBUG
+      printf("fastpath\n");
+      #endif
+      // Fast path for really small multiplications
+      uint64_t result = (uint64_t)AT[0]*BT[0];
+      target->T[0] = result % 1000000000;
+      result /= 1000000000;
+      target->T[1] = result;
+    } else if(target->L < 2000) {
+      #ifdef DEBUG
+      printf("basecase\n");
+      #endif
+      for(size_t i=0;i<target->L;i++) {
+        target->T[i] = 0;
+      }
+      for(size_t i=0;i<AL;i++) {
+        fprintf(stderr, "Mein Gehirn schmilzt\n");
+        abort();
+      }
+    } else {
+      #ifdef DEBUG
+      printf("fft\n");
+      #endif
+      //  Perform multiplication.
+      int digits_per_point = 4;
 
-    int points_per_word = 9/digits_per_point;
-    if(9%digits_per_point) {
-      points_per_word++;
+      int points_per_word = 9/digits_per_point;
+      if(9%digits_per_point) {
+        points_per_word++;
+      }
+
+      //  Determine minimum FFT size.
+      int k = 0;
+      size_t length = 1;
+      while (length < points_per_word*target->L) {
+          length <<= 1;
+          k++;
+      }
+
+      //  Perform a convolution using FFT.
+      //  Yeah, this is slow for small sizes, but it's asympotically optimal.
+
+      // FIXME: Comment incorrect. 2 digits per point!
+      //  3 digits per point is small enough to not encounter round-off error
+      //  until a transform size of 2^30.
+      //  A transform length of 2^29 allows for the maximum product size to be
+      //  2^29 * 3 = 1,610,612,736 decimal digits.
+      if (k > 29) {
+        fprintf(stderr, "FFT size too large\n");
+        abort();
+      }
+
+      //  Allocate FFT arrays
+      __m128d *Ta = (__m128d*)_mm_malloc(length * sizeof(__m128d), 16);
+      __m128d *Tb = (__m128d*)_mm_malloc(length * sizeof(__m128d), 16);
+
+      //  Make sure the twiddle table is big enough.
+      if (twiddle_table_size - 1 < k) {
+        fprintf(stderr, "Table is not large enough\n");
+        abort();
+      }
+
+      int_to_fft(Ta,k,AT,AL, digits_per_point);           //  Convert 1st operand
+      int_to_fft(Tb,k,BT,BL, digits_per_point);           //  Convert 2nd operand
+      fft_forward(Ta,k,tds); //  Transform 1st operand
+      fft_forward(Tb,k,tds); //  Transform 2nd operand
+      fft_pointwise(Ta,Tb,k);//  Pointwise multiply
+      fft_inverse(Ta,k,tds); //  Perform inverse transform.
+      fft_to_int(Ta,k,target->T,target->L, digits_per_point);   //  Convert back to word array.
+      _mm_free(Ta);
+      _mm_free(Tb);
     }
-
-    //  Determine minimum FFT size.
-    int k = 0;
-    size_t length = 1;
-    while (length < points_per_word*target->L) {
-        length <<= 1;
-        k++;
-    }
-
-    //  Perform a convolution using FFT.
-    //  Yeah, this is slow for small sizes, but it's asympotically optimal.
-
-    // FIXME: Comment incorrect. 2 digits per point!
-    //  3 digits per point is small enough to not encounter round-off error
-    //  until a transform size of 2^30.
-    //  A transform length of 2^29 allows for the maximum product size to be
-    //  2^29 * 3 = 1,610,612,736 decimal digits.
-    if (k > 29) {
-      fprintf(stderr, "FFT size too large\n");
-      abort();
-    }
-
-    //  Allocate FFT arrays
-    __m128d *Ta = (__m128d*)_mm_malloc(length * sizeof(__m128d), 16);
-    __m128d *Tb = (__m128d*)_mm_malloc(length * sizeof(__m128d), 16);
-
-    //  Make sure the twiddle table is big enough.
-    if (twiddle_table_size - 1 < k) {
-      fprintf(stderr, "Table is not large enough\n");
-      abort();
-    }
-
-    int_to_fft(Ta,k,AT,AL, digits_per_point);           //  Convert 1st operand
-    int_to_fft(Tb,k,BT,BL, digits_per_point);           //  Convert 2nd operand
-    fft_forward(Ta,k,tds); //  Transform 1st operand
-    fft_forward(Tb,k,tds); //  Transform 2nd operand
-    fft_pointwise(Ta,Tb,k);//  Pointwise multiply
-    fft_inverse(Ta,k,tds); //  Perform inverse transform.
-    fft_to_int(Ta,k,target->T,target->L, digits_per_point);   //  Convert back to word array.
-    _mm_free(Ta);
-    _mm_free(Tb);
-
     #ifdef DEBUG
     for(size_t i=AL;i-->0;) {
       printf("%09d", AT[i]);
