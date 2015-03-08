@@ -182,7 +182,7 @@ int main() {
   #ifdef DEBUG
   size_t digits = 100;
   #else
-  size_t digits = 100000000;
+  size_t digits = 500000000;
   #endif
 
   //  Determine minimum FFT size.
@@ -196,14 +196,18 @@ int main() {
   }
 
   printf("Configuration:\n");
-  printf("Digits:       %ld\n", digits);
-  printf("Threads:      %d\n", threads);
-  printf("CPU Features: Using SSE3\n");
-  printf("Output File:  ./e.txt\n");
+  printf("Digits:           %ld\n", digits);
+  printf("Threads:          %d\n", threads);
+  printf("CPU Features:     Using SSE3\n");
+  printf("Output File:      ./e.txt\n");
+  printf("Max FFT required: 2^%ld\n", k);
   printf("\n");
 
+  if(k>26) {
+    k = 26;
+  }
   double time1 = wall_clock();
-  printf("Bulding FFT tables of size 2^%ld...", k);
+  printf("Building FFT tables of size 2^%ld...", k);
   fflush(stdout);
   fft_ensure_table(k);
   double time2 = wall_clock();

@@ -440,17 +440,22 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
       __m128d *Tb = (__m128d*)_mm_malloc(length * sizeof(__m128d), 16);
 
       //  Make sure the twiddle table is big enough.
-      if (twiddle_table_size - 1 < k) {
-        fprintf(stderr, "Table is not large enough\n");
-        abort();
-      }
 
       int_to_fft(Ta,k,AT,AL, digits_per_point);           //  Convert 1st operand
       int_to_fft(Tb,k,BT,BL, digits_per_point);           //  Convert 2nd operand
-      fft_forward(Ta,k,tds); //  Transform 1st operand
-      fft_forward(Tb,k,tds); //  Transform 2nd operand
+      if (twiddle_table_size - 1 < k) {
+        fft_forward_uncached(Ta,k,tds);
+        fft_forward_uncached(Tb,k,tds);
+      } else {
+        fft_forward(Ta,k,tds);
+        fft_forward(Tb,k,tds);
+      }
       fft_pointwise(Ta,Tb,k);//  Pointwise multiply
-      fft_inverse(Ta,k,tds); //  Perform inverse transform.
+      if (twiddle_table_size - 1 < k) {
+        fft_inverse_uncached(Ta,k,tds);
+      } else {
+        fft_inverse(Ta,k,tds);
+      }
       fft_to_int(Ta,k,target->T,target->L, digits_per_point);   //  Convert back to word array.
       _mm_free(Ta);
       _mm_free(Tb);
