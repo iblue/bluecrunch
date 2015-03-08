@@ -377,7 +377,7 @@ void bigfloat_mul(BigFloat target, const BigFloat a, const BigFloat b, size_t p,
       target->T[0] = result % 1000000000;
       result /= 1000000000;
       target->T[1] = result;
-    } else if(target->L < 2000) {
+    } else if(target->L < 500) {
       #ifdef DEBUG
       printf("basecase\n");
       #endif
@@ -385,8 +385,28 @@ void bigfloat_mul(BigFloat target, const BigFloat a, const BigFloat b, size_t p,
         target->T[i] = 0;
       }
       for(size_t i=0;i<AL;i++) {
-        fprintf(stderr, "Mein Gehirn schmilzt\n");
-        abort();
+        uint64_t carry = 0;
+        uint64_t value;
+        for(size_t j=0;j<BL;j++) {
+          value = target->T[i+j];
+          value += (uint64_t) AT[i] * (uint64_t) BT[j];
+          value += carry;
+
+          carry  = value / 1000000000;
+          value %= 1000000000;
+          target->T[i+j] = value;
+        }
+        for(size_t j=i+BL;j<target->L;j++) {
+          if(carry == 0) {
+            break;
+          }
+          value = target->T[j];
+          value += carry;
+
+          carry  = value / 1000000000;
+          value %= 1000000000;
+          target->T[j] = value;
+        }
       }
     } else {
       #ifdef DEBUG

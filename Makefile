@@ -1,5 +1,5 @@
-CC=icc
-#CC=gcc
+#CC=icc
+CC=gcc
 #CC=clang
 STRIP=strip
 CFLAGS=-std=c11 -Wall -Werror -ggdb -O3 -fopenmp -msse3
