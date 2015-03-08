@@ -414,10 +414,12 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
       #endif
       //  Perform multiplication.
       int digits_per_point;
-      if(target->L > 1000000) {
+      if(target->L > 80000000) {
+        digits_per_point = 2;
+      } else if(target->L > 1000000) {
         digits_per_point = 3;
       } else {
-        digits_per_point = 2;
+        digits_per_point = 4;
       }
 
       int points_per_word = 9/digits_per_point;
@@ -431,19 +433,6 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
       while (length < points_per_word*target->L) {
           length <<= 1;
           k++;
-      }
-
-      //  Perform a convolution using FFT.
-      //  Yeah, this is slow for small sizes, but it's asympotically optimal.
-
-      // FIXME: Comment incorrect. 2 digits per point!
-      //  3 digits per point is small enough to not encounter round-off error
-      //  until a transform size of 2^30.
-      //  A transform length of 2^29 allows for the maximum product size to be
-      //  2^29 * 3 = 1,610,612,736 decimal digits.
-      if (k > 29) {
-        fprintf(stderr, "FFT size too large\n");
-        abort();
       }
 
       //  Allocate FFT arrays
@@ -482,8 +471,9 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
     #endif
 
     //  Check top word and correct length.
-    if (target->T[target->L - 1] == 0)
-        target->L--;
+    if (target->T[target->L - 1] == 0) {
+      target->L--;
+    }
 }
 
 void bigfloat_rcp(bigfloat_t target, const bigfloat_t a, size_t p, int tds) {
