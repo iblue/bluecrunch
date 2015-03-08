@@ -413,7 +413,12 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
       printf("fft\n");
       #endif
       //  Perform multiplication.
-      int digits_per_point = 4;
+      int digits_per_point;
+      if(target->L > 1000000) {
+        digits_per_point = 3;
+      } else {
+        digits_per_point = 2;
+      }
 
       int points_per_word = 9/digits_per_point;
       if(9%digits_per_point) {
