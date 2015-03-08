@@ -349,9 +349,6 @@ void fft_inverse_uncached(__m128d *T,int k,int tds){
       }
   }
 
-  //  Get local twiddle table.
-  my_complex_t* local_table = twiddle_table[k];
-
   //  Perform FFT reduction into two halves.
   for (size_t c = 0; c < half_length; c++){
       //  Generate Twiddle Factor

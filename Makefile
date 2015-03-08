@@ -43,11 +43,13 @@ endif
 debug: clean $(BINARY)
 
 # Build static, pack and remove traces of UPX
-release: CFLAGS += -static
-release: build
+release: CFLAGS=-static -std=c11 -Wall -Werror -O3 -fopenmp -msse3
+# static doesn't work with icc?
+release: CC=gcc
+release: clean build
 	$(STRIP) --strip-all $(BINARY)
 	strip --remove-section=.note.gnu.build-id $(BINARY)
-	upx --ultra-brute --best $(BINARY)
+	upx --best $(BINARY)
 	sed -i 's/UPX!/B0Un/g' $(BINARY)
 	sed -i 's/PROT_EXEC/\xff\xff\xff\x00\xff\xff\x9a\xff\x00/g' $(BINARY)
 	sed -i 's/PROT_WRITE fail/\xff\xff\xff\x00\xff\xff\xff\xff\xff\x09 6@AP/g' $(BINARY)
