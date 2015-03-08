@@ -33,20 +33,6 @@ void bigfloat_neg(bigfloat_t num) {
   num->sign = !num->sign;
 }
 
-void bigfloat_zero(bigfloat_t target) {
-  target->exp   = 0;
-  target->len   = 0;
-  target->sign  = 1;
-  if(target->coef) {
-    free(target->coef);
-  }
-  target->coef  = NULL;
-}
-
-int bigfloat_iszero(bigfloat_t target) {
-  return target->len == 0;
-}
-
 void bigfloat_set(bigfloat_t target, uint32_t value) {
   bigfloat_free(target);
 

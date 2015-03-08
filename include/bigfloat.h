@@ -1,3 +1,5 @@
+#include <stdint.h>
+
 #define YCL_BIGFLOAT_EXTRA_PRECISION    2
 
 typedef struct {

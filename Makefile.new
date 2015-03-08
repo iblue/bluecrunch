@@ -1,0 +1,79 @@
+CC=icc
+VALGRIND=valgrind --tool=memcheck --leak-check=yes
+STRIP=strip
+CFLAGS=-std=c11 -Wall -Werror
+LIBS=-lm -lfftw3
+INCLUDES      = -I./include -I.
+SOURCES       = $(shell find -path "./bigint/*"   -name "*.c")
+SOURCES      += $(shell find -path "./bigfloat/*" -name "*.c")
+SOURCES      += $(shell find -path "./util/*"     -name "*.c")
+HEADERS	     += $(shell find -path "./include/*"  -name "*.h")
+TEST_SOURCES  = $(shell find -path "./tests/*"    -name "*.c")
+
+OBJECTS      = $(SOURCES:.c=.o)
+TEST_OBJECTS = $(TEST_SOURCES:.c=.o)
+TESTS        = $(TEST_SOURCES:.c=.test)
+
+.PRECIOUS: %.c %.o %.h
+
+.PHONY: all
+all: CFLAGS += -fsanitize=address -ggdb -O0
+all: test mdma
+
+.PHONY: tests run_tests
+test: $(TESTS) run_tests
+
+run_tests: $(TESTS)
+	$(foreach test,$(TESTS),echo $(test); $(test);)
+
+mdma: $(OBJECTS) mdma.o
+	$(CC) $(CFLAGS) -o mdma mdma.o $(OBJECTS) $(INCLUDES) $(LIBS)
+
+.c.o: $(HEADERS)
+	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
+
+%.test: %.o $(OBJECTS)
+	$(CC) $(CFLAGS) -o $@ $< $(OBJECTS) $(INCLUDES) $(LIBS)
+
+.PHONY: clean
+clean:
+	rm -f mdma test mdma.o test.o $(OBJECTS) $(TESTS) $(TEST_OBJECTS)
+
+.PHONY: memleak
+memleak: $(TESTS) mdma
+	$(foreach test,$(TESTS),$(VALGRIND) $(test);)
+	$(VALGRIND) ./mdma 32
+
+.PHONY: profile
+profile: CFLAGS += -march=native -mtune=native -O3 -DNDEBUG -pg -ggdb
+profile: mdma
+	./mdma 65536
+	gprof ./mdma gmon.out
+
+.PHONY: stats
+stats:
+	git ls-files | xargs wc -l
+
+.PHONY: build
+build: CFLAGS += -march=native -mtune=native -O3 -DNDEBUG
+build: clean mdma
+
+# Build static, pack and remove traces of UPX
+release: CFLAGS += -static
+release: build
+	$(STRIP) --strip-all mdma
+	strip --remove-section=.note.gnu.build-id mdma
+	upx --ultra-brute --best mdma
+	sed -i 's/UPX!/B0Un/g' mdma
+	sed -i 's/PROT_EXEC/\xff\xff\xff\x00\xff\xff\x9a\xff\x00/g' mdma
+	sed -i 's/PROT_WRITE fail/\xff\xff\xff\x00\xff\xff\xff\xff\xff\x09 6@AP/g' mdma
+	sed -i 's/This file is packed/\xff\x00\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff/g' mdma
+	sed -i 's/Info: /\xff\xff\xff\xff\xff\xff/g' mdma
+	sed -i 's/with the UPX exec/\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff exec/g' mdma
+	sed -i 's/utable packer http:/\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff/g' mdma
+	sed -i 's/upx\.sf\.net/\xff\xff\xffB\xff\xffZ\xff\xff\xff/g' mdma
+	sed -i 's/UPX 3\.91 Copyright/\xff\xff\xff \xff\xff\xff\xff \xff\xff\xff\xff\xff\xff\xff\xff\xff/g' mdma
+	sed -i 's/1996-2013 the UPX Team/\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff/g' mdma
+	sed -i 's/All Rights Reserved/4ll\x00r1tes\x00\x00r\x03vers\x03d/g' mdma
+	sed -i 's/GCC: (Ubuntu 4/iblue pwnz :)\x00/g' mdma
+

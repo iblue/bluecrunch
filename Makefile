@@ -1,6 +1,7 @@
 CC=icc
 #CC=gcc
 #CC=clang
+VALGRIND=valgrind --tool=memcheck --leak-check=yes
 STRIP=strip
 CFLAGS=-std=c11 -Wall -Werror -ggdb -O3 -fopenmp -msse3
 BINARY=bluecrunch
@@ -9,16 +10,22 @@ ifeq ($(CC),icc)
 	CFLAGS += -ipo
 endif
 
+INCLUDES = -I./include -I.
+SOURCES  = $(shell find -path "./bigfloat/*" -name "*.c")
+SOURCES += $(shell find -path "./fft/*"      -name "*.c")
+SOURCES += main.c
+HEADERS  = $(shell find -path "./include/*"  -name "*.h")
+OBJECTS  = $(SOURCES:.c=.o)
 
-$(BINARY): main.o fft.o bigfloat.o
-	$(CC) $(CFLAGS) -o $(BINARY) main.o fft.o bigfloat.o $(LIBS)
+$(BINARY): $(OBJECTS)
+	$(CC) $(CFLAGS) -o $(BINARY) $(OBJECTS) $(LIBS)
 
 .c.o: $(HEADERS)
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 .PHONY: clean
 clean:
-	rm -f $(BINARY) main.o fft.o bigfloat.o
+	rm -f $(BINARY) $(OBJECTS)
 
 .PHONY: stats
 stats:
