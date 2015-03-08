@@ -12,6 +12,6 @@ void bigfloat_zero(bigfloat_t target) {
   target->coef  = NULL;
 }
 
-int bigfloat_iszero(bigfloat_t target) {
+int bigfloat_iszero(const bigfloat_t target) {
   return target->len == 0;
 }

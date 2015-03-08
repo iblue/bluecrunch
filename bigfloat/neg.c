@@ -12,10 +12,10 @@
 #include "fft.h"
 #include "bigfloat.h"
 
-void bigfloat_neg(bigfloat_t num) {
-  if(bigfloat_iszero(num)) {
+void bigfloat_neg(bigfloat_t target) {
+  if(bigfloat_iszero(target)) {
     return;
   }
 
-  num->sign = !num->sign;
+  target->sign = !target->sign;
 }

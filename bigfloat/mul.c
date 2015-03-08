@@ -15,8 +15,8 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
     //  at maximum precision with no data loss.
 
     //  Either operand is zero.
-    if (a->len == 0 || b->len == 0) {
-      bigfloat_new(target);
+    if (bigfloat_iszero(a) || bigfloat_iszero(b)) {
+      bigfloat_zero(target);
       return;
     }
 
