@@ -70,7 +70,7 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
       target->coef[0] = result % 1000000000;
       result /= 1000000000;
       target->coef[1] = result;
-    } else if(target->len < 500) {
+    } else if(target->len < 350) {
       #ifdef DEBUG
       printf("basecase\n");
       #endif
