@@ -107,12 +107,12 @@ void e_BSR(bigfloat_t P, bigfloat_t Q, uint32_t a, uint32_t b, int tds) {
   bigfloat_t tmp;
   bigfloat_new(tmp);
   bigfloat_mul(tmp, P0, Q1, 0, tds);
-  bigfloat_add(P, tmp, P1, 0);
-  bigfloat_mul(Q, Q0, Q1, 0, tds);
   bigfloat_free(P0);
+  bigfloat_add(P, tmp, P1, 0);
   bigfloat_free(P1);
-  bigfloat_free(Q0);
+  bigfloat_mul(Q, Q0, Q1, 0, tds);
   bigfloat_free(Q1);
+  bigfloat_free(Q0);
   bigfloat_free(tmp);
 }
 
@@ -151,10 +151,10 @@ void e(size_t digits, int tds){
   bigfloat_t tmp;
   bigfloat_new(tmp);
   bigfloat_div(tmp, P, Q, p, tds);
+  bigfloat_free(Q);
   bigfloat_add(P, tmp, one, p);
   bigfloat_free(tmp);
   bigfloat_free(one);
-  bigfloat_free(Q);
   double time2 = wall_clock();
   printf("ok [%f seconds]\n", time2 - time1);
 
@@ -182,7 +182,7 @@ int main() {
   #ifdef DEBUG
   size_t digits = 100;
   #else
-  size_t digits = 500000000;
+  size_t digits = 5000000;
   #endif
 
   //  Determine minimum FFT size.

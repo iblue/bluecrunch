@@ -451,6 +451,7 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
         fft_forward(Tb,k,tds);
       }
       fft_pointwise(Ta,Tb,k);//  Pointwise multiply
+      _mm_free(Tb);
       if (twiddle_table_size - 1 < k) {
         fft_inverse_uncached(Ta,k,tds);
       } else {
@@ -458,7 +459,6 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
       }
       fft_to_int(Ta,k,target->T,target->L, digits_per_point);   //  Convert back to word array.
       _mm_free(Ta);
-      _mm_free(Tb);
     }
     #ifdef DEBUG
     for(size_t i=AL;i-->0;) {
@@ -558,13 +558,12 @@ void bigfloat_rcp(bigfloat_t target, const bigfloat_t a, size_t p, int tds) {
     bigfloat_t tmp2;
     bigfloat_new(tmp2);
     bigfloat_sub(tmp2, tmp, one, p);
+    bigfloat_free(tmp);
     bigfloat_t tmp3;
     bigfloat_new(tmp3);
     bigfloat_mul(tmp3, tmp2, T, p, tds);
-    bigfloat_sub(target, T, tmp3, p);
-
-    bigfloat_free(tmp);
     bigfloat_free(tmp2);
+    bigfloat_sub(target, T, tmp3, p);
     bigfloat_free(tmp3);
     bigfloat_free(T);
     bigfloat_free(one);
