@@ -12,33 +12,54 @@
 #include "fft.h"
 #include "bigfloat.h"
 
+uint32_t _bigfloat_word_at(const bigfloat_t target, int64_t mag);
+int _bigfloat_ucmp(const bigfloat_t a, const bigfloat_t b);
+
 #define max(a,b) ({ __typeof__(a) _a = (a); __typeof__(b) _b = (b); _a > _b ? _a : _b; })
 #define min(a,b) ({ __typeof__(a) _a = (a); __typeof__(b) _b = (b); _a < _b ? _a : _b; })
 
 void bigfloat_new(bigfloat_t target) {
   target->sign = 1;
   target->exp  = 0;
-  target->len    = 0;
-  target->coef    = NULL;
+  target->len  = 0;
+  target->coef  = NULL;
 }
 
-void bigfloat_set(bigfloat_t target, uint32_t x, int sign_) {
-  bigfloat_free(target);
-
-  target->exp  = 0;
-
-  if (x == 0) {
-      target->len    = 0;
-      target->sign = 1;
-      target->coef    = NULL;
-      return;
+void bigfloat_neg(bigfloat_t num) {
+  if(bigfloat_iszero(num)) {
+    return;
   }
 
-  target->sign = sign_;
+  num->sign = !num->sign;
+}
 
-  target->coef = (uint32_t*) malloc(sizeof(uint32_t));
-  target->coef[0] = x;
-  target->len    = 1;
+void bigfloat_zero(bigfloat_t target) {
+  target->exp   = 0;
+  target->len   = 0;
+  target->sign  = 1;
+  if(target->coef) {
+    free(target->coef);
+  }
+  target->coef  = NULL;
+}
+
+int bigfloat_iszero(bigfloat_t target) {
+  return target->len == 0;
+}
+
+void bigfloat_set(bigfloat_t target, uint32_t value) {
+  bigfloat_free(target);
+
+  if (value == 0) {
+    bigfloat_zero(target);
+    return;
+  }
+
+  target->exp     = 0;
+  target->sign    = 1;
+  target->len     = 1;
+  target->coef    = (uint32_t*) malloc(target->len*sizeof(uint32_t));
+  target->coef[0] = value;
 }
 
 void bigfloat_free(bigfloat_t target) {
@@ -153,14 +174,6 @@ int _bigfloat_ucmp(const bigfloat_t a, const bigfloat_t b) {
 }
 ////////////////////////////////////////////////////////////////////////////////
 //  Arithmetic
-void bigfloat_negate(bigfloat_t num) {
-  if(num->len == 0) {
-    return;
-  }
-
-  num->sign = !num->sign;
-}
-
 void _bigfloat_uadd(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, size_t p) {
     //  Perform addition ignoring the sign of the two operands.
 
@@ -262,13 +275,12 @@ void _bigfloat_usub(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, s
     }
 
     //  Strip leading zeros
-    while (target->len > 0 && target->coef[target->len - 1] == 0)
-        target->len--;
+    while (target->len > 0 && target->coef[target->len - 1] == 0) {
+      target->len--;
+    }
+
     if (target->len == 0){
-        target->exp = 0;
-        target->sign = 1;
-        free(target->coef);
-        target->coef = NULL;
+      bigfloat_zero(target);
     }
 }
 
@@ -288,7 +300,7 @@ void bigfloat_add(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
         _bigfloat_usub(target, a, b, p);
       } else { //  this < x
         _bigfloat_usub(target, b, a, p);
-        bigfloat_negate(target);
+        bigfloat_neg(target);
       }
     }
 }
@@ -309,7 +321,7 @@ void bigfloat_sub(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
       _bigfloat_usub(target, a, b, p);
     } else { //  this < x
       _bigfloat_usub(target, b, a, p);
-      bigfloat_negate(target);
+      bigfloat_neg(target);
     }
   }
 }
@@ -551,7 +563,7 @@ void bigfloat_rcp(bigfloat_t target, const bigfloat_t a, size_t p, int tds) {
     //  r1 = r0 - (r0 * x - 1) * r0
     bigfloat_t one;
     bigfloat_new(one);
-    bigfloat_set(one, 1, 1);
+    bigfloat_set(one, 1);
     bigfloat_t tmp;
     bigfloat_new(tmp);
     bigfloat_mul(tmp, a, T, p, tds);

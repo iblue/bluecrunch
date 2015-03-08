@@ -69,8 +69,8 @@ void e_BSR(bigfloat_t P, bigfloat_t Q, uint32_t a, uint32_t b, int tds) {
   //  Binary Splitting recursion for exp(1).
 
   if (b - a == 1){
-    bigfloat_set(P, 1, 1);
-    bigfloat_set(Q, b, 1);
+    bigfloat_set(P, 1);
+    bigfloat_set(Q, b);
     return;
   }
 
@@ -147,7 +147,7 @@ void e(size_t digits, int tds){
 
   bigfloat_t one;
   bigfloat_new(one);
-  bigfloat_set(one, 1, 1);
+  bigfloat_set(one, 1);
   bigfloat_t tmp;
   bigfloat_new(tmp);
   bigfloat_div(tmp, P, Q, p, tds);
