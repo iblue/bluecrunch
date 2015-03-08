@@ -65,7 +65,7 @@ size_t e_terms(size_t p) {
   return b + 2;
 }
 
-void e_BSR(BigFloat P, BigFloat Q, uint32_t a, uint32_t b, int tds) {
+void e_BSR(bigfloat_t P, bigfloat_t Q, uint32_t a, uint32_t b, int tds) {
   //  Binary Splitting recursion for exp(1).
 
   if (b - a == 1){
@@ -76,7 +76,7 @@ void e_BSR(BigFloat P, BigFloat Q, uint32_t a, uint32_t b, int tds) {
 
   uint32_t m = (a + b) / 2;
 
-  BigFloat P0, Q0, P1, Q1;
+  bigfloat_t P0, Q0, P1, Q1;
   bigfloat_new(P0);
   bigfloat_new(Q0);
   bigfloat_new(P1);
@@ -104,7 +104,7 @@ void e_BSR(BigFloat P, BigFloat Q, uint32_t a, uint32_t b, int tds) {
     }
   }
 
-  BigFloat tmp;
+  bigfloat_t tmp;
   bigfloat_new(tmp);
   bigfloat_mul(tmp, P0, Q1, 0, tds);
   bigfloat_add(P, tmp, P1, 0);
@@ -134,7 +134,7 @@ void e(size_t digits, int tds){
   printf("Summing (%ld terms)...", terms);
   fflush(stdout);
 
-  BigFloat P, Q;
+  bigfloat_t P, Q;
   bigfloat_new(P);
   bigfloat_new(Q);
   e_BSR(P, Q, 0, (uint32_t)terms, tds);
@@ -145,10 +145,10 @@ void e(size_t digits, int tds){
   printf("Dividing...");
   fflush(stdout);
 
-  BigFloat one;
+  bigfloat_t one;
   bigfloat_new(one);
   bigfloat_set(one, 1, 1);
-  BigFloat tmp;
+  bigfloat_t tmp;
   bigfloat_new(tmp);
   bigfloat_div(tmp, P, Q, p, tds);
   bigfloat_add(P, tmp, one, p);

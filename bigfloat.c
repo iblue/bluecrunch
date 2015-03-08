@@ -15,14 +15,14 @@
 #define max(a,b) ({ __typeof__(a) _a = (a); __typeof__(b) _b = (b); _a > _b ? _a : _b; })
 #define min(a,b) ({ __typeof__(a) _a = (a); __typeof__(b) _b = (b); _a < _b ? _a : _b; })
 
-void bigfloat_new(BigFloat target) {
+void bigfloat_new(bigfloat_t target) {
   target->sign = 1;
   target->exp  = 0;
   target->L    = 0;
   target->T    = NULL;
 }
 
-void bigfloat_set(BigFloat target, uint32_t x, int sign_) {
+void bigfloat_set(bigfloat_t target, uint32_t x, int sign_) {
   bigfloat_free(target);
 
   target->exp  = 0;
@@ -41,7 +41,7 @@ void bigfloat_set(BigFloat target, uint32_t x, int sign_) {
   target->L    = 1;
 }
 
-void bigfloat_free(BigFloat target) {
+void bigfloat_free(bigfloat_t target) {
   if(target->T != NULL) {
     free(target->T);
     target->T = NULL;
@@ -68,7 +68,7 @@ size_t int_to_str_trimmed(uint32_t val, char* str) {
 }
 
 // Returns length of string, fills char* string with value
-size_t bigfloat_to_string(char* string, const BigFloat value, size_t digits) {
+size_t bigfloat_to_string(char* string, const bigfloat_t value, size_t digits) {
   char* initial_string = string;
   if(value->L == 0) {
     string[0] = '0';
@@ -111,7 +111,7 @@ size_t bigfloat_to_string(char* string, const BigFloat value, size_t digits) {
 
 ////////////////////////////////////////////////////////////////////////////////
 //  Getters
-uint32_t _bigfloat_word_at(const BigFloat target, int64_t mag) {
+uint32_t _bigfloat_word_at(const bigfloat_t target, int64_t mag) {
   //  Returns the word at the mag'th digit place.
   //  This is useful for additions where you need to access a specific "digit place"
   //  of the operand without having to worry if it's out-of-bounds.
@@ -126,7 +126,7 @@ uint32_t _bigfloat_word_at(const BigFloat target, int64_t mag) {
   return target->T[(size_t)(mag - target->exp)];
 }
 
-int _bigfloat_ucmp(const BigFloat a, const BigFloat b) {
+int _bigfloat_ucmp(const bigfloat_t a, const bigfloat_t b) {
     //  Compare function that ignores the sign.
     //  This is needed to determine which direction subtractions will go.
 
@@ -153,7 +153,7 @@ int _bigfloat_ucmp(const BigFloat a, const BigFloat b) {
 }
 ////////////////////////////////////////////////////////////////////////////////
 //  Arithmetic
-void bigfloat_negate(BigFloat num) {
+void bigfloat_negate(bigfloat_t num) {
   if(num->L == 0) {
     return;
   }
@@ -161,7 +161,7 @@ void bigfloat_negate(BigFloat num) {
   num->sign = !num->sign;
 }
 
-void _bigfloat_uadd(BigFloat target, const BigFloat a, const BigFloat b, size_t p) {
+void _bigfloat_uadd(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, size_t p) {
     //  Perform addition ignoring the sign of the two operands.
 
     //  Magnitude
@@ -213,7 +213,7 @@ void _bigfloat_uadd(BigFloat target, const BigFloat a, const BigFloat b, size_t 
     }
 }
 
-void _bigfloat_usub(BigFloat target, const BigFloat a, const BigFloat b, size_t p) {
+void _bigfloat_usub(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, size_t p) {
     //  Perform subtraction ignoring the sign of the two operands.
 
     //  "this" must be greater than or equal to x. Otherwise, the behavior
@@ -272,7 +272,7 @@ void _bigfloat_usub(BigFloat target, const BigFloat a, const BigFloat b, size_t 
     }
 }
 
-void bigfloat_add(BigFloat target, const BigFloat a, const BigFloat b, size_t p) {
+void bigfloat_add(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, size_t p) {
     //  Addition
 
     //  The target precision is p.
@@ -293,7 +293,7 @@ void bigfloat_add(BigFloat target, const BigFloat a, const BigFloat b, size_t p)
     }
 }
 
-void bigfloat_sub(BigFloat target, const BigFloat a, const BigFloat b, size_t p) {
+void bigfloat_sub(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, size_t p) {
   //  Subtraction
 
   //  The target precision is p.
@@ -314,7 +314,7 @@ void bigfloat_sub(BigFloat target, const BigFloat a, const BigFloat b, size_t p)
   }
 }
 
-void bigfloat_mul(BigFloat target, const BigFloat a, const BigFloat b, size_t p, int tds) {
+void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, size_t p, int tds) {
     //  Multiplication
 
     //  The target precision is p.
@@ -481,7 +481,7 @@ void bigfloat_mul(BigFloat target, const BigFloat a, const BigFloat b, size_t p,
         target->L--;
 }
 
-void bigfloat_rcp(BigFloat target, const BigFloat a, size_t p, int tds) {
+void bigfloat_rcp(bigfloat_t target, const bigfloat_t a, size_t p, int tds) {
     //  Compute reciprocal using Newton's Method.
 
     //  r1 = r0 - (r0 * x - 1) * r0
@@ -524,7 +524,7 @@ void bigfloat_rcp(BigFloat target, const BigFloat a, size_t p, int tds) {
             Aexp--;
         }
 
-        //  Rebuild a BigFloat.
+        //  Rebuild a bigfloat_t.
         uint64_t val64 = (uint64_t)val;
 
         target->sign = a->sign;
@@ -544,21 +544,21 @@ void bigfloat_rcp(BigFloat target, const BigFloat a, size_t p, int tds) {
     if (p == 2) s = 1;
 
     //  Recurse at half the precision
-    BigFloat T;
+    bigfloat_t T;
     bigfloat_new(T);
     bigfloat_rcp(T, a, s, tds);
 
     //  r1 = r0 - (r0 * x - 1) * r0
-    BigFloat one;
+    bigfloat_t one;
     bigfloat_new(one);
     bigfloat_set(one, 1, 1);
-    BigFloat tmp;
+    bigfloat_t tmp;
     bigfloat_new(tmp);
     bigfloat_mul(tmp, a, T, p, tds);
-    BigFloat tmp2;
+    bigfloat_t tmp2;
     bigfloat_new(tmp2);
     bigfloat_sub(tmp2, tmp, one, p);
-    BigFloat tmp3;
+    bigfloat_t tmp3;
     bigfloat_new(tmp3);
     bigfloat_mul(tmp3, tmp2, T, p, tds);
     bigfloat_sub(target, T, tmp3, p);
@@ -570,9 +570,9 @@ void bigfloat_rcp(BigFloat target, const BigFloat a, size_t p, int tds) {
     bigfloat_free(one);
 }
 
-void bigfloat_div(BigFloat target, const BigFloat a, const BigFloat b, size_t p, int tds) {
+void bigfloat_div(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, size_t p, int tds) {
   //  Division
-  BigFloat rcp;
+  bigfloat_t rcp;
   bigfloat_new(rcp);
   bigfloat_rcp(rcp, b, p, tds);
   bigfloat_mul(target, a, rcp, p, tds);
