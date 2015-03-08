@@ -18,8 +18,8 @@
 void bigfloat_new(bigfloat_t target) {
   target->sign = 1;
   target->exp  = 0;
-  target->L    = 0;
-  target->T    = NULL;
+  target->len    = 0;
+  target->coef    = NULL;
 }
 
 void bigfloat_set(bigfloat_t target, uint32_t x, int sign_) {
@@ -28,23 +28,23 @@ void bigfloat_set(bigfloat_t target, uint32_t x, int sign_) {
   target->exp  = 0;
 
   if (x == 0) {
-      target->L    = 0;
+      target->len    = 0;
       target->sign = 1;
-      target->T    = NULL;
+      target->coef    = NULL;
       return;
   }
 
   target->sign = sign_;
 
-  target->T = (uint32_t*) malloc(sizeof(uint32_t));
-  target->T[0] = x;
-  target->L    = 1;
+  target->coef = (uint32_t*) malloc(sizeof(uint32_t));
+  target->coef[0] = x;
+  target->len    = 1;
 }
 
 void bigfloat_free(bigfloat_t target) {
-  if(target->T != NULL) {
-    free(target->T);
-    target->T = NULL;
+  if(target->coef != NULL) {
+    free(target->coef);
+    target->coef = NULL;
   }
 }
 
@@ -70,32 +70,32 @@ size_t int_to_str_trimmed(uint32_t val, char* str) {
 // Returns length of string, fills char* string with value
 size_t bigfloat_to_string(char* string, const bigfloat_t value, size_t digits) {
   char* initial_string = string;
-  if(value->L == 0) {
+  if(value->len == 0) {
     string[0] = '0';
     string[1] = '\0';
     return 1;
   }
 
-  int mag = value->L + value->exp;
+  int mag = value->len + value->exp;
 
-  size_t c = value->L-1;
+  size_t c = value->len-1;
 
   if(mag == 1) {
-    string += int_to_str_trimmed(value->T[c], string);
+    string += int_to_str_trimmed(value->coef[c], string);
   }
 
   *string++ = '.';
 
   size_t min_c;
 
-  if(value->L > digits/9) {
-    min_c = value->L-digits/9-1;
+  if(value->len > digits/9) {
+    min_c = value->len-digits/9-1;
   } else {
     min_c = 0;
   }
 
   while(c-->min_c) {
-    string += int_to_str(value->T[c], string);
+    string += int_to_str(value->coef[c], string);
   }
 
   *string++ = '\0';
@@ -121,9 +121,9 @@ uint32_t _bigfloat_word_at(const bigfloat_t target, int64_t mag) {
 
   if (mag < target->exp)
       return 0;
-  if (mag >= target->exp + (int64_t)target->L)
+  if (mag >= target->exp + (int64_t)target->len)
       return 0;
-  return target->T[(size_t)(mag - target->exp)];
+  return target->coef[(size_t)(mag - target->exp)];
 }
 
 int _bigfloat_ucmp(const bigfloat_t a, const bigfloat_t b) {
@@ -131,8 +131,8 @@ int _bigfloat_ucmp(const bigfloat_t a, const bigfloat_t b) {
     //  This is needed to determine which direction subtractions will go.
 
     //  Magnitude
-    int64_t magA = a->exp + a->L;
-    int64_t magB = b->exp + b->L;
+    int64_t magA = a->exp + a->len;
+    int64_t magB = b->exp + b->len;
     if (magA > magB)
         return 1;
     if (magA < magB)
@@ -154,7 +154,7 @@ int _bigfloat_ucmp(const bigfloat_t a, const bigfloat_t b) {
 ////////////////////////////////////////////////////////////////////////////////
 //  Arithmetic
 void bigfloat_negate(bigfloat_t num) {
-  if(num->L == 0) {
+  if(num->len == 0) {
     return;
   }
 
@@ -165,8 +165,8 @@ void _bigfloat_uadd(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, s
     //  Perform addition ignoring the sign of the two operands.
 
     //  Magnitude
-    int64_t magA = a->exp + a->L;
-    int64_t magB = b->exp + b->L;
+    int64_t magA = a->exp + a->len;
+    int64_t magB = b->exp + b->len;
     int64_t top = max(magA, magB);
     int64_t bot = min(a->exp, b->exp);
 
@@ -190,10 +190,10 @@ void _bigfloat_uadd(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, s
     //  Compute basic fields.
     target->sign  = a->sign;
     target->exp   = bot;
-    target->L     = (uint32_t)TL;
+    target->len     = (uint32_t)TL;
 
     //  Allocate mantissa
-    target->T = (uint32_t*) malloc(sizeof(uint32_t)*(TL + 1));
+    target->coef = (uint32_t*) malloc(sizeof(uint32_t)*(TL + 1));
 
     //  Add
     uint32_t carry = 0;
@@ -204,12 +204,12 @@ void _bigfloat_uadd(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, s
           word -= 1000000000;
           carry = 1;
       }
-      target->T[c] = word;
+      target->coef[c] = word;
     }
 
     //  Carry out
     if (carry != 0) {
-        target->T[target->L++] = 1;
+        target->coef[target->len++] = 1;
     }
 }
 
@@ -220,8 +220,8 @@ void _bigfloat_usub(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, s
     //  is undefined.
 
     //  Magnitude
-    int64_t magA = a->exp + a->L;
-    int64_t magB = b->exp + b->L;
+    int64_t magA = a->exp + a->len;
+    int64_t magB = b->exp + b->len;
     int64_t top = max(magA, magB);
     int64_t bot = min(a->exp, b->exp);
 
@@ -244,10 +244,10 @@ void _bigfloat_usub(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, s
     //  Compute basic fields.
     target->sign  = a->sign;
     target->exp   = bot;
-    target->L     = (uint32_t)TL;
+    target->len     = (uint32_t)TL;
 
     //  Allocate mantissa
-    target->T = (uint32_t*) malloc(sizeof(uint32_t)*(TL + 1));
+    target->coef = (uint32_t*) malloc(sizeof(uint32_t)*(TL + 1));
 
     //  Subtract
     int32_t carry = 0;
@@ -258,17 +258,17 @@ void _bigfloat_usub(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, s
             word += 1000000000;
             carry = 1;
         }
-        target->T[c] = word;
+        target->coef[c] = word;
     }
 
     //  Strip leading zeros
-    while (target->L > 0 && target->T[target->L - 1] == 0)
-        target->L--;
-    if (target->L == 0){
+    while (target->len > 0 && target->coef[target->len - 1] == 0)
+        target->len--;
+    if (target->len == 0){
         target->exp = 0;
         target->sign = 1;
-        free(target->T);
-        target->T = NULL;
+        free(target->coef);
+        target->coef = NULL;
     }
 }
 
@@ -322,14 +322,14 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
     //  at maximum precision with no data loss.
 
     //  Either operand is zero.
-    if (a->L == 0 || b->L == 0) {
+    if (a->len == 0 || b->len == 0) {
       bigfloat_new(target);
       return;
     }
 
     if (p == 0) {
         //  Default value. No trunction.
-        p = a->L + b->L;
+        p = a->len + b->len;
     } else {
         //  Increase precision
         p += YCL_BIGFLOAT_EXTRA_PRECISION;
@@ -338,10 +338,10 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
     //  Collect operands.
     int64_t Aexp = a->exp;
     int64_t Bexp = b->exp;
-    size_t AL = a->L;
-    size_t BL = b->L;
-    uint32_t *AT = a->T;
-    uint32_t *BT = b->T;
+    size_t AL = a->len;
+    size_t BL = b->len;
+    uint32_t *AT = a->coef;
+    uint32_t *BT = b->coef;
 
     //  Perform precision truncation.
     if (AL > p) {
@@ -360,52 +360,52 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
     //  Compute basic fields.
     target->sign = a->sign == b->sign;  //  Sign is positive if signs are equal.
     target->exp  = Aexp + Bexp;       //  Add the exponents.
-    target->L    = AL + BL;           //  Add the lenghts for now. May need to correct later.
+    target->len    = AL + BL;           //  Add the lenghts for now. May need to correct later.
 
     //  Allocate mantissa
-    if(target->T != NULL) {
-      free(target->T);
+    if(target->coef != NULL) {
+      free(target->coef);
     }
-    target->T = (uint32_t*)malloc(sizeof(uint32_t)*(target->L));
+    target->coef = (uint32_t*)malloc(sizeof(uint32_t)*(target->len));
 
-    if(target->L == 2) {
+    if(target->len == 2) {
       #ifdef DEBUG
       printf("fastpath\n");
       #endif
       // Fast path for really small multiplications
       uint64_t result = (uint64_t)AT[0]*BT[0];
-      target->T[0] = result % 1000000000;
+      target->coef[0] = result % 1000000000;
       result /= 1000000000;
-      target->T[1] = result;
-    } else if(target->L < 500) {
+      target->coef[1] = result;
+    } else if(target->len < 500) {
       #ifdef DEBUG
       printf("basecase\n");
       #endif
-      for(size_t i=0;i<target->L;i++) {
-        target->T[i] = 0;
+      for(size_t i=0;i<target->len;i++) {
+        target->coef[i] = 0;
       }
       for(size_t i=0;i<AL;i++) {
         uint64_t carry = 0;
         uint64_t value;
         for(size_t j=0;j<BL;j++) {
-          value = target->T[i+j];
+          value = target->coef[i+j];
           value += (uint64_t) AT[i] * (uint64_t) BT[j];
           value += carry;
 
           carry  = value / 1000000000;
           value %= 1000000000;
-          target->T[i+j] = value;
+          target->coef[i+j] = value;
         }
-        for(size_t j=i+BL;j<target->L;j++) {
+        for(size_t j=i+BL;j<target->len;j++) {
           if(carry == 0) {
             break;
           }
-          value = target->T[j];
+          value = target->coef[j];
           value += carry;
 
           carry  = value / 1000000000;
           value %= 1000000000;
-          target->T[j] = value;
+          target->coef[j] = value;
         }
       }
     } else {
@@ -414,9 +414,9 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
       #endif
       //  Perform multiplication.
       int digits_per_point;
-      if(target->L > 80000000) {
+      if(target->len > 80000000) {
         digits_per_point = 2;
-      } else if(target->L > 1000000) {
+      } else if(target->len > 1000000) {
         digits_per_point = 3;
       } else {
         digits_per_point = 4;
@@ -430,9 +430,9 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
       //  Determine minimum FFT size.
       int k = 0;
       size_t length = 1;
-      while (length < points_per_word*target->L) {
-          length <<= 1;
-          k++;
+      while (length < points_per_word*target->len) {
+        length <<= 1;
+        k++;
       }
 
       //  Allocate FFT arrays
@@ -457,7 +457,7 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
       } else {
         fft_inverse(Ta,k,tds);
       }
-      fft_to_int(Ta,k,target->T,target->L, digits_per_point);   //  Convert back to word array.
+      fft_to_int(Ta,k,target->coef,target->len, digits_per_point);   //  Convert back to word array.
       _mm_free(Ta);
     }
     #ifdef DEBUG
@@ -469,15 +469,15 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
       printf("%09d", BT[i]);
     }
     printf(",");
-    for(size_t i=target->L;i-->0;) {
-      printf("%09d", target->T[i]);
+    for(size_t i=target->len;i-->0;) {
+      printf("%09d", target->coef[i]);
     }
     printf("\n");
     #endif
 
     //  Check top word and correct length.
-    if (target->T[target->L - 1] == 0) {
-      target->L--;
+    if (target->coef[target->len - 1] == 0) {
+      target->len--;
     }
 }
 
@@ -486,15 +486,15 @@ void bigfloat_rcp(bigfloat_t target, const bigfloat_t a, size_t p, int tds) {
 
     //  r1 = r0 - (r0 * x - 1) * r0
 
-    if (a->L == 0) {
+    if (a->len == 0) {
       fprintf(stderr, "Divide by Zero\n");
       abort();
     }
 
     //  Collect operand
     int64_t Aexp = a->exp;
-    size_t AL = a->L;
-    uint32_t *AT = a->T;
+    size_t AL = a->len;
+    uint32_t *AT = a->coef;
 
     //  End of recursion. Generate starting point.
     if (p == 0){
@@ -529,10 +529,10 @@ void bigfloat_rcp(bigfloat_t target, const bigfloat_t a, size_t p, int tds) {
 
         target->sign = a->sign;
 
-        target->T = (uint32_t*)malloc(sizeof(uint32_t)*2);
-        target->T[0] = (uint32_t)(val64 % 1000000000);
-        target->T[1] = (uint32_t)(val64 / 1000000000);
-        target->L = 2;
+        target->coef = (uint32_t*)malloc(sizeof(uint32_t)*2);
+        target->coef[0] = (uint32_t)(val64 % 1000000000);
+        target->coef[1] = (uint32_t)(val64 / 1000000000);
+        target->len = 2;
         target->exp = Aexp;
 
         return;

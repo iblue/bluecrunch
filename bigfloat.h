@@ -1,10 +1,10 @@
 #define YCL_BIGFLOAT_EXTRA_PRECISION    2
 
 typedef struct {
-    int sign;       //  1 = positive or zero, 0 = negative
-    int64_t exp;    //  Exponent
-    size_t L;       //  Length
-    uint32_t* T;
+    uint32_t* coef;    // Coefficients
+    int64_t   exp;     // Exponent
+    size_t    len;     // Length
+    int       sign;    // 1: pos, 0: neg
 } _bigfloat_struct;
 
 typedef _bigfloat_struct bigfloat_t[1];
