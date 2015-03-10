@@ -5,6 +5,7 @@
 #include <string.h>
 #include <malloc.h>
 #include <pmmintrin.h>
+#include <immintrin.h> // More Magic!
 #include <omp.h>
 #include "fft.h"
 
@@ -106,28 +107,71 @@ void fft_forward(__m128d *T,int k,int tds){
   my_complex_t* local_table = twiddle_table[k];
 
   //  Perform FFT reduction into two halves.
-  for (size_t c = 0; c < half_length; c++){
-    //  Grab Twiddle Factor
-    __m128d r0 = _mm_loaddup_pd(&local_table[c].r);
-    __m128d i0 = _mm_loaddup_pd(&local_table[c].i);
+  // Input: a[0], a[1], b[0], b[1], W[0], W[1]
+  //        ----------  ----------  ----------
+  //            |           |           |
+  //      real & imag T[c]  |    real & imag root
+  //               real & imag T[c+N/2]
+  //
+  // Output:
+  //  a[0] <- a[0] + b[0]
+  //  a[1] <- a[1] + b[1]
+  //  b[0] <- W[0]*(a[0] - b[0]) - W[1]*(a[1] - b[1])
+  //  b[1] <- W[0]*(a[1] - b[1]) - W[1]*(a[0] - b[0])
+  for (size_t n = 0; n < half_length; n+=2){
+    //  Grab Twiddle Factors
+    __m256d tmp = _mm256_load_pd((double*)&local_table[n]); // tmp = [r0,i0,r1,i1]
+    __m256d r   = _mm256_unpacklo_pd(tmp, tmp);             //   r = [r0,r0,r1,r1]
+    __m256d i   = _mm256_unpackhi_pd(tmp, tmp);             //   i = [i0,i0,i1,i1]
 
     //  Grab elements
-    __m128d a0 = T[c];
-    __m128d b0 = T[c + half_length];
+    __m256d a = _mm256_load_pd((double*)&T[n]);              // a = [a0r, a0i, a1r, a1i]
+    __m256d b = _mm256_load_pd((double*)&T[n+half_length]);  // b = [b0r, b0i, b1r, b1i]
+
+    //  Check: Grab Twiddle Factor
+    __m128d r0 = _mm_loaddup_pd(&local_table[n].r);
+    __m128d i0 = _mm_loaddup_pd(&local_table[n].i);
+    __m128d r1 = _mm_loaddup_pd(&local_table[n+1].r);
+    __m128d i1 = _mm_loaddup_pd(&local_table[n+1].i);
+
+    //  Check: Grab elements
+    __m128d a0 = T[n];
+    __m128d b0 = T[n + half_length];
+    __m128d a1 = T[n+1];
+    __m128d b1 = T[n+1 + half_length];
 
     //  Perform butterfly
+    __m256d c = _mm256_add_pd(a,b); // c = a + b
+    __m256d d = _mm256_sub_pd(a,b); // d = a - b
+
+    //  Check: Perform butterfly
     __m128d c0,d0;
     c0 = _mm_add_pd(a0,b0);
     d0 = _mm_sub_pd(a0,b0);
+    __m128d c1,d1;
+    c1 = _mm_add_pd(a1,b1);
+    d1 = _mm_sub_pd(a1,b1);
 
-    T[c] = c0;
+    _mm256_store_pd((double*)(T+n), c); // T[c] <- c
+    T[n] = c0;
+    T[n+1] = c1;
 
     //  Multiply by twiddle factor.
+    c = _mm256_mul_pd(d,r);
+    d = _mm256_mul_pd(_mm256_shuffle_pd(d,d,1),i);
+    c = _mm256_addsub_pd(c,d);
+
+    //  Check: Multiply by twiddle factor.
     c0 = _mm_mul_pd(d0,r0);
     d0 = _mm_mul_pd(_mm_shuffle_pd(d0,d0,1),i0);
     c0 = _mm_addsub_pd(c0,d0);
+    c1 = _mm_mul_pd(d1,r1);
+    d1 = _mm_mul_pd(_mm_shuffle_pd(d1,d1,1),i1);
+    c1 = _mm_addsub_pd(c1,d1);
 
-    T[c + half_length] = c0;
+    _mm256_store_pd((double*)(T+half_length+n), c); // T[c+N/2] <- c
+    T[n+half_length] = c0;
+    T[n+half_length+1] = c1;
   }
 
   if (tds < 2){

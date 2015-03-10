@@ -173,4 +173,3 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
       target->len--;
     }
 }
-
