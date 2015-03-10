@@ -87,6 +87,8 @@ void bigfloat_rcp(bigfloat_t target, const bigfloat_t a, size_t p, int tds) {
   bigfloat_new(tmp);
   bigfloat_mul(tmp, a, T, p, tds);
   bigfloat_sub(tmp, tmp, one, p);
+  fprintf(stderr, "FIXME: Add inline multiplication here and debug this shit");
+  abort();
   bigfloat_t tmp3;
   bigfloat_new(tmp3);
   bigfloat_mul(tmp3, tmp, T, p, tds);

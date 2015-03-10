@@ -51,15 +51,29 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
     }
 
     //  Compute basic fields.
-    target->sign = a->sign == b->sign;  //  Sign is positive if signs are equal.
-    target->exp  = Aexp + Bexp;       //  Add the exponents.
-    target->len    = AL + BL;           //  Add the lenghts for now. May need to correct later.
+    target->sign = a->sign == b->sign; // Sign is positive if signs are equal.
+    target->exp  = Aexp + Bexp;        // Add the exponents.
 
     //  Allocate mantissa
-    if(target->coef != NULL) {
-      free(target->coef);
+    if(target->coef == a->coef) {
+      // "In-place" mul
+      if(AL+BL > target->len) {
+        target->coef = (uint32_t*) realloc(target->coef, sizeof(uint32_t)*(AL+BL));
+        AT = target->coef; // Prevent use-after-free
+      }
+    } else if(target->coef == b->coef) {
+      if(AL+BL > target->len) {
+        target->coef = (uint32_t*) realloc(target->coef, sizeof(uint32_t)*(AL+BL));
+        BT = target->coef; // Prevent use-after-free
+      }
+    } else {
+      if(target->coef != NULL) {
+        free(target->coef);
+      }
+      target->coef = (uint32_t*) malloc(sizeof(uint32_t)*(AL+BL));
     }
-    target->coef = (uint32_t*)malloc(sizeof(uint32_t)*(target->len));
+
+    target->len  = AL + BL; // Add the lenghts for now. May need to correct later.
 
     if(target->len == 2) {
       #ifdef DDEBUG
