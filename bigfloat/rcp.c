@@ -86,13 +86,11 @@ void bigfloat_rcp(bigfloat_t target, const bigfloat_t a, size_t p, int tds) {
   bigfloat_t tmp;
   bigfloat_new(tmp);
   bigfloat_mul(tmp, a, T, p, tds);
-  bigfloat_t tmp2;
-  bigfloat_new(tmp2);
-  bigfloat_sub(tmp2, tmp, one, p);
+  bigfloat_sub(tmp, tmp, one, p);
   bigfloat_t tmp3;
   bigfloat_new(tmp3);
-  bigfloat_mul(tmp3, tmp2, T, p, tds);
-  bigfloat_free(tmp); // because overwrite
+  bigfloat_mul(tmp3, tmp, T, p, tds);
+  bigfloat_free(tmp);
   bigfloat_sub(target, T, tmp3, p);
   bigfloat_free(tmp3);
   bigfloat_free(T);

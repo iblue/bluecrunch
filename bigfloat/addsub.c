@@ -111,8 +111,8 @@ void _bigfloat_uadd(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, s
 
   //  Compute basic fields.
   target->sign  = a->sign;
-  target->exp   = bot;
-  target->len     = (uint32_t)TL;
+  target->exp   = top - p;
+  target->len   = (uint32_t)TL;
 
   //  Carry out
   if (carry != 0) {
@@ -166,7 +166,7 @@ void _bigfloat_usub(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, s
 
     //  Compute basic fields.
     target->sign = a->sign;
-    target->exp  = bot;
+    target->exp  = top - p;
     target->len  = (uint32_t)TL;
 
     //  Strip leading zeros
