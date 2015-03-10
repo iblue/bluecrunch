@@ -80,6 +80,63 @@ void fft4(__m128d *T) {
   T[3] = (__m128d){D[0], D[1]};
 }
 
+// Runs a forward butterfly on 2 elements simultaniously
+// Arguments:
+// - twiddles: Vektor of twiddles [r0, i0, r1, i1]
+// - T0:       Pointer to 2 complex doubles (first half)
+// - T1:       Pointer to 2 complex doubles (second half)
+void fft_forward_butterfly(__m256d twiddles, __m256d* T0, __m256d* T1) {
+  __m256d r   = _mm256_unpacklo_pd(twiddles, twiddles);  //   r = [r0,r0,r1,r1]
+  __m256d i   = _mm256_unpackhi_pd(twiddles, twiddles);  //   i = [i0,i0,i1,i1]
+
+  //  Grab elements
+  __m256d a = _mm256_load_pd((double*)T0);  // a = [a0r, a0i, a1r, a1i]
+  __m256d b = _mm256_load_pd((double*)T1);  // b = [b0r, b0i, b1r, b1i]
+
+  //  Perform butterfly
+  __m256d c = _mm256_add_pd(a,b); // c = a + b
+  __m256d d = _mm256_sub_pd(a,b); // d = a - b
+
+  _mm256_store_pd((double*)T0, c); // T[c] <- c
+
+  //  Multiply by twiddle factor.
+  //  FIXME: Documentation. Tomorrow will have forgotten how this works!
+  c = _mm256_mul_pd(d,r);                             // c = (a-b)*omega_r
+  d = _mm256_mul_pd(_mm256_shuffle_pd(d,d,0x5), i);   // shuffle -> switch real and imag
+  c = _mm256_addsub_pd(c,d);
+
+  _mm256_store_pd((double*)T1, c); // T[c+N/2] <- c
+}
+
+// Runs a inverse butterfly on 2 elements simultaniously
+// Arguments:
+// - twiddles: Vektor of twiddles [r0, i0, r1, i1]
+// - T0:       Pointer to 2 complex doubles (first half)
+// - T1:       Pointer to 2 complex doubles (second half)
+void fft_inverse_butterfly(__m256d twiddle, __m256d* T0, __m256d* T1) {
+  __m256d r   = _mm256_unpacklo_pd(twiddle, twiddle);     //   r = [r0,r0,r1,r1]
+  __m256d i   = _mm256_unpackhi_pd(twiddle, twiddle);     //   i = [i0,i0,i1,i1]
+  i = _mm256_xor_pd(i,_mm256_set1_pd(-0.0));              //   i = -i
+
+  //  Grab elements
+  __m256d a = _mm256_load_pd((double*)T0);  // a = [a0r, a0i, a1r, a1i]
+  __m256d b = _mm256_load_pd((double*)T1);  // b = [b0r, b0i, b1r, b1i]
+
+  //  Perform butterfly
+  __m256d c, d;
+
+  //  Multiply by twiddle factor.
+  c = _mm256_mul_pd(b,r);
+  d = _mm256_mul_pd(_mm256_shuffle_pd(b,b,0x5),i);
+  c = _mm256_addsub_pd(c,d);
+
+  b = _mm256_add_pd(a,c);
+  d = _mm256_sub_pd(a,c);
+
+  _mm256_store_pd((double*)T0, b);
+  _mm256_store_pd((double*)T1, d);
+}
+
 void fft_forward(__m128d *T,int k,int tds){
   /*if (k == 2) {
     fft4(T);
@@ -120,27 +177,8 @@ void fft_forward(__m128d *T,int k,int tds){
   //  b[1] <- W[0]*(a[1] - b[1]) - W[1]*(a[0] - b[0])
   for (size_t n = 0; n < half_length; n+=2){
     //  Grab Twiddle Factors
-    __m256d tmp = _mm256_load_pd((double*)&local_table[n]); // tmp = [r0,i0,r1,i1]
-    __m256d r   = _mm256_unpacklo_pd(tmp, tmp);             //   r = [r0,r0,r1,r1]
-    __m256d i   = _mm256_unpackhi_pd(tmp, tmp);             //   i = [i0,i0,i1,i1]
-
-    //  Grab elements
-    __m256d a = _mm256_load_pd((double*)&T[n]);              // a = [a0r, a0i, a1r, a1i]
-    __m256d b = _mm256_load_pd((double*)&T[n+half_length]);  // b = [b0r, b0i, b1r, b1i]
-
-    //  Perform butterfly
-    __m256d c = _mm256_add_pd(a,b); // c = a + b
-    __m256d d = _mm256_sub_pd(a,b); // d = a - b
-
-    _mm256_store_pd((double*)(T+n), c); // T[c] <- c
-
-    //  Multiply by twiddle factor.
-    //  FIXME: Documentation. Tomorrow will have forgotten how this works!
-    c = _mm256_mul_pd(d,r);                             // c = (a-b)*omega_r
-    d = _mm256_mul_pd(_mm256_shuffle_pd(d,d,0x5), i);   // shuffle -> switch real and imag
-    c = _mm256_addsub_pd(c,d);
-
-    _mm256_store_pd((double*)(T+half_length+n), c); // T[c+N/2] <- c
+    __m256d twiddles = _mm256_load_pd((double*)&local_table[n]); // tmp = [r0,i0,r1,i1]
+    fft_forward_butterfly(twiddles, (__m256d*)(T+n), (__m256d*)(T+n+half_length));
   }
 
   if (tds < 2){
@@ -307,28 +345,8 @@ void fft_inverse(__m128d *T,int k,int tds){
   //  Perform FFT reduction into two halves.
   for (size_t n = 0; n < half_length; n+=2){
       //  Grab Twiddle Factors
-      __m256d tmp = _mm256_load_pd((double*)&local_table[n]); // tmp = [r0,i0,r1,i1]
-      __m256d r   = _mm256_unpacklo_pd(tmp, tmp);             //   r = [r0,r0,r1,r1]
-      __m256d i   = _mm256_unpackhi_pd(tmp, tmp);             //   i = [i0,i0,i1,i1]
-      i = _mm256_xor_pd(i,_mm256_set1_pd(-0.0));              //   i = -i
-
-      //  Grab elements
-      __m256d a = _mm256_load_pd((double*)&T[n]);              // a = [a0r, a0i, a1r, a1i]
-      __m256d b = _mm256_load_pd((double*)&T[n+half_length]);  // b = [b0r, b0i, b1r, b1i]
-
-      //  Perform butterfly
-      __m256d c, d;
-
-      //  Multiply by twiddle factor.
-      c = _mm256_mul_pd(b,r);
-      d = _mm256_mul_pd(_mm256_shuffle_pd(b,b,0x5),i);
-      c = _mm256_addsub_pd(c,d);
-
-      b = _mm256_add_pd(a,c);
-      d = _mm256_sub_pd(a,c);
-
-      _mm256_store_pd((double*)(T+n), b);
-      _mm256_store_pd((double*)(T+half_length+n), d);
+      __m256d twiddle = _mm256_load_pd((double*)&local_table[n]); // tmp = [r0,i0,r1,i1]
+      fft_inverse_butterfly(twiddle, (__m256d*)(T+n), (__m256d*)(T+n+half_length));
   }
 }
 
