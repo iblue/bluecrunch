@@ -81,11 +81,11 @@ void fft4(__m128d *T) {
 }
 
 void fft_forward(__m128d *T,int k,int tds){
-  if (k == 2) {
+  /*if (k == 2) {
     fft4(T);
 
     return;
-  }
+  }*/
 
   // (Bit reversed) 2-point DFT
   if (k == 1){
@@ -305,29 +305,30 @@ void fft_inverse(__m128d *T,int k,int tds){
   my_complex_t* local_table = twiddle_table[k];
 
   //  Perform FFT reduction into two halves.
-  for (size_t c = 0; c < half_length; c++){
-      //  Grab Twiddle Factor
-      __m128d r0 = _mm_loaddup_pd(&local_table[c].r);
-      __m128d i0 = _mm_loaddup_pd(&local_table[c].i);
-      i0 = _mm_xor_pd(i0,_mm_set1_pd(-0.0));
+  for (size_t n = 0; n < half_length; n+=2){
+      //  Grab Twiddle Factors
+      __m256d tmp = _mm256_load_pd((double*)&local_table[n]); // tmp = [r0,i0,r1,i1]
+      __m256d r   = _mm256_unpacklo_pd(tmp, tmp);             //   r = [r0,r0,r1,r1]
+      __m256d i   = _mm256_unpackhi_pd(tmp, tmp);             //   i = [i0,i0,i1,i1]
+      i = _mm256_xor_pd(i,_mm256_set1_pd(-0.0));              //   i = -i
 
       //  Grab elements
-      __m128d a0 = T[c];
-      __m128d b0 = T[c + half_length];
+      __m256d a = _mm256_load_pd((double*)&T[n]);              // a = [a0r, a0i, a1r, a1i]
+      __m256d b = _mm256_load_pd((double*)&T[n+half_length]);  // b = [b0r, b0i, b1r, b1i]
 
       //  Perform butterfly
-      __m128d c0,d0;
+      __m256d c, d;
 
       //  Multiply by twiddle factor.
-      c0 = _mm_mul_pd(b0,r0);
-      d0 = _mm_mul_pd(_mm_shuffle_pd(b0,b0,1),i0);
-      c0 = _mm_addsub_pd(c0,d0);
+      c = _mm256_mul_pd(b,r);
+      d = _mm256_mul_pd(_mm256_shuffle_pd(b,b,0x5),i);
+      c = _mm256_addsub_pd(c,d);
 
-      b0 = _mm_add_pd(a0,c0);
-      d0 = _mm_sub_pd(a0,c0);
+      b = _mm256_add_pd(a,c);
+      d = _mm256_sub_pd(a,c);
 
-      T[c] = b0;
-      T[c + half_length] = d0;
+      _mm256_store_pd((double*)(T+n), b);
+      _mm256_store_pd((double*)(T+half_length+n), d);
   }
 }
 
