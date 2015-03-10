@@ -3,7 +3,7 @@ CC=icc
 #CC=clang
 VALGRIND=valgrind --tool=memcheck --leak-check=yes
 STRIP=strip
-CFLAGS=-std=c11 -Wall -Werror -ggdb -O3 -fopenmp -msse3 -mavx
+CFLAGS=-std=c11 -Wall -Werror -ggdb -O2 -fopenmp -msse3 -mavx
 BINARY=bluecrunch
 LIBS=-lm
 ifeq ($(CC),icc)
@@ -47,7 +47,7 @@ endif
 debug: clean $(BINARY)
 
 # Build static, pack and remove traces of UPX
-release: CFLAGS=-static -std=c11 -Wall -Werror -O3 -fopenmp -msse3
+release: CFLAGS=-static -std=c11 -Wall -Werror -O2 -fopenmp -msse3 -mavx
 # static doesn't work with icc?
 release: CC=gcc
 release: clean build
