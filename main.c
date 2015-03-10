@@ -198,7 +198,7 @@ int main() {
   printf("Configuration:\n");
   printf("Digits:           %ld\n", digits);
   printf("Threads:          %d\n", threads);
-  printf("CPU Features:     Using SSE3\n");
+  printf("CPU Features:     Using AVX\n");
   printf("Output File:      ./e.txt\n");
   printf("Max FFT required: 2^%ld\n", k);
   printf("\n");
