@@ -29,3 +29,4 @@ void bigfloat_rcp(bigfloat_t target, const bigfloat_t a,                     siz
 
 // Output
 size_t bigfloat_to_string(char* string, const bigfloat_t value, size_t digits);
+void bigfloat_print(const char* name,   const bigfloat_t value);

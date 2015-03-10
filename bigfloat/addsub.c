@@ -86,13 +86,16 @@ void _bigfloat_uadd(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, s
     TL = p;
   }
 
-  //  Compute basic fields.
-  target->sign  = a->sign;
-  target->exp   = bot;
-  target->len     = (uint32_t)TL;
-
   //  Allocate mantissa
-  target->coef = (uint32_t*) malloc(sizeof(uint32_t)*(TL + 1));
+  //  Allocate mantissa
+  if(target->coef == a->coef || target->coef == b->coef) {
+    // In-place subtraction
+    if(TL+1 > target->len) {
+      target->coef = (uint32_t*) realloc(target->coef, sizeof(uint32_t)*(TL + 1));
+    }
+  } else {
+    target->coef = (uint32_t*) malloc(sizeof(uint32_t)*(TL + 1));
+  }
 
   //  Add
   uint32_t carry = 0;
@@ -105,6 +108,11 @@ void _bigfloat_uadd(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, s
     }
     target->coef[c] = word;
   }
+
+  //  Compute basic fields.
+  target->sign  = a->sign;
+  target->exp   = bot;
+  target->len     = (uint32_t)TL;
 
   //  Carry out
   if (carry != 0) {
@@ -134,13 +142,15 @@ void _bigfloat_usub(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, s
         TL = p;
     }
 
-    //  Compute basic fields.
-    target->sign  = a->sign;
-    target->exp   = bot;
-    target->len     = (uint32_t)TL;
-
     //  Allocate mantissa
-    target->coef = (uint32_t*) malloc(sizeof(uint32_t)*(TL + 1));
+    if(target->coef == a->coef || target->coef == b->coef) {
+      // In-place subtraction
+      if(TL+1 > target->len) {
+        target->coef = (uint32_t*) realloc(target->coef, sizeof(uint32_t)*(TL + 1));
+      }
+    } else {
+      target->coef = (uint32_t*) malloc(sizeof(uint32_t)*(TL + 1));
+    }
 
     //  Subtract
     int32_t carry = 0;
@@ -154,12 +164,17 @@ void _bigfloat_usub(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, s
         target->coef[c] = word;
     }
 
+    //  Compute basic fields.
+    target->sign = a->sign;
+    target->exp  = bot;
+    target->len  = (uint32_t)TL;
+
     //  Strip leading zeros
     while (target->len > 0 && target->coef[target->len - 1] == 0) {
       target->len--;
     }
 
-    if (target->len == 0){
+    if (target->len == 0) {
       bigfloat_zero(target);
     }
 }
@@ -183,6 +198,12 @@ void bigfloat_add(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
         bigfloat_neg(target);
       }
     }
+
+  #ifdef DEBUG
+  bigfloat_print("a", a);
+  bigfloat_print("b", b);
+  bigfloat_print("t", target);
+  #endif
 }
 
 void bigfloat_sub(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, size_t p) {
@@ -204,5 +225,11 @@ void bigfloat_sub(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
       bigfloat_neg(target);
     }
   }
+
+  #ifdef DEBUG
+  bigfloat_print("a", a);
+  bigfloat_print("b", b);
+  bigfloat_print("t", target);
+  #endif
 }
 
