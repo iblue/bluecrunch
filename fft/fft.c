@@ -45,38 +45,43 @@ void fft_ensure_table(int k) {
   twiddle_table_size = k+1;
 }
 
+void fft4(__m128d *T) {
+  // Bit reversed 4-point DFT
+  // T[0] = a +   b + c +   d (= x_0)
+  // T[1] = a -   b + c -   d (= x_2)
+  // T[2] = a + i*b + c + i*d (= x_1)
+  // T[3] = a - i*b - c + i*d (= x_3)
+  //
+  // Let [0] bet the real, [1] be the complex part:
+  // A[0] = a[0] + b[0] + c[0] + d[0]; A[1] = a[1] + b[1] + c[1] + d[1];
+  // B[0] = a[0] - b[0] + c[0] - d[0]; B[1] = a[1] - b[1] + c[1] - d[1];
+  // C[0] = a[0] - b[1] - c[0] + d[1]; C[1] = a[1] + b[0] - c[1] - d[0];
+  // D[0] = a[0] + b[1] - c[0] - d[1]; D[1] = a[1] - b[0] - c[1] + d[0];
+
+  // Input
+  double a[2] = {((double*)&T[0])[0], ((double*)&T[0])[1]};
+  double b[2] = {((double*)&T[1])[0], ((double*)&T[1])[1]};
+  double c[2] = {((double*)&T[2])[0], ((double*)&T[2])[1]};
+  double d[2] = {((double*)&T[3])[0], ((double*)&T[3])[1]};
+
+  // Calc
+  double A[2], B[2], C[2], D[2];
+
+  A[0] = a[0] + b[0] + c[0] + d[0]; A[1] = a[1] + b[1] + c[1] + d[1];
+  B[0] = a[0] - b[0] + c[0] - d[0]; B[1] = a[1] - b[1] + c[1] - d[1];
+  C[0] = a[0] - b[1] - c[0] + d[1]; C[1] = a[1] + b[0] - c[1] - d[0];
+  D[0] = a[0] + b[1] - c[0] - d[1]; D[1] = a[1] - b[0] - c[1] + d[0];
+
+  // Output
+  T[0] = (__m128d){A[0], A[1]};
+  T[1] = (__m128d){B[0], B[1]};
+  T[2] = (__m128d){C[0], C[1]};
+  T[3] = (__m128d){D[0], D[1]};
+}
+
 void fft_forward(__m128d *T,int k,int tds){
   if (k == 2) {
-    // Bit reversed 4-point DFT
-    // T[0] = a +   b + c +   d (= x_0)
-    // T[1] = a -   b + c -   d (= x_2)
-    // T[2] = a + i*b + c + i*d (= x_1)
-    // T[3] = a - i*b - c + i*d (= x_3)
-    //
-    // Let [0] bet the real, [1] be the complex part:
-    // A[0] = a[0] + b[0] + c[0] + d[0]; A[1] = a[1] + b[1] + c[1] + d[1];
-    // B[0] = a[0] - b[0] + c[0] - d[0]; B[1] = a[1] - b[1] + c[1] - d[1];
-    // C[0] = a[0] - b[1] - c[0] + d[1]; C[1] = a[1] + b[0] - c[1] - d[0];
-    // D[0] = a[0] + b[1] - c[0] - d[1]; D[1] = a[1] - b[0] - c[1] + d[0];
-
-    // Input
-    double a[2] = {((double*)&T[0])[0], ((double*)&T[0])[1]};
-    double b[2] = {((double*)&T[1])[0], ((double*)&T[1])[1]};
-    double c[2] = {((double*)&T[2])[0], ((double*)&T[2])[1]};
-    double d[2] = {((double*)&T[3])[0], ((double*)&T[3])[1]};
-
-    // Calc
-    double A[2], B[2], C[2], D[2];
-    A[0] = a[0] + b[0] + c[0] + d[0]; A[1] = a[1] + b[1] + c[1] + d[1];
-    B[0] = a[0] - b[0] + c[0] - d[0]; B[1] = a[1] - b[1] + c[1] - d[1];
-    C[0] = a[0] - b[1] - c[0] + d[1]; C[1] = a[1] + b[0] - c[1] - d[0];
-    D[0] = a[0] + b[1] - c[0] - d[1]; D[1] = a[1] - b[0] - c[1] + d[0];
-
-    // Output
-    T[0] = (__m128d){A[0], A[1]};
-    T[1] = (__m128d){B[0], B[1]};
-    T[2] = (__m128d){C[0], C[1]};
-    T[3] = (__m128d){D[0], D[1]};
+    fft4(T);
 
     return;
   }

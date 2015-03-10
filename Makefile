@@ -3,11 +3,15 @@ CC=gcc
 #CC=clang
 VALGRIND=valgrind --tool=memcheck --leak-check=yes
 STRIP=strip
-CFLAGS=-std=c11 -Wall -Werror -ggdb -O3 -fopenmp -msse3
+CFLAGS=-std=c11 -Wall -Werror -ggdb -O3 -fopenmp -msse3 -mavx
 BINARY=bluecrunch
 LIBS=-lm
 ifeq ($(CC),icc)
 	CFLAGS += -ipo
+endif
+ifeq ($(CC),gcc)
+	# => Infinite loop in calc of number of terms
+	#CFLAGS += -ffast-math
 endif
 
 INCLUDES = -I./include -I.
