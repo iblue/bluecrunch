@@ -1,5 +1,5 @@
-CC=icc
-#CC=gcc
+#CC=icc
+CC=gcc
 #CC=clang
 VALGRIND=valgrind --tool=memcheck --leak-check=yes
 STRIP=strip
