@@ -1,17 +1,6 @@
-#define _USE_MATH_DEFINES
-#include <math.h>
 #include <stdint.h>
-#include <stdio.h>
-#include <string.h>
-#include <malloc.h>
-#include <pmmintrin.h>
-#include <immintrin.h> // More Magic!
-#include <omp.h>
+#include <x86intrin.h>
 #include "fft.h"
-
-#ifndef M_PI
-#define M_PI       3.14159265358979323846
-#endif
 
 // Puts 2 digits per complex point
 static inline size_t int_to_fft2(__m128d *T, const uint32_t *A, size_t AL) {
@@ -134,7 +123,7 @@ static inline size_t int_to_fft4(__m128d *T, const uint32_t *A, size_t AL) {
   return T-origT;
 }
 
-static inline void fft_to_int2(__m128d *T, uint32_t *A, size_t AL, double scale) {
+static inline void fft_to_int2(const __m128d *T, uint32_t *A, size_t AL, double scale) {
   uint64_t carry = 0;
 
   for (size_t c = 0; c < AL/2+1; c++){
@@ -214,7 +203,7 @@ static inline void fft_to_int2(__m128d *T, uint32_t *A, size_t AL, double scale)
   }
 }
 
-static inline void fft_to_int3(__m128d *T, uint32_t *A, size_t AL, double scale) {
+static inline void fft_to_int3(const __m128d *T, uint32_t *A, size_t AL, double scale) {
   uint64_t carry = 0;
 
   for (size_t c = 0; c < AL; c++){
@@ -244,7 +233,7 @@ static inline void fft_to_int3(__m128d *T, uint32_t *A, size_t AL, double scale)
   }
 }
 
-static inline void fft_to_int4(__m128d *T, uint32_t *A, size_t AL, double scale) {
+static inline void fft_to_int4(const __m128d *T, uint32_t *A, size_t AL, double scale) {
   uint64_t carry = 0;
 
   for (size_t c = 0; c < AL/4+1; c++){
@@ -276,10 +265,6 @@ static inline void fft_to_int4(__m128d *T, uint32_t *A, size_t AL, double scale)
 
     A[4*c]   = word1;
 
-    if(word1 >= 1000000000) {
-      abort();
-    }
-
     if(4*c+1 >= AL) {
       break;
     }
@@ -300,10 +285,6 @@ static inline void fft_to_int4(__m128d *T, uint32_t *A, size_t AL, double scale)
     carry /= 100;
 
     A[4*c+1] = word2;
-
-    if(word2 >= 1000000000) {
-      abort();
-    }
 
     if(4*c+2 >= AL) {
       break;
@@ -326,10 +307,6 @@ static inline void fft_to_int4(__m128d *T, uint32_t *A, size_t AL, double scale)
 
     A[4*c+2] = word3;
 
-    if(word3 >= 1000000000) {
-      abort();
-    }
-
     if(4*c+3 >= AL) {
       break;
     }
@@ -350,23 +327,12 @@ static inline void fft_to_int4(__m128d *T, uint32_t *A, size_t AL, double scale)
     carry /= 10000;
 
     A[4*c+3] = word4;
-
-    if(word4 >= 1000000000) {
-      abort();
-    }
   }
 }
 
 // Converts an array of words to an array of complex numbers. Put a given
 // number of digits per point.
 void int_to_fft(__m128d *T, int k, const uint32_t *A, size_t AL, int digits_per_point) {
-  size_t fft_length = 1 << k;
-
-  // Check if FFT size is sufficient.
-  if (fft_length < (9/digits_per_point)*AL) {
-    abort();
-  }
-
   size_t points_written;
 
   switch(digits_per_point) {
@@ -376,22 +342,17 @@ void int_to_fft(__m128d *T, int k, const uint32_t *A, size_t AL, int digits_per_
   }
 
   //  Pad the rest with zeros.
+  size_t fft_length = 1 << k;
   for(size_t i = points_written; i < fft_length; i++) {
     T[i] = _mm_setzero_pd();
   }
 }
 
 //  Convert FFT array back to word array. Perform rounding and carryout.
-void fft_to_int(__m128d *T,int k,uint32_t *A,size_t AL, int digits_per_point){
-
+void fft_to_int(const __m128d *T, int k, uint32_t *A, size_t AL, int digits_per_point) {
   //  Compute Scaling Factor
   size_t fft_length = 1 << k;
   double scale = 1. / fft_length;
-
-  // Check FFT length
-  if (fft_length < (9/digits_per_point)*AL) {
-    abort();
-  }
 
   //  Round and carry out.
   switch(digits_per_point) {
