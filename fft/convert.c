@@ -134,6 +134,229 @@ static inline size_t int_to_fft4(__m128d *T, const uint32_t *A, size_t AL) {
   return T-origT;
 }
 
+static inline void fft_to_int2(__m128d *T, uint32_t *A, size_t AL, double scale) {
+  uint64_t carry = 0;
+
+  for (size_t c = 0; c < AL/2+1; c++){
+    double   f_point;
+    uint64_t i_point;
+    uint32_t word1;
+    uint32_t word2;
+
+    if(2*c >= AL) {
+      break;
+    }
+
+    f_point = ((double*)T++)[0] * scale;    //  Load and scale
+    i_point = (uint64_t)(f_point + 0.5);    //  Round
+    carry += i_point;                       //  Add to carry
+    word1 = carry % 100;                    //  Get 2 digits.
+    carry /= 100;
+
+    f_point = ((double*)T++)[0] * scale;    //  Load and scale
+    i_point = (uint64_t)(f_point + 0.5);    //  Round
+    carry += i_point;                       //  Add to carry
+    word1 += (carry % 100) * 100;           //  Get 2 digits.
+    carry /= 100;
+
+    f_point = ((double*)T++)[0] * scale;    //  Load and scale
+    i_point = (uint64_t)(f_point + 0.5);    //  Round
+    carry += i_point;                       //  Add to carry
+    word1 += (carry % 100) * 10000;         //  Get 2 digits.
+    carry /= 100;
+
+    f_point = ((double*)T++)[0] * scale;    //  Load and scale
+    i_point = (uint64_t)(f_point + 0.5);    //  Round
+    carry += i_point;                       //  Add to carry
+    word1 += (carry % 100) * 1000000;       //  Get 2 digits.
+    carry /= 100;
+
+    f_point = ((double*)T++)[0] * scale;    //  Load and scale
+    i_point = (uint64_t)(f_point + 0.5);    //  Round
+    carry += i_point;                       //  Add to carry
+    word1 += (carry % 10) * 100000000;      //  Get 1 digit.
+    carry /= 10;
+
+    A[2*c] = word1;
+
+    if(2*c+1 >= AL) {
+      break;
+    }
+
+    word2  = carry % 10;                    // Get 1 digit
+    carry /= 10;
+
+    f_point = ((double*)T++)[0] * scale;    //  Load and scale
+    i_point = (uint64_t)(f_point + 0.5);    //  Round
+    carry += i_point;                       //  Add to carry
+    word2 += (carry % 100) * 10;            //  Get 2 digits
+    carry /= 100;
+
+    f_point = ((double*)T++)[0] * scale;    //  Load and scale
+    i_point = (uint64_t)(f_point + 0.5);    //  Round
+    carry += i_point;                       //  Add to carry
+    word2 += (carry % 100) * 1000;         //  Get 2 digits
+    carry /= 100;
+
+    f_point = ((double*)T++)[0] * scale;    //  Load and scale
+    i_point = (uint64_t)(f_point + 0.5);    //  Round
+    carry += i_point;                       //  Add to carry
+    word2 += (carry % 100) * 100000;        //  Get 2 digits
+    carry /= 100;
+
+    f_point = ((double*)T++)[0] * scale;    //  Load and scale
+    i_point = (uint64_t)(f_point + 0.5);    //  Round
+    carry += i_point;                       //  Add to carry
+    word2 += (carry % 100) * 10000000;      //  Get 2 digits
+    carry /= 100;
+
+    A[2*c+1] = word2;
+  }
+}
+
+static inline void fft_to_int3(__m128d *T, uint32_t *A, size_t AL, double scale) {
+  uint64_t carry = 0;
+
+  for (size_t c = 0; c < AL; c++){
+    double   f_point;
+    uint64_t i_point;
+    uint32_t word;
+
+    f_point = ((double*)T++)[0] * scale;    //  Load and scale
+    i_point = (uint64_t)(f_point + 0.5);    //  Round
+    carry += i_point;                       //  Add to carry
+    word = carry % 1000;                    //  Get 3 digits.
+    carry /= 1000;
+
+    f_point = ((double*)T++)[0] * scale;    //  Load and scale
+    i_point = (uint64_t)(f_point + 0.5);    //  Round
+    carry += i_point;                       //  Add to carry
+    word += (carry % 1000) * 1000;          //  Get 3 digits.
+    carry /= 1000;
+
+    f_point = ((double*)T++)[0] * scale;    //  Load and scale
+    i_point = (uint64_t)(f_point + 0.5);    //  Round
+    carry += i_point;                       //  Add to carry
+    word += (carry % 1000) * 1000000;       //  Get 3 digits.
+    carry /= 1000;
+
+    A[c] = word;
+  }
+}
+
+static inline void fft_to_int4(__m128d *T, uint32_t *A, size_t AL, double scale) {
+  uint64_t carry = 0;
+
+  for (size_t c = 0; c < AL/4+1; c++){
+    double   f_point;
+    uint64_t i_point;
+    uint32_t word1, word2, word3, word4;
+
+    if(4*c >= AL) {
+      break;
+    }
+
+    f_point = ((double*)T++)[0] * scale;    //  Load and scale
+    i_point = (uint64_t)(f_point + 0.5);    //  Round
+    carry += i_point;                       //  Add to carry
+    word1 = carry % 10000;                  //  Get 4 digits
+    carry /= 10000;
+
+    f_point = ((double*)T++)[0] * scale;    //  Load and scale
+    i_point = (uint64_t)(f_point + 0.5);    //  Round
+    carry += i_point;                       //  Add to carry
+    word1 += (carry % 10000) * 10000;       //  Get 4 digits
+    carry /= 10000;
+
+    f_point = ((double*)T++)[0] * scale;    //  Load and scale
+    i_point = (uint64_t)(f_point + 0.5);    //  Round
+    carry += i_point;                       //  Add to carry
+    word1 += (carry % 10) * 100000000;      //  Get 1 digit.
+    carry /= 10;
+
+    A[4*c]   = word1;
+
+    if(word1 >= 1000000000) {
+      abort();
+    }
+
+    if(4*c+1 >= AL) {
+      break;
+    }
+
+    word2  = carry % 1000;                  //  Get 3 digits.
+    carry /= 1000;
+
+    f_point = ((double*)T++)[0] * scale;    //  Load and scale
+    i_point = (uint64_t)(f_point + 0.5);    //  Round
+    carry += i_point;                       //  Add to carry
+    word2 += (carry % 10000) * 1000;        //  Get 4 digits
+    carry /= 10000;
+
+    f_point = ((double*)T++)[0] * scale;    //  Load and scale
+    i_point = (uint64_t)(f_point + 0.5);    //  Round
+    carry += i_point;                       //  Add to carry
+    word2 += (carry % 100) * 10000000;      //  Get 2 digits
+    carry /= 100;
+
+    A[4*c+1] = word2;
+
+    if(word2 >= 1000000000) {
+      abort();
+    }
+
+    if(4*c+2 >= AL) {
+      break;
+    }
+
+    word3  = carry % 100;                   //  Get 2 digits.
+    carry /= 100;
+
+    f_point = ((double*)T++)[0] * scale;    //  Load and scale
+    i_point = (uint64_t)(f_point + 0.5);    //  Round
+    carry += i_point;                       //  Add to carry
+    word3 += (carry % 10000) * 100;         //  Get 4 digits
+    carry /= 10000;
+
+    f_point = ((double*)T++)[0] * scale;    //  Load and scale
+    i_point = (uint64_t)(f_point + 0.5);    //  Round
+    carry += i_point;                       //  Add to carry
+    word3 += (carry % 1000) * 1000000;      //  Get 3 digits
+    carry /= 1000;
+
+    A[4*c+2] = word3;
+
+    if(word3 >= 1000000000) {
+      abort();
+    }
+
+    if(4*c+3 >= AL) {
+      break;
+    }
+
+    word4  = carry % 10;                    //  Get 1 digit
+    carry /= 10;
+
+    f_point = ((double*)T++)[0] * scale;    //  Load and scale
+    i_point = (uint64_t)(f_point + 0.5);    //  Round
+    carry += i_point;                       //  Add to carry
+    word4 += (carry % 10000) * 10;          //  Get 4 digits
+    carry /= 10000;
+
+    f_point = ((double*)T++)[0] * scale;    //  Load and scale
+    i_point = (uint64_t)(f_point + 0.5);    //  Round
+    carry += i_point;                       //  Add to carry
+    word4 += (carry % 10000) * 100000;      //  Get 4 digits
+    carry /= 10000;
+
+    A[4*c+3] = word4;
+
+    if(word4 >= 1000000000) {
+      abort();
+    }
+  }
+}
+
 // Converts an array of words to an array of complex numbers. Put a given
 // number of digits per point.
 void int_to_fft(__m128d *T, int k, const uint32_t *A, size_t AL, int digits_per_point) {
@@ -158,241 +381,22 @@ void int_to_fft(__m128d *T, int k, const uint32_t *A, size_t AL, int digits_per_
   }
 }
 
+//  Convert FFT array back to word array. Perform rounding and carryout.
 void fft_to_int(__m128d *T,int k,uint32_t *A,size_t AL, int digits_per_point){
-  //  Convert FFT array back to word array. Perform rounding and carryout.
-
-  //Parameters:
-  //  -   T   -   FFT array
-  //  -   A   -   word array
-  //  -   AL  -   length of word array
 
   //  Compute Scaling Factor
   size_t fft_length = 1 << k;
   double scale = 1. / fft_length;
 
-  //  Since there are 9 digits per word and we want to put 3 digits per
-  //  point, the length of the transform must be at least 3 times the word
-  //  length of the input.
+  // Check FFT length
   if (fft_length < (9/digits_per_point)*AL) {
     abort();
   }
 
   //  Round and carry out.
-  uint64_t carry = 0;
-  if(digits_per_point == 2) {
-    for (size_t c = 0; c < AL/2+1; c++){
-      double   f_point;
-      uint64_t i_point;
-      uint32_t word1;
-      uint32_t word2;
-
-      if(2*c >= AL) {
-        break;
-      }
-
-      f_point = ((double*)T++)[0] * scale;    //  Load and scale
-      i_point = (uint64_t)(f_point + 0.5);    //  Round
-      carry += i_point;                       //  Add to carry
-      word1 = carry % 100;                    //  Get 2 digits.
-      carry /= 100;
-
-      f_point = ((double*)T++)[0] * scale;    //  Load and scale
-      i_point = (uint64_t)(f_point + 0.5);    //  Round
-      carry += i_point;                       //  Add to carry
-      word1 += (carry % 100) * 100;           //  Get 2 digits.
-      carry /= 100;
-
-      f_point = ((double*)T++)[0] * scale;    //  Load and scale
-      i_point = (uint64_t)(f_point + 0.5);    //  Round
-      carry += i_point;                       //  Add to carry
-      word1 += (carry % 100) * 10000;         //  Get 2 digits.
-      carry /= 100;
-
-      f_point = ((double*)T++)[0] * scale;    //  Load and scale
-      i_point = (uint64_t)(f_point + 0.5);    //  Round
-      carry += i_point;                       //  Add to carry
-      word1 += (carry % 100) * 1000000;       //  Get 2 digits.
-      carry /= 100;
-
-      f_point = ((double*)T++)[0] * scale;    //  Load and scale
-      i_point = (uint64_t)(f_point + 0.5);    //  Round
-      carry += i_point;                       //  Add to carry
-      word1 += (carry % 10) * 100000000;      //  Get 1 digit.
-      carry /= 10;
-
-      A[2*c] = word1;
-
-      if(2*c+1 >= AL) {
-        break;
-      }
-
-      word2  = carry % 10;                    // Get 1 digit
-      carry /= 10;
-
-      f_point = ((double*)T++)[0] * scale;    //  Load and scale
-      i_point = (uint64_t)(f_point + 0.5);    //  Round
-      carry += i_point;                       //  Add to carry
-      word2 += (carry % 100) * 10;            //  Get 2 digits
-      carry /= 100;
-
-      f_point = ((double*)T++)[0] * scale;    //  Load and scale
-      i_point = (uint64_t)(f_point + 0.5);    //  Round
-      carry += i_point;                       //  Add to carry
-      word2 += (carry % 100) * 1000;         //  Get 2 digits
-      carry /= 100;
-
-      f_point = ((double*)T++)[0] * scale;    //  Load and scale
-      i_point = (uint64_t)(f_point + 0.5);    //  Round
-      carry += i_point;                       //  Add to carry
-      word2 += (carry % 100) * 100000;        //  Get 2 digits
-      carry /= 100;
-
-      f_point = ((double*)T++)[0] * scale;    //  Load and scale
-      i_point = (uint64_t)(f_point + 0.5);    //  Round
-      carry += i_point;                       //  Add to carry
-      word2 += (carry % 100) * 10000000;      //  Get 2 digits
-      carry /= 100;
-
-      A[2*c+1] = word2;
-    }
-  }
-
-  if(digits_per_point == 3) {
-    for (size_t c = 0; c < AL; c++){
-        double   f_point;
-        uint64_t i_point;
-        uint32_t word;
-
-        f_point = ((double*)T++)[0] * scale;    //  Load and scale
-        i_point = (uint64_t)(f_point + 0.5);    //  Round
-        carry += i_point;                       //  Add to carry
-        word = carry % 1000;                    //  Get 3 digits.
-        carry /= 1000;
-
-        f_point = ((double*)T++)[0] * scale;    //  Load and scale
-        i_point = (uint64_t)(f_point + 0.5);    //  Round
-        carry += i_point;                       //  Add to carry
-        word += (carry % 1000) * 1000;          //  Get 3 digits.
-        carry /= 1000;
-
-        f_point = ((double*)T++)[0] * scale;    //  Load and scale
-        i_point = (uint64_t)(f_point + 0.5);    //  Round
-        carry += i_point;                       //  Add to carry
-        word += (carry % 1000) * 1000000;       //  Get 3 digits.
-        carry /= 1000;
-
-        A[c] = word;
-    }
-  }
-
-  if(digits_per_point == 4) {
-    for (size_t c = 0; c < AL/4+1; c++){
-      double   f_point;
-      uint64_t i_point;
-      uint32_t word1, word2, word3, word4;
-
-      if(4*c >= AL) {
-        break;
-      }
-
-      f_point = ((double*)T++)[0] * scale;    //  Load and scale
-      i_point = (uint64_t)(f_point + 0.5);    //  Round
-      carry += i_point;                       //  Add to carry
-      word1 = carry % 10000;                  //  Get 4 digits
-      carry /= 10000;
-
-      f_point = ((double*)T++)[0] * scale;    //  Load and scale
-      i_point = (uint64_t)(f_point + 0.5);    //  Round
-      carry += i_point;                       //  Add to carry
-      word1 += (carry % 10000) * 10000;       //  Get 4 digits
-      carry /= 10000;
-
-      f_point = ((double*)T++)[0] * scale;    //  Load and scale
-      i_point = (uint64_t)(f_point + 0.5);    //  Round
-      carry += i_point;                       //  Add to carry
-      word1 += (carry % 10) * 100000000;      //  Get 1 digit.
-      carry /= 10;
-
-      A[4*c]   = word1;
-
-      if(word1 >= 1000000000) {
-        abort();
-      }
-
-      if(4*c+1 >= AL) {
-        break;
-      }
-
-      word2  = carry % 1000;                  //  Get 3 digits.
-      carry /= 1000;
-
-      f_point = ((double*)T++)[0] * scale;    //  Load and scale
-      i_point = (uint64_t)(f_point + 0.5);    //  Round
-      carry += i_point;                       //  Add to carry
-      word2 += (carry % 10000) * 1000;        //  Get 4 digits
-      carry /= 10000;
-
-      f_point = ((double*)T++)[0] * scale;    //  Load and scale
-      i_point = (uint64_t)(f_point + 0.5);    //  Round
-      carry += i_point;                       //  Add to carry
-      word2 += (carry % 100) * 10000000;      //  Get 2 digits
-      carry /= 100;
-
-      A[4*c+1] = word2;
-
-      if(word2 >= 1000000000) {
-        abort();
-      }
-
-      if(4*c+2 >= AL) {
-        break;
-      }
-
-      word3  = carry % 100;                   //  Get 2 digits.
-      carry /= 100;
-
-      f_point = ((double*)T++)[0] * scale;    //  Load and scale
-      i_point = (uint64_t)(f_point + 0.5);    //  Round
-      carry += i_point;                       //  Add to carry
-      word3 += (carry % 10000) * 100;         //  Get 4 digits
-      carry /= 10000;
-
-      f_point = ((double*)T++)[0] * scale;    //  Load and scale
-      i_point = (uint64_t)(f_point + 0.5);    //  Round
-      carry += i_point;                       //  Add to carry
-      word3 += (carry % 1000) * 1000000;      //  Get 3 digits
-      carry /= 1000;
-
-      A[4*c+2] = word3;
-
-      if(word3 >= 1000000000) {
-        abort();
-      }
-
-      if(4*c+3 >= AL) {
-        break;
-      }
-
-      word4  = carry % 10;                    //  Get 1 digit
-      carry /= 10;
-
-      f_point = ((double*)T++)[0] * scale;    //  Load and scale
-      i_point = (uint64_t)(f_point + 0.5);    //  Round
-      carry += i_point;                       //  Add to carry
-      word4 += (carry % 10000) * 10;          //  Get 4 digits
-      carry /= 10000;
-
-      f_point = ((double*)T++)[0] * scale;    //  Load and scale
-      i_point = (uint64_t)(f_point + 0.5);    //  Round
-      carry += i_point;                       //  Add to carry
-      word4 += (carry % 10000) * 100000;      //  Get 4 digits
-      carry /= 10000;
-
-      A[4*c+3] = word4;
-
-      if(word4 >= 1000000000) {
-        abort();
-      }
-    }
+  switch(digits_per_point) {
+    case 2: fft_to_int2(T, A, AL, scale); break;
+    case 3: fft_to_int3(T, A, AL, scale); break;
+    case 4: fft_to_int4(T, A, AL, scale); break;
   }
 }
