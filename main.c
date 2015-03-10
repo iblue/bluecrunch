@@ -109,11 +109,11 @@ void e_BSR(bigfloat_t P, bigfloat_t Q, uint32_t a, uint32_t b, int tds) {
   bigfloat_mul(tmp, P0, Q1, 0, tds);
   bigfloat_free(P0);
   bigfloat_add(P, tmp, P1, 0);
+  bigfloat_free(tmp);
   bigfloat_free(P1);
   bigfloat_mul(Q, Q0, Q1, 0, tds);
   bigfloat_free(Q1);
   bigfloat_free(Q0);
-  bigfloat_free(tmp);
 }
 
 void e(size_t digits, int tds){

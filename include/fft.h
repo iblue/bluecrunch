@@ -1,6 +1,6 @@
 #define FFT_THRESHOLD_K     20
 
-typedef struct my_complex{
+typedef struct my_complex {
   double r;
   double i;
 } my_complex_t;
