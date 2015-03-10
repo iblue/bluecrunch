@@ -85,7 +85,7 @@ void fft4(__m128d *T) {
 // - twiddles: Vektor of twiddles [r0, i0, r1, i1]
 // - T0:       Pointer to 2 complex doubles (first half)
 // - T1:       Pointer to 2 complex doubles (second half)
-void fft_forward_butterfly(__m256d twiddles, __m256d* T0, __m256d* T1) {
+static inline void fft_forward_butterfly(__m256d twiddles, __m256d* T0, __m256d* T1) {
   __m256d r   = _mm256_unpacklo_pd(twiddles, twiddles);  //   r = [r0,r0,r1,r1]
   __m256d i   = _mm256_unpackhi_pd(twiddles, twiddles);  //   i = [i0,i0,i1,i1]
 
@@ -113,7 +113,7 @@ void fft_forward_butterfly(__m256d twiddles, __m256d* T0, __m256d* T1) {
 // - twiddles: Vektor of twiddles [r0, i0, r1, i1]
 // - T0:       Pointer to 2 complex doubles (first half)
 // - T1:       Pointer to 2 complex doubles (second half)
-void fft_inverse_butterfly(__m256d twiddle, __m256d* T0, __m256d* T1) {
+static inline void fft_inverse_butterfly(__m256d twiddle, __m256d* T0, __m256d* T1) {
   __m256d r   = _mm256_unpacklo_pd(twiddle, twiddle);     //   r = [r0,r0,r1,r1]
   __m256d i   = _mm256_unpackhi_pd(twiddle, twiddle);     //   i = [i0,i0,i1,i1]
   i = _mm256_xor_pd(i,_mm256_set1_pd(-0.0));              //   i = -i
@@ -137,25 +137,24 @@ void fft_inverse_butterfly(__m256d twiddle, __m256d* T0, __m256d* T1) {
   _mm256_store_pd((double*)T1, d);
 }
 
+static inline void dft_2p(__m128d* T) {
+  __m128d a = T[0];
+  __m128d b = T[1];
+  T[0] = _mm_add_pd(a,b);
+  T[1] = _mm_sub_pd(a,b);
+}
+
 void fft_forward(__m128d *T,int k,int tds){
-  /*if (k == 2) {
-    fft4(T);
-
-    return;
-  }*/
-
   // (Bit reversed) 2-point DFT
-  if (k == 1){
-    __m128d a = T[0];
-    __m128d b = T[1];
-    T[0] = _mm_add_pd(a,b);
-    T[1] = _mm_sub_pd(a,b);
+  if(k==1) {
+    dft_2p(T);
     return;
   }
 
   //  Don't thread if it's too small.
-  if (k < FFT_THRESHOLD_K)
+  if (k < FFT_THRESHOLD_K) {
     tds = 1;
+  }
 
   size_t length = 1 << k;
   size_t half_length = length / 2;
@@ -215,10 +214,7 @@ void fft_forward_uncached(__m128d *T,int k,int tds){
 
   //  End recursion at 2 points.
   if (k == 1){
-    __m128d a = T[0];
-    __m128d b = T[1];
-    T[0] = _mm_add_pd(a,b);
-    T[1] = _mm_sub_pd(a,b);
+    dft_2p(T);
     return;
   }
 
@@ -305,11 +301,8 @@ void fft_inverse(__m128d *T,int k,int tds){
 
   //  End recursion at 2 points.
   if (k == 1){
-      __m128d a = T[0];
-      __m128d b = T[1];
-      T[0] = _mm_add_pd(a,b);
-      T[1] = _mm_sub_pd(a,b);
-      return;
+    dft_2p(T);
+    return;
   }
 
   //  Don't thread if it's too small.
@@ -363,11 +356,8 @@ void fft_inverse_uncached(__m128d *T,int k,int tds){
 
   //  End recursion at 2 points.
   if (k == 1){
-      __m128d a = T[0];
-      __m128d b = T[1];
-      T[0] = _mm_add_pd(a,b);
-      T[1] = _mm_sub_pd(a,b);
-      return;
+    dft_2p(T);
+    return;
   }
 
   //  Don't thread if it's too small.
@@ -441,23 +431,6 @@ void fft_inverse_uncached(__m128d *T,int k,int tds){
   }
 }
 
-void fft_pointwise(__m128d *T,__m128d *A,int k){
-  //  Performs pointwise multiplications of two FFT arrays.
-
-  //Parameters:
-  //  -   T           -   Pointer to array.
-  //  -   k           -   2^k is the size of the transform
-
-  size_t length = 1 << k;
-  for (size_t c = 0; c < length; c++){
-      __m128d a0 = T[c];
-      __m128d b0 = A[c];
-      __m128d c0,d0;
-      c0 = _mm_mul_pd(a0,_mm_unpacklo_pd(b0,b0));
-      d0 = _mm_mul_pd(_mm_shuffle_pd(a0,a0,1),_mm_unpackhi_pd(b0,b0));
-      T[c] = _mm_addsub_pd(c0,d0);
-  }
-}
 void int_to_fft(__m128d *T,int k,const uint32_t *A,size_t AL, int digits_per_point){
   //  Convert word array into FFT array. Put 2 decimal digits per complex point.
 

@@ -40,7 +40,7 @@ build: CFLAGS += -DNDEBUG
 build: clean $(BINARY)
 
 .PHONY: debug
-debug: CFLAGS := $(filter-out -O3,$(CFLAGS)) -DDEBUG -O0
+debug: CFLAGS := $(filter-out -O2,$(CFLAGS)) -DDEBUG -O0
 ifeq ($(CC),gcc)
 debug: CFLAGS += -fsanitize=address
 endif
