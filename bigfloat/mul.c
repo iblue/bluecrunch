@@ -62,7 +62,7 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
     target->coef = (uint32_t*)malloc(sizeof(uint32_t)*(target->len));
 
     if(target->len == 2) {
-      #ifdef DEBUG
+      #ifdef DDEBUG
       printf("fastpath\n");
       #endif
       // Fast path for really small multiplications
@@ -71,7 +71,7 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
       result /= 1000000000;
       target->coef[1] = result;
     } else if(target->len < 350) {
-      #ifdef DEBUG
+      #ifdef DDEBUG
       printf("basecase\n");
       #endif
       for(size_t i=0;i<target->len;i++) {
@@ -102,7 +102,7 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
         }
       }
     } else {
-      #ifdef DEBUG
+      #ifdef DDEBUG
       printf("fft\n");
       #endif
       //  Perform multiplication.
@@ -153,7 +153,7 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
       fft_to_int(Ta,k,target->coef,target->len, digits_per_point);   //  Convert back to word array.
       _mm_free(Ta);
     }
-    #ifdef DEBUG
+    #ifdef DDEBUG
     for(size_t i=AL;i-->0;) {
       printf("%09d", AT[i]);
     }
