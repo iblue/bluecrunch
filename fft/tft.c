@@ -26,7 +26,7 @@ complex double omega(int i, int N) {
   return val.r + I*val.i;
 }
 
-void tft1(complex double *x, int L, int z, int n, int u, int s, int sl) {
+void tft1(complex double *x, int L, int z, int n, int u, int s) {
   if(L == 2) {
     if(n == 2 && z == 2) {
       complex double a = x[u];
@@ -65,22 +65,22 @@ void tft1(complex double *x, int L, int z, int n, int u, int s, int sl) {
 
   // col transforms
   for(int k=0;k<z_2;k++) {
-    tft1(x, L_1, z_1+1, n_1prime, u+s*k, s*L_2, sl+2);
+    tft1(x, L_1, z_1+1, n_1prime, u+s*k, s*L_2);
   }
   for(int k=z_2;k<z_2prime;k++) {
-    tft1(x, L_1, z_1, n_1prime, u+s*k, s*L_2, sl+2);
+    tft1(x, L_1, z_1, n_1prime, u+s*k, s*L_2);
   }
 
   // row transforms
   for(int k=0;k<n_1;k++) {
-    tft1(x, L_2, z_2prime, L_2, u+s*k*L_2, s, sl+2);
+    tft1(x, L_2, z_2prime, L_2, u+s*k*L_2, s);
   }
   if(n_2 > 0) {
-    tft1(x, L_2, z_2prime, n_2, u+s*n_1*L_2, s, sl+2);
+    tft1(x, L_2, z_2prime, n_2, u+s*n_1*L_2, s);
   }
 }
 
-void itft1(complex double *x, int L, int z, int n, int f, int u, int s, int sl) {
+void itft1(complex double *x, int L, int z, int n, int f, int u, int s) {
   if(L == 2) {
     if(n == 2) {
       complex double xi = omega(u%(L*s), L*s);
@@ -147,35 +147,35 @@ void itft1(complex double *x, int L, int z, int n, int f, int u, int s, int sl) 
 
   // row transforms
   for(int k=0;k<n_1;k++) {
-    itft1(x, L_2, L_2, L_2, 0, u+s*k*L_2, s, sl+2);
+    itft1(x, L_2, L_2, L_2, 0, u+s*k*L_2, s);
   }
 
   // rightmost column transforms
   for(int k=n_2;k<mprime;k++) {
-    itft1(x, L_1, z_1+1, n_1, fprime, u+s*k, s*L_2, sl+2);
+    itft1(x, L_1, z_1+1, n_1, fprime, u+s*k, s*L_2);
   }
   for(int k=mprime;k<z_2prime;k++) {
-    itft1(x, L_1, z_1, n_1, fprime, u+s*k, s*L_2, sl+2);
+    itft1(x, L_1, z_1, n_1, fprime, u+s*k, s*L_2);
   }
 
   // last row transform
   if(fprime == 1) {
-    itft1(x, L_2, z_2prime, n_2, f, u+s*n_1*L_2, s, sl+2);
+    itft1(x, L_2, z_2prime, n_2, f, u+s*n_1*L_2, s);
   }
 
   // leftmost column transforms
   for(int k=0;k<m;k++) {
-    itft1(x, L_1, z_1 + 1, n_1 + 1, 0, u+s*k, s*L_2, sl+2);
+    itft1(x, L_1, z_1 + 1, n_1 + 1, 0, u+s*k, s*L_2);
   }
   for(int k=m;k<n_2;k++) {
-    itft1(x, L_1, z_1, n_1 + 1, 0, u+s*k, s*L_2, sl+2);
+    itft1(x, L_1, z_1, n_1 + 1, 0, u+s*k, s*L_2);
   }
 }
 
 void tft_forward(__m128d *T, int k, size_t in, size_t out) {
-  tft1((complex double*)T, 1 << k, in, out, 0, 1, 0);
+  tft1((complex double*)T, 1 << k, in, out, 0, 1);
 }
 
 void tft_inverse(__m128d *T, int k, size_t in, size_t out) {
-  itft1((complex double*)T, 1 << k, in, out, 0, 0, 1, 0);
+  itft1((complex double*)T, 1 << k, in, out, 0, 0, 1);
 }
