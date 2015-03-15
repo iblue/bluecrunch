@@ -15,11 +15,17 @@
  * Implementation of cache friendly tft
  */
 
-complex double omega(int i, int N) {
+static inline int bitlog2(int N) {
   int k = 0;
   while (N >>= 1) {
     k++;
   }
+  return k;
+}
+
+complex double omega(int i, int N) {
+  int k = bitlog2(N);
+
   my_complex_t* local_table = twiddle_table[k];
   my_complex_t  val         = local_table[i];
 
@@ -44,7 +50,7 @@ void tft1(complex double *x, int L, int z, int n, int u, int s) {
     return;
   }
 
-  int l = log((float)L)/log(2.0); // Cache tuning param FIXME
+  int l = bitlog2(L);
 
   // recursive case
   int L_1      = 1 << l/2;
@@ -119,7 +125,7 @@ void itft1(complex double *x, int L, int z, int n, int f, int u, int s) {
     return;
   }
 
-  int l = log((float)L)/log(2.0); // Cache tuning param FIXME
+  int l = bitlog2(L);
 
   // recursive case
   int L_1      = 1 << l/2;
