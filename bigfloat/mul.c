@@ -148,6 +148,7 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
 
       //  Make sure the twiddle table is big enough.
 
+      #define TRUNC_FFT 1
       #ifdef TRUNC_FFT
       size_t AF = int_to_fft(Ta,k,AT,AL, digits_per_point);           //  Convert 1st operand
       size_t BF = int_to_fft(Tb,k,BT,BL, digits_per_point);           //  Convert 2nd operand

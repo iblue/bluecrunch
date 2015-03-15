@@ -13,7 +13,9 @@
  * Implementation of cache friendly tft
  */
 
-complex double x[16] = {1, 2, 3, 4, 5, 0, 0, 0,
+#define DATASIZE 32
+
+complex double x[DATASIZE] = {1, 2, 3, 4, 5, 0, 0, 0,
                         0, 0, 0, 0, 0, 0, 0, 0};
 
 complex double omega(int i, int N) {
@@ -21,7 +23,9 @@ complex double omega(int i, int N) {
 }
 
 void tft(int L, complex double xi, int z, int n, int u, int s, int sl) {
-  //printf("tft(L=%d, ..., z=%d, n=%d, u=%d, s=%d)\n", L, z, n, u, s);
+  printf("%*stft(L=%d, xi = (%+f, %+f), z=%d, n=%d, u=%d, s=%d, sl=%d)\n", sl, "", L, creal(xi), cimag(xi), z, n, u, s, sl);
+  complex double xi2 = omega(u, L*s);
+  printf("xi: L = %02d, u = %02d | s = %02d | (%f, %f) | (%f, %f)\n", L, u, s, creal(xi), cimag(xi), creal(xi2), cimag(xi2));
   if(L == 2) {
     printf("%*scalc n = %d, z = %d\n", sl, "", n, z);
     if(n == 2 && z == 2) {
@@ -187,12 +191,17 @@ void dump() {
 }
 
 int main() {
-  int N = 8;
-  int in = 5;
-  int out = 6;
+  int N = DATASIZE;
+  int in = DATASIZE;
+  int out = DATASIZE;
   dump();
   tft(N, 1.0, in, out, 0, 1, 0);
   dump();
   itft(N, 1.0, in, out, 0, 0, 1, 0);
   dump();
+
+  for(int i=0;i<N/2;i++) {
+    complex double xi = omega(i,N);
+    printf("xi: omega,               %02d | (%f, %f)\n", i, creal(xi), cimag(xi));
+  }
 }
