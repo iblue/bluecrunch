@@ -84,8 +84,9 @@ void itft1(complex double *x, int L, int z, int n, int f, int u, int s) {
   if(L == 2) {
     if(n == 2) {
       complex double xi = omega(u%(L*s), L*s);
-      complex double a = x[u] + cpow(xi, -1)*x[u+s];
-      complex double b = x[u] - cpow(xi, -1)*x[u+s];
+      xi = creal(xi)-I*cimag(xi);
+      complex double a = x[u] + xi*x[u+s];
+      complex double b = x[u] - xi*x[u+s];
       x[u]   = a;
       x[u+s] = b;
     }
