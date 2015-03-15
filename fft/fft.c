@@ -13,6 +13,9 @@
 #define M_PI       3.14159265358979323846
 #endif
 
+#define max(a,b) ({ __typeof__(a) _a = (a); __typeof__(b) _b = (b); _a > _b ? _a : _b; })
+#define min(a,b) ({ __typeof__(a) _a = (a); __typeof__(b) _b = (b); _a < _b ? _a : _b; })
+
 // Runs a forward butterfly on 2 elements simultaniously
 // Arguments:
 // - twiddles: Vektor of twiddles [r0, i0, r1, i1]
@@ -90,7 +93,7 @@ static inline void dft_2p(__m128d* T) {
   T[1] = _mm_sub_pd(a,b);
 }
 
-void fft_forward(__m128d *T,int k,int tds){
+void fft_forward(__m128d *T, int k, int tds){
   // (Bit reversed) 2-point DFT
   if(k==1) {
     dft_2p(T);

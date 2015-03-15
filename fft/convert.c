@@ -332,7 +332,7 @@ static inline void fft_to_int4(const __m128d *T, uint32_t *A, size_t AL, double 
 
 // Converts an array of words to an array of complex numbers. Put a given
 // number of digits per point.
-void int_to_fft(__m128d *T, int k, const uint32_t *A, size_t AL, int digits_per_point) {
+size_t int_to_fft(__m128d *T, int k, const uint32_t *A, size_t AL, int digits_per_point) {
   size_t points_written = 0;
 
   switch(digits_per_point) {
@@ -346,6 +346,8 @@ void int_to_fft(__m128d *T, int k, const uint32_t *A, size_t AL, int digits_per_
   for(size_t i = points_written; i < fft_length; i++) {
     T[i] = _mm_setzero_pd();
   }
+
+  return points_written;
 }
 
 //  Convert FFT array back to word array. Perform rounding and carryout.

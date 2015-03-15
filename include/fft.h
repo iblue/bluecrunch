@@ -21,5 +21,10 @@ void fft_inverse_uncached(__m128d*, int, int);
 void fft_pointwise(__m128d*, __m128d *, int);
 
 // Convert data back and forth between words and complex FFT points
-void int_to_fft(      __m128d*, int, const uint32_t*, size_t, int);
+size_t int_to_fft(    __m128d*, int, const uint32_t*, size_t, int);
 void fft_to_int(const __m128d*, int,       uint32_t*, size_t, int);
+
+// Truncated FFT
+void tft_forward(__m128d *T, int k, size_t in, size_t out);
+void tft_inverse(__m128d *T, int k, size_t in, size_t out);
+void tft_pointwise(__m128d *a, __m128d *b, size_t len);

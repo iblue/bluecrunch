@@ -148,8 +148,17 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
 
       //  Make sure the twiddle table is big enough.
 
+      #ifdef TRUNC_FFT
+      size_t AF = int_to_fft(Ta,k,AT,AL, digits_per_point);           //  Convert 1st operand
+      size_t BF = int_to_fft(Tb,k,BT,BL, digits_per_point);           //  Convert 2nd operand
+      tft_forward(Ta, k, AF, AF+BF+1);
+      tft_forward(Tb, k, BF, AF+BF+1);
+      tft_pointwise(Ta, Tb, AF+BF+1); //  Pointwise multiply
+      tft_inverse(Ta, k, AF+BF+1, AF+BF+1);
+      #else
       int_to_fft(Ta,k,AT,AL, digits_per_point);           //  Convert 1st operand
       int_to_fft(Tb,k,BT,BL, digits_per_point);           //  Convert 2nd operand
+
       if (twiddle_table_size - 1 < k) {
         fft_forward_uncached(Ta,k,tds);
         fft_forward_uncached(Tb,k,tds);
@@ -157,14 +166,19 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
         fft_forward(Ta,k,tds);
         fft_forward(Tb,k,tds);
       }
+
       fft_pointwise(Ta,Tb,k);//  Pointwise multiply
-      _mm_free(Tb);
+
       if (twiddle_table_size - 1 < k) {
         fft_inverse_uncached(Ta,k,tds);
       } else {
         fft_inverse(Ta,k,tds);
       }
+      #endif
+
       fft_to_int(Ta,k,target->coef,target->len, digits_per_point);   //  Convert back to word array.
+
+      _mm_free(Tb);
       _mm_free(Ta);
     }
     #ifdef DDEBUG
