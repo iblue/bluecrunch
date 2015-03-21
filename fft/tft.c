@@ -2,6 +2,8 @@
 #include <math.h>
 #include <x86intrin.h>
 #include <stdint.h>
+#include <stdio.h> // fprintf
+#include <assert.h>
 #include "fft.h"
 
 #ifndef M_PI
@@ -11,6 +13,30 @@
 #define max(a,b) ({ __typeof__(a) _a = (a); __typeof__(b) _b = (b); _a > _b ? _a : _b; })
 #define min(a,b) ({ __typeof__(a) _a = (a); __typeof__(b) _b = (b); _a < _b ? _a : _b; })
 
+// FIXME: Deduplication!!!
+static inline void fft_inverse_butterfly(__m256d twiddle, __m256d* T0, __m256d* T1) {
+  __m256d r   = _mm256_unpacklo_pd(twiddle, twiddle);     //   r = [r0,r0,r1,r1]
+  __m256d i   = _mm256_unpackhi_pd(twiddle, twiddle);     //   i = [i0,i0,i1,i1]
+  i = _mm256_xor_pd(i,_mm256_set1_pd(-0.0));              //   i = -i
+
+  //  Grab elements
+  __m256d a = _mm256_load_pd((double*)T0);  // a = [a0r, a0i, a1r, a1i]
+  __m256d b = _mm256_load_pd((double*)T1);  // b = [b0r, b0i, b1r, b1i]
+
+  //  Perform butterfly
+  __m256d c, d;
+
+  //  Multiply by twiddle factor.
+  c = _mm256_mul_pd(b,r);
+  d = _mm256_mul_pd(_mm256_shuffle_pd(b,b,0x5),i);
+  c = _mm256_addsub_pd(c,d);
+
+  b = _mm256_add_pd(a,c);
+  d = _mm256_sub_pd(a,c);
+
+  _mm256_store_pd((double*)T0, b);
+  _mm256_store_pd((double*)T1, d);
+}
 /**
  * Implementation of cache friendly tft
  */
@@ -32,159 +58,60 @@ complex double omega(int i, int N) {
   return val;
 }
 
-void tft1(complex double *x, int l, int L, int z, int n, int u, int s) {
-  if(L == 2) {
-    if(n == 2 && z == 2) {
-      complex double a = x[u];
-      complex double b = x[u+s];
-      complex double xi = omega(u%(L*s), L*s);
-      x[u]   = a + b;
-      x[u+s] = xi*(a - b);
-    } else if(n == 2 && z == 1) {
-      complex double xi = omega(u%(L*s), L*s);
-      x[u+s] = xi*x[u];
-    } else if(n == 1 && z == 2) {
-      x[u] += x[u+s];
-    } else {
-    }
+void tft_inverse1(complex double *T, size_t head, size_t tail, size_t last, size_t s) {
+  size_t left_middle  = (last - head)/2 + head;
+  size_t right_middle = left_middle + 1;
+
+  if(head > tail) {
     return;
-  }
+  } else if(tail >= left_middle) {
+    // Recursion end:
+    if(last-head==1) {
+      if(tail-head==0) {
+        T[head] = 2*T[head] - T[last];
+        return;
+      } else {
+        fprintf(stderr, "Not implemented\n");
+        return;
+      }
+    }
 
-  // recursive case
-  int l_1      = l/2;
-  int l_2      = l - l/2;
-  int L_1      = 1 << l_1;
-  int L_2      = 1 << l_2;
+    // Push up the self-contained region T[head] to T[left_middle]
+    fft_inverse(T+head, bitlog2(left_middle - head + 1), 1);
 
-  int n_2      = n % L_2; // FIXME: Bitshift?
-  int n_1      = n/L_2;
-  int n_1prime = (n+(L_2-1))/L_2; // round up by adding L_2-1
-  int z_2      = z%L_2;
-  int z_1      = z/L_2;
+    // Push down T[tail+1] to T[last]
+    for(size_t i=tail+1;i<=last;i++) {
+      T[i]  = T[i-left_middle-1];
+      T[i] *= omega(i-left_middle-1, last-head+1);
+    }
 
-  int z_2prime;
-  if(z_1 > 0) {
-    z_2prime = L_2;
-  } else {
-    z_2prime = z_2;
-  }
+    tft_inverse1(T, right_middle, tail, last, s+1);
 
+    // FIXME: p != 2!!!
+    size_t m_s = 2 - bitlog2(left_middle - head + 1) + 1;
+    size_t half_length = 1 << (m_s - 1);
+    complex double* local_table = twiddle_table[m_s]; // m_s - 1 ????
 
-  // col transforms
-  for(int k=0;k<z_2;k++) {
-    tft1(x, l_1, L_1, z_1+1, n_1prime, u+s*k, s*L_2);
-  }
-  for(int k=z_2;k<z_2prime;k++) {
-    tft1(x, l_1, L_1, z_1, n_1prime, u+s*k, s*L_2);
-  }
-
-  // row transforms
-  for(int k=0;k<n_1;k++) {
-    tft1(x, l_2, L_2, z_2prime, L_2, u+s*k*L_2, s);
-  }
-  if(n_2 > 0) {
-    tft1(x, l_2, L_2, z_2prime, n_2, u+s*n_1*L_2, s);
+    // Push up (in pairs) (T[head], T[head+m_s]) ... (T[left_middle], T[left_middle+m_s])
+    for(size_t n=0; n < half_length; n+=2) {
+      __m256d twiddle = _mm256_load_pd((double*)&local_table[n]); // tmp = [r0,i0,r1,i1]
+      fft_inverse_butterfly(twiddle, (__m256d*)(T+n), (__m256d*)(T+n+half_length));
+    }
+  } else if(tail < left_middle) {
+    fprintf(stderr, "Not implemented\n");
+    abort();
   }
 }
 
-void itft1(complex double *x, int l, int L, int z, int n, int f, int u, int s) {
-  if(L == 2) {
-    if(n == 2) {
-      complex double xi = omega(u%(L*s), L*s);
-      xi = creal(xi)-I*cimag(xi);
-      complex double a = x[u] + xi*x[u+s];
-      complex double b = x[u] - xi*x[u+s];
-      x[u]   = a;
-      x[u+s] = b;
-    }
-    if(n == 1 && f == 1 && z == 2) {
-      complex double xi = omega(u%(L*s), L*s);
-      complex double a = 2*x[u] - x[u+s];
-      complex double b = xi*(x[u]-x[u+s]);
-      x[u]   = a;
-      x[u+s] = b;
-    }
-    if(n == 1 && f == 1 && z == 1) {
-      complex double xi = omega(u%(L*s), L*s);
-      complex double a = 2*x[u];
-      complex double b = xi*x[u];
-      x[u]   = a;
-      x[u+s] = b;
-    }
-    if(n == 1 && f == 0 && z == 2) {
-      x[u] = 2*x[u] - x[u+s];
-    }
-    if(n == 1 && f == 0 && z == 1) {
-      x[u] = 2*x[u];
-    }
-    if(n == 0 && z == 2) {
-      x[u] = (x[u] + x[u+s])/2;
-    }
-    if(n == 0 && z == 1) {
-      x[u] = x[u]/2;
-    }
-    return;
+void tft_inverse(complex double *T, size_t len) {
+  size_t n = 2;
+  size_t l = len;
+
+  assert(len >= 2);
+
+  while(len /= 2) {
+    n *= 2;
   }
 
-  // recursive case
-  int l_1      = l/2;
-  int l_2      = l - l/2;
-  int L_1      = 1 << l_1;
-  int L_2      = 1 << l_2;
-
-  int n_2      = n % L_2; // FIXME: Bitshift?
-  int n_1      = n/L_2;
-  int z_2      = z%L_2;
-  int z_1      = z/L_2;
-
-  int fprime;
-  if(n_2 + f > 0) {
-    fprime = 1;
-  } else {
-    fprime = 0;
-  }
-
-  int z_2prime;
-  if(z_1 > 0) {
-    z_2prime = L_2;
-  } else {
-    z_2prime = z_2;
-  }
-
-  int m      = min(n_2, z_2);
-  int mprime = max(n_2, z_2);
-
-  // row transforms
-  for(int k=0;k<n_1;k++) {
-    itft1(x, l_2, L_2, L_2, L_2, 0, u+s*k*L_2, s);
-  }
-
-  // rightmost column transforms
-  for(int k=n_2;k<mprime;k++) {
-    itft1(x, l_1, L_1, z_1+1, n_1, fprime, u+s*k, s*L_2);
-  }
-  for(int k=mprime;k<z_2prime;k++) {
-    itft1(x, l_1, L_1, z_1, n_1, fprime, u+s*k, s*L_2);
-  }
-
-  // last row transform
-  if(fprime == 1) {
-    itft1(x, l_2, L_2, z_2prime, n_2, f, u+s*n_1*L_2, s);
-  }
-
-  // leftmost column transforms
-  for(int k=0;k<m;k++) {
-    itft1(x, l_1, L_1, z_1 + 1, n_1 + 1, 0, u+s*k, s*L_2);
-  }
-  for(int k=m;k<n_2;k++) {
-    itft1(x, l_1, L_1, z_1, n_1 + 1, 0, u+s*k, s*L_2);
-  }
-}
-
-void tft_forward(complex double *T, int k, size_t in, size_t out) {
-  tft1(T, k, 1 << k, in, out, 0, 1);
-}
-
-void tft_inverse(complex double *T, int k, size_t in, size_t out) {
-  itft1(T, k, 1 << k, in, out, 0, 0, 1);
+  tft_inverse1(T, 0, l-1, n-1, 1);
 }

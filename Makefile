@@ -63,6 +63,13 @@ debug: CFLAGS += -fsanitize=address
 endif
 debug: clean $(BINARY)
 
+.PHONY: debug-test
+debug-test: CFLAGS := $(filter-out -O2,$(CFLAGS)) -DDEBUG -O0
+ifeq ($(CC),gcc)
+debug-test: CFLAGS += -fsanitize=address
+endif
+debug-test: test
+
 # Build static, pack and remove traces of UPX
 release: CFLAGS=-static -std=c11 -Wall -Werror -O2 -fopenmp -msse3 -mavx
 # static doesn't work with icc?
