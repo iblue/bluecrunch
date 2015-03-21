@@ -86,14 +86,15 @@ static inline void fft_inverse_butterfly(__m256d twiddle, __m256d* T0, __m256d* 
   _mm256_store_pd((double*)T1, d);
 }
 
-static inline void dft_2p(__m128d* T) {
+static inline void dft_2p(complex double* V) {
+  __m128d *T = (__m128d*)V;
   __m128d a = T[0];
   __m128d b = T[1];
   T[0] = _mm_add_pd(a,b);
   T[1] = _mm_sub_pd(a,b);
 }
 
-void fft_forward(__m128d *T, int k, int tds){
+void fft_forward(complex double *T, int k, int tds){
   // (Bit reversed) 2-point DFT
   if(k==1) {
     dft_2p(T);
@@ -109,7 +110,7 @@ void fft_forward(__m128d *T, int k, int tds){
   size_t half_length = length / 2;
 
   //  Get local twiddle table.
-  my_complex_t* local_table = twiddle_table[k];
+  complex double* local_table = twiddle_table[k];
 
   for (size_t n = 0; n < half_length; n+=2){
     //  Grab Twiddle Factors
@@ -140,7 +141,7 @@ void fft_forward(__m128d *T, int k, int tds){
 
 // Runs FFT without cached twiddles
 // FIXME: Merge?
-void fft_forward_uncached(__m128d *T,int k,int tds){
+void fft_forward_uncached(complex double *T,int k,int tds){
   //  End recursion at 2 points.
   if (k == 1){
     dft_2p(T);
@@ -165,22 +166,22 @@ void fft_forward_uncached(__m128d *T,int k,int tds){
     __m128d i0 = _mm_loaddup_pd(&i);
 
     //  Grab elements
-    __m128d a0 = T[c];
-    __m128d b0 = T[c + half_length];
+    __m128d a0 = ((__m128d*)T)[c];
+    __m128d b0 = ((__m128d*)T)[c + half_length];
 
     //  Perform butterfly
     __m128d c0,d0;
     c0 = _mm_add_pd(a0,b0);
     d0 = _mm_sub_pd(a0,b0);
 
-    T[c] = c0;
+    ((__m128d*)T)[c] = c0;
 
     //  Multiply by twiddle factor.
     c0 = _mm_mul_pd(d0,r0);
     d0 = _mm_mul_pd(_mm_shuffle_pd(d0,d0,1),i0);
     c0 = _mm_addsub_pd(c0,d0);
 
-    T[c + half_length] = c0;
+    ((__m128d*)T)[c + half_length] = c0;
   }
 
   if (tds < 2){
@@ -217,7 +218,7 @@ void fft_forward_uncached(__m128d *T,int k,int tds){
   }
 }
 
-void fft_inverse(__m128d *T,int k,int tds){
+void fft_inverse(complex double *T,int k,int tds){
   //  Fast Fourier Transform
   //  This function performs an inverse FFT of length 2^k.
 
@@ -262,7 +263,7 @@ void fft_inverse(__m128d *T,int k,int tds){
   }
 
   //  Get local twiddle table.
-  my_complex_t* local_table = twiddle_table[k];
+  complex double* local_table = twiddle_table[k];
 
   //  Perform FFT reduction into two halves.
   for (size_t n = 0; n < half_length; n+=2){
@@ -272,7 +273,7 @@ void fft_inverse(__m128d *T,int k,int tds){
   }
 }
 
-void fft_inverse_uncached(__m128d *T,int k,int tds){
+void fft_inverse_uncached(complex double *T,int k,int tds){
   //  Fast Fourier Transform
   //  This function performs an inverse FFT of length 2^k.
 
@@ -341,8 +342,8 @@ void fft_inverse_uncached(__m128d *T,int k,int tds){
       i0 = _mm_xor_pd(i0,_mm_set1_pd(-0.0));
 
       //  Grab elements
-      __m128d a0 = T[c];
-      __m128d b0 = T[c + half_length];
+      __m128d a0 = ((__m128d*)T)[c];
+      __m128d b0 = ((__m128d*)T)[c + half_length];
 
       //  Perform butterfly
       __m128d c0,d0;
@@ -355,8 +356,8 @@ void fft_inverse_uncached(__m128d *T,int k,int tds){
       b0 = _mm_add_pd(a0,c0);
       d0 = _mm_sub_pd(a0,c0);
 
-      T[c] = b0;
-      T[c + half_length] = d0;
+      ((__m128d*)T)[c] = b0;
+      ((__m128d*)T)[c + half_length] = d0;
   }
 }
 

@@ -13,7 +13,7 @@
 #define M_PI       3.14159265358979323846
 #endif
 
-my_complex_t* twiddle_table[32];
+complex double* twiddle_table[32];
 int twiddle_table_size = 0;
 
 void fft_ensure_table(int k) {
@@ -30,14 +30,12 @@ void fft_ensure_table(int k) {
   length /= 2;
 
   //  Build the sub-table.
-  my_complex_t *sub_table = (my_complex_t*)_mm_malloc(length*sizeof(my_complex_t), 32);
+  complex double *sub_table = (complex double*)_mm_malloc(length*sizeof(complex double), 32);
 
   for (size_t c = 0; c < length; c++){
       //  Generate Twiddle Factor
       double angle = omega * c;
-      my_complex_t twiddle_factor;
-      twiddle_factor.r = cos(angle);
-      twiddle_factor.i = sin(angle);
+      complex double twiddle_factor = cos(angle)+I*sin(angle);
       sub_table[c] = twiddle_factor;
   }
 

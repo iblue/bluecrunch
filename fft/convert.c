@@ -3,8 +3,9 @@
 #include "fft.h"
 
 // Puts 2 digits per complex point
-static inline size_t int_to_fft2(__m128d *T, const uint32_t *A, size_t AL) {
-  __m128d *origT = T;
+static inline size_t int_to_fft2(complex double *V, const uint32_t *A, size_t AL) {
+  __m128d* T = (__m128d*)V;
+  complex double *origV = V;
 
   for (size_t c = 0; c < AL/2+1; c++){
     uint32_t word1 = A[2*c];
@@ -43,12 +44,15 @@ static inline size_t int_to_fft2(__m128d *T, const uint32_t *A, size_t AL) {
     word2 /= 100;
   }
 
-  return T-origT;
+  V = (complex double*)T;
+  return V-origV;
 }
 
 // Puts 3 digits per complex point
-static inline size_t int_to_fft3(__m128d *T, const uint32_t *A, size_t AL) {
-  __m128d *origT = T;
+static inline size_t int_to_fft3(complex double *V, const uint32_t *A, size_t AL) {
+  __m128d* T = (__m128d*)V;
+  complex double *origV = V;
+
 
   for (size_t c = 0; c < AL; c++) {
     uint32_t word = A[c];
@@ -60,12 +64,14 @@ static inline size_t int_to_fft3(__m128d *T, const uint32_t *A, size_t AL) {
     *T++ = _mm_set_sd(word);
   }
 
-  return T-origT;
+  V = (complex double*)T;
+  return V-origV;
 }
 
 // Puts 4 digits per complex point
-static inline size_t int_to_fft4(__m128d *T, const uint32_t *A, size_t AL) {
-  __m128d *origT = T;
+static inline size_t int_to_fft4(complex double *V, const uint32_t *A, size_t AL) {
+  __m128d* T = (__m128d*)V;
+  complex double *origV = V;
 
   for (size_t c = 0; c < AL/4+1; c++){
     uint32_t tmp1, tmp2, tmp3;
@@ -120,10 +126,11 @@ static inline size_t int_to_fft4(__m128d *T, const uint32_t *A, size_t AL) {
     word4 /= 10000;
   }
 
-  return T-origT;
+  V = (complex double*)T;
+  return V-origV;
 }
 
-static inline void fft_to_int2(const __m128d *T, uint32_t *A, size_t AL, double scale) {
+static inline void fft_to_int2(const complex double *T, uint32_t *A, size_t AL, double scale) {
   uint64_t carry = 0;
 
   for (size_t c = 0; c < AL/2+1; c++){
@@ -203,7 +210,7 @@ static inline void fft_to_int2(const __m128d *T, uint32_t *A, size_t AL, double 
   }
 }
 
-static inline void fft_to_int3(const __m128d *T, uint32_t *A, size_t AL, double scale) {
+static inline void fft_to_int3(const complex double *T, uint32_t *A, size_t AL, double scale) {
   uint64_t carry = 0;
 
   for (size_t c = 0; c < AL; c++){
@@ -233,7 +240,7 @@ static inline void fft_to_int3(const __m128d *T, uint32_t *A, size_t AL, double 
   }
 }
 
-static inline void fft_to_int4(const __m128d *T, uint32_t *A, size_t AL, double scale) {
+static inline void fft_to_int4(const complex double *T, uint32_t *A, size_t AL, double scale) {
   uint64_t carry = 0;
 
   for (size_t c = 0; c < AL/4+1; c++){
@@ -332,17 +339,19 @@ static inline void fft_to_int4(const __m128d *T, uint32_t *A, size_t AL, double 
 
 // Converts an array of words to an array of complex numbers. Put a given
 // number of digits per point.
-size_t int_to_fft(__m128d *T, int k, const uint32_t *A, size_t AL, int digits_per_point) {
+size_t int_to_fft(complex double *V, int k, const uint32_t *A, size_t AL, int digits_per_point) {
   size_t points_written = 0;
 
   switch(digits_per_point) {
-    case 2: points_written = int_to_fft2(T, A, AL); break;
-    case 3: points_written = int_to_fft3(T, A, AL); break;
-    case 4: points_written = int_to_fft4(T, A, AL); break;
+    case 2: points_written = int_to_fft2(V, A, AL); break;
+    case 3: points_written = int_to_fft3(V, A, AL); break;
+    case 4: points_written = int_to_fft4(V, A, AL); break;
   }
 
   //  Pad the rest with zeros.
+  __m128d* T = (__m128d*)V;
   size_t fft_length = 1 << k;
+
   for(size_t i = points_written; i < fft_length; i++) {
     T[i] = _mm_setzero_pd();
   }
@@ -351,7 +360,7 @@ size_t int_to_fft(__m128d *T, int k, const uint32_t *A, size_t AL, int digits_pe
 }
 
 //  Convert FFT array back to word array. Perform rounding and carryout.
-void fft_to_int(const __m128d *T, int k, uint32_t *A, size_t AL, int digits_per_point) {
+void fft_to_int(const complex double *T, int k, uint32_t *A, size_t AL, int digits_per_point) {
   //  Compute Scaling Factor
   size_t fft_length = 1 << k;
   double scale = 1. / fft_length;

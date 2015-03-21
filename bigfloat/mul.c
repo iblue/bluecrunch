@@ -143,8 +143,8 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
       }
 
       //  Allocate FFT arrays
-      __m128d *Ta = (__m128d*)_mm_malloc(length * sizeof(__m128d), 32);
-      __m128d *Tb = (__m128d*)_mm_malloc(length * sizeof(__m128d), 32);
+      complex double *Ta = (complex double*)_mm_malloc(length * sizeof(complex double), 32);
+      complex double *Tb = (complex double*)_mm_malloc(length * sizeof(complex double), 32);
 
       //  Make sure the twiddle table is big enough.
 

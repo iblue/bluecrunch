@@ -26,10 +26,10 @@ static inline int bitlog2(int N) {
 complex double omega(int i, int N) {
   int k = bitlog2(N);
 
-  my_complex_t* local_table = twiddle_table[k];
-  my_complex_t  val         = local_table[i];
+  complex double* local_table = twiddle_table[k];
+  complex double  val         = local_table[i];
 
-  return val.r + I*val.i;
+  return val;
 }
 
 void tft1(complex double *x, int l, int L, int z, int n, int u, int s) {
@@ -181,10 +181,10 @@ void itft1(complex double *x, int l, int L, int z, int n, int f, int u, int s) {
   }
 }
 
-void tft_forward(__m128d *T, int k, size_t in, size_t out) {
-  tft1((complex double*)T, k, 1 << k, in, out, 0, 1);
+void tft_forward(complex double *T, int k, size_t in, size_t out) {
+  tft1(T, k, 1 << k, in, out, 0, 1);
 }
 
-void tft_inverse(__m128d *T, int k, size_t in, size_t out) {
-  itft1((complex double*)T, k, 1 << k, in, out, 0, 0, 1);
+void tft_inverse(complex double *T, int k, size_t in, size_t out) {
+  itft1(T, k, 1 << k, in, out, 0, 0, 1);
 }
