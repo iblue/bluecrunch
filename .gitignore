@@ -2,3 +2,4 @@ e.txt
 *.o
 bluecrunch
 e.dec
+*.test
