@@ -1,3 +1,6 @@
+#include <x86intrin.h>
+#include <stdint.h>
+
 #define FFT_THRESHOLD_K     20
 
 typedef struct my_complex {

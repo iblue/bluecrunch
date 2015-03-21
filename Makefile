@@ -14,15 +14,23 @@ ifeq ($(CC),gcc)
 	#CFLAGS += -ffast-math
 endif
 
+MAIN_C = main.c
+MAIN_O = $(MAIN_C:.c=.o)
+
 INCLUDES = -I./include -I.
 SOURCES  = $(shell find -path "./bigfloat/*" -name "*.c")
 SOURCES += $(shell find -path "./fft/*"      -name "*.c")
-SOURCES += main.c
 HEADERS  = $(shell find -path "./include/*"  -name "*.h")
 OBJECTS  = $(SOURCES:.c=.o)
 
-$(BINARY): $(OBJECTS)
-	$(CC) $(CFLAGS) -o $(BINARY) $(OBJECTS) $(LIBS)
+TEST_SOURCES = $(shell find -path "./test/*"     -name "*.c")
+TEST_OBJECTS = $(TEST_SOURCES:.c=.o)
+TESTS        = $(TEST_SOURCES:.c=.test)
+
+.PRECIOUS: %.c %.o %.h
+
+$(BINARY): $(OBJECTS) $(MAIN_O)
+	$(CC) $(CFLAGS) -o $(BINARY) $(OBJECTS) $(MAIN_O) $(LIBS)
 
 .c.o: $(HEADERS)
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
@@ -38,6 +46,15 @@ stats:
 .PHONY: build
 build: CFLAGS += -DNDEBUG
 build: clean $(BINARY)
+
+.PHONY: tests run_tests
+test: $(TESTS) run_tests
+
+run_tests: $(TESTS)
+	$(foreach test,$(TESTS),echo $(test); $(test);)
+
+%.test: %.o $(OBJECTS)
+	$(CC) $(CFLAGS) -o $@ $< $(OBJECTS) $(INCLUDES) $(LIBS)
 
 .PHONY: debug
 debug: CFLAGS := $(filter-out -O2,$(CFLAGS)) -DDEBUG -O0
