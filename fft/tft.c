@@ -107,8 +107,22 @@ void tft_inverse1(complex double *T, size_t head, size_t tail, size_t last, size
       fft_inverse_butterfly(twiddle, (__m256d*)(T+head+n), (__m256d*)(T+head+n+half_length));
     }
   } else if(tail < left_middle) {
-    fprintf(stderr, "Not implemented\n");
-    abort();
+    // Push down T[tail+1] to T[left_middle]
+    assert(tail+1 <= left_middle); // FIXME?
+    for(size_t i=tail+1;i>=left_middle;i--) {
+      complex double a = T[i];
+      complex double b = T[i+last-left_middle];
+      T[i]  = (a+b)/2;
+    }
+
+    tft_inverse1(T, head, tail, left_middle, s+1);
+
+    // Push up T[head] to T[left_middle]
+    for(size_t i=head;i<=left_middle;i++) {
+      complex double b = T[i+last-left_middle];
+      T[i] *= 2;
+      T[i] -= b;
+    }
   }
 }
 

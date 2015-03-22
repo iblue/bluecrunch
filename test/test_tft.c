@@ -2,12 +2,14 @@
 #include <assert.h>
 #include <stdio.h>
 
-static inline void assert_fp(complex double a, complex double b) {
+#define assert_fp(a, b) _assert_fp(a, b, __FILE__, __LINE__)
+
+static inline void _assert_fp(complex double a, complex double b, char* file, int line) {
   double radius = 1e-7;
 
   if(cabs(a-b) > radius) {
-    fprintf(stderr, "Expected: (%f + %fi) but got (%f + %fi)\n",
-      creal(b), cimag(b), creal(a), cimag(b));
+    fprintf(stderr, "Expected: (%f + %fi) but got (%f + %fi) in %s:%d\n",
+      creal(b), cimag(b), creal(a), cimag(b), file, line);
     abort();
   }
 }
@@ -15,6 +17,8 @@ static inline void assert_fp(complex double a, complex double b) {
 
 int main() {
   fft_ensure_table(8); // up to 256 values
+
+#if 0
 
   {
     __attribute__ ((aligned (32))) complex double values[] = {6, 2, -2+2*I, 0};
@@ -91,14 +95,15 @@ int main() {
     assert_fp(values[6], 0);
     assert_fp(values[7], 0);
   }
+#endif
 
   /*
    * Forward FFT:
    *
-   * stage 0:    1  34   26      95       53                  0.000+0.000i     0.000+00.000i     00.000+00.000i
-   * stage 1:   54  34   26      95      -52                 24.042+24.042i    0.000+26.000i    -67.175+67.175i
-   * stage 2:   80  129  28         -61i -52    +26i        -43.134+91.217i  -52.000-26.000i     43.134+91.217i
-   * stage 3:  209 -49   28-61i  28+61i  -95.134+117.217i    -8.866-65.217i   -8.866+65.217i    -95.134-117.217i
+   * stage 0:    1  34   26      95      |  53                  0.000+0.000i     0.000+00.000i     00.000+00.000i
+   * stage 1:   54  34   26      95      | -52                 24.042+24.042i    0.000+26.000i    -67.175+67.175i
+   * stage 2:   80  129  28         -61i | -52    +26i        -43.134+91.217i  -52.000-26.000i     43.134+91.217i
+   * stage 3:  209 -49   28-61i  28+61i  | -95.134+117.217i    -8.866-65.217i   -8.866+65.217i    -95.134-117.217i
    */
   {
     __attribute__ ((aligned (32))) complex double values[] = {
@@ -116,7 +121,7 @@ int main() {
     tft_inverse(values, 5);
 
     assert_fp(values[0], 1*8);
-    assert_fp(values[1], 34*9);
+    assert_fp(values[1], 34*8);
     assert_fp(values[2], 26*8);
     assert_fp(values[3], 95*8);
     assert_fp(values[4], 53*8);
