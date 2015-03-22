@@ -37,9 +37,15 @@ static inline void fft_inverse_butterfly(__m256d twiddle, __m256d* T0, __m256d* 
   _mm256_store_pd((double*)T0, b);
   _mm256_store_pd((double*)T1, d);
 }
-/**
- * Implementation of cache friendly tft
- */
+
+// FIXME: Deduplication!!!
+static inline void dft_2p(complex double* V) {
+  __m128d *T = (__m128d*)V;
+  __m128d a = T[0];
+  __m128d b = T[1];
+  T[0] = _mm_add_pd(a,b);
+  T[1] = _mm_sub_pd(a,b);
+}
 
 static inline int bitlog2(int N) {
   int k = 0;
@@ -79,23 +85,27 @@ void tft_inverse1(complex double *T, size_t head, size_t tail, size_t last, size
     // Push up the self-contained region T[head] to T[left_middle]
     fft_inverse(T+head, bitlog2(left_middle - head + 1), 1);
 
-    // Push down T[tail+1] to T[last]
+    // Push down T[tail+1] .. T[last] from T[tail+1-left_middle] .. T[left_middle]
     for(size_t i=tail+1;i<=last;i++) {
-      T[i]  = T[i-left_middle-1];
+      complex double c = T[head+i-left_middle-1];
+      complex double b = T[i];
+      T[i]  = c - b;
       T[i] *= omega(i-left_middle-1, last-head+1);
     }
 
     tft_inverse1(T, right_middle, tail, last, s+1);
 
     // FIXME: p != 2!!!
-    size_t m_s = 2 - bitlog2(left_middle - head + 1) + 1;
+    size_t m_s = bitlog2(last-head+1);
     size_t half_length = 1 << (m_s - 1);
     complex double* local_table = twiddle_table[m_s]; // m_s - 1 ????
 
     // Push up (in pairs) (T[head], T[head+m_s]) ... (T[left_middle], T[left_middle+m_s])
-    for(size_t n=0; n < half_length; n+=2) {
-      __m256d twiddle = _mm256_load_pd((double*)&local_table[n]); // tmp = [r0,i0,r1,i1]
-      fft_inverse_butterfly(twiddle, (__m256d*)(T+n), (__m256d*)(T+n+half_length));
+    if(half_length == 1) {
+      dft_2p(T+head);
+    } else for(size_t n=0; n < half_length; n+=2) {
+      __m256d twiddle = _mm256_load_pd((double*)&local_table[n]);
+      fft_inverse_butterfly(twiddle, (__m256d*)(T+head+n), (__m256d*)(T+head+n+half_length));
     }
   } else if(tail < left_middle) {
     fprintf(stderr, "Not implemented\n");
