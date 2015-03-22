@@ -18,8 +18,6 @@ static inline void _assert_fp(complex double a, complex double b, char* file, in
 int main() {
   fft_ensure_table(8); // up to 256 values
 
-#if 0
-
   {
     __attribute__ ((aligned (32))) complex double values[] = {6, 2, -2+2*I, 0};
 
@@ -95,7 +93,6 @@ int main() {
     assert_fp(values[6], 0);
     assert_fp(values[7], 0);
   }
-#endif
 
   /*
    * Forward FFT:
