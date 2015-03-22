@@ -5,7 +5,7 @@
 #define assert_fp(a, b) _assert_fp(a, b, __FILE__, __LINE__)
 
 static inline void _assert_fp(complex double a, complex double b, char* file, int line) {
-  double radius = 1e-7;
+  double radius = 1e-6;
 
   if(cabs(a-b) > radius) {
     fprintf(stderr, "Expected: (%f + %fi) but got (%f + %fi) in %s:%d\n",
@@ -125,5 +125,46 @@ int main() {
     assert_fp(values[5], 0);
     assert_fp(values[6], 0);
     assert_fp(values[7], 0);
+  }
+
+  {
+    __attribute__ ((aligned (32))) complex double values[] = {
+        647.00000000+0*I,
+        -29.00000000+0*I,
+         81.00000000-74*I,
+         81.00000000+74*I,
+        -42.52186130+87.1543289*I,
+        220.52186130-23.1543289*I,
+        220.52186130+23.1543289*I,
+        -42.52186130-87.1543289*I,
+       -118.78486382+197.7215088*I,
+        -48.89637704-63.4372376*I,
+        -59.61723845+56.2080022*I,
+         67.29847932+21.5077265*I,
+       0, //  67.29847932-21.5077265*I,
+       0, // -59.61723845-56.2080022*I,
+       0, // -48.89637704+63.4372376*I,
+       0, //-118.78486382-197.7215088*I,
+    };
+
+
+    tft_inverse(values, 12);
+
+    assert_fp(values[0],  51*16);
+    assert_fp(values[1],  34*16);
+    assert_fp(values[2],  26*16);
+    assert_fp(values[3],  95*16);
+    assert_fp(values[4],  53*16);
+    assert_fp(values[5],  93*16);
+    assert_fp(values[6],  41*16);
+    assert_fp(values[7],  37*16);
+    assert_fp(values[8],  91*16);
+    assert_fp(values[9],   5*16);
+    assert_fp(values[10], 47*16);
+    assert_fp(values[11], 74*16);
+    assert_fp(values[12],  0);
+    assert_fp(values[13],  0);
+    assert_fp(values[14],  0);
+    assert_fp(values[15],  0);
   }
 }
