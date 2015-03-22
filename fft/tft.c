@@ -95,10 +95,9 @@ void tft_inverse1(complex double *T, size_t head, size_t tail, size_t last, size
 
     tft_inverse1(T, right_middle, tail, last, s+1);
 
-    // FIXME: p != 2!!!
     size_t m_s = bitlog2(last-head+1);
     size_t half_length = 1 << (m_s - 1);
-    complex double* local_table = twiddle_table[m_s]; // m_s - 1 ????
+    complex double* local_table = twiddle_table[m_s];
 
     // Push up (in pairs) (T[head], T[head+m_s]) ... (T[left_middle], T[left_middle+m_s])
     if(half_length == 1) {
