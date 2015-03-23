@@ -19,6 +19,18 @@ int main() {
   fft_ensure_table(8); // up to 256 values
 
   {
+    __attribute__ ((aligned (32))) complex double values[] = {1, 2, 3, 0};
+
+    tft_forward(values, 3);
+
+    assert_fp(values[0], 6);
+    assert_fp(values[1], 2);
+    assert_fp(values[2], -2+2*I);
+    assert_fp(values[3], 0);
+  }
+
+
+  {
     __attribute__ ((aligned (32))) complex double values[] = {6, 2, -2+2*I, 0};
 
     tft_inverse(values, 3);
