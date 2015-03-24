@@ -37,7 +37,7 @@ $(BINARY): $(OBJECTS) $(MAIN_O)
 
 .PHONY: clean
 clean:
-	rm -f $(BINARY) $(OBJECTS) $(TEST_OBJECTS) $(TESTS)
+	rm -f $(BINARY) $(OBJECTS) $(TEST_OBJECTS) $(TESTS) $(MAIN_O)
 
 .PHONY: stats
 stats:
