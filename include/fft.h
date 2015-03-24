@@ -24,6 +24,6 @@ size_t int_to_fft(    complex double*, int, const uint32_t*, size_t, int);
 void fft_to_int(const complex double*, int,       uint32_t*, size_t, int);
 
 // Truncated FFT
-void tft_forward(complex double*, size_t);
-void tft_inverse(complex double*, size_t);
+void tft_forward(complex double*, size_t, int);
+void tft_inverse(complex double*, size_t, int);
 //void tft_pointwise(complex double *a, complex double *b, size_t len);

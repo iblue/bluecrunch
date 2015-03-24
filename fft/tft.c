@@ -20,8 +20,7 @@ complex double omega(int i, int N) {
   return val;
 }
 
-void tft_forward(complex double *T, size_t length) {
-  size_t k = bitlog2(length);
+void tft_forward(complex double *T, size_t length, int k) {
   size_t full_length = 1 << k;
 
   //size_t left_length = full_length / 2;
@@ -72,8 +71,13 @@ void tft_inverse1(complex double *T, size_t head, size_t tail, size_t last, size
 
     // Push down T[tail+1] .. T[last] from T[tail+1-left_middle] .. T[left_middle]
     for(size_t i=tail+1;i<=last;i++) {
+      complex double b = 0;
+
+      if(s > 1) {
+        b = T[i];
+      }
+
       complex double c = T[head+i-left_middle-1];
-      complex double b = T[i];
       T[i]  = c - b;
       T[i] *= omega(i-left_middle-1, last-head+1);
     }
@@ -111,14 +115,16 @@ void tft_inverse1(complex double *T, size_t head, size_t tail, size_t last, size
   }
 }
 
-void tft_inverse(complex double *T, size_t len) {
-  size_t n = 2;
+void tft_inverse(complex double *T, size_t len, int k) {
+  size_t n = 1 << k;
   size_t l = len;
 
   assert(len >= 2);
 
-  while(len /= 2) {
-    n *= 2;
+  // If 2^k normal sized FFT, use FFT algoritmn, because it's faster.
+  if(n == l) {
+    fft_inverse(T, k, 1);
+    return;
   }
 
   tft_inverse1(T, 0, l-1, n-1, 1);

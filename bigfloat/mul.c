@@ -75,6 +75,7 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
 
     target->len  = AL + BL; // Add the lenghts for now. May need to correct later.
 
+    /*
     if(target->len == 2) {
       #ifdef DDEBUG
       printf("fastpath\n");
@@ -115,7 +116,7 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
           target->coef[j] = value;
         }
       }
-    } else {
+    } else */{
       #ifdef DDEBUG
       printf("fft\n");
       #endif
@@ -147,9 +148,8 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
       complex double *Tb = (complex double*)_mm_malloc(length * sizeof(complex double), 32);
 
       //  Make sure the twiddle table is big enough.
-
-      int_to_fft(Ta,k,AT,AL, digits_per_point);           //  Convert 1st operand
-      int_to_fft(Tb,k,BT,BL, digits_per_point);           //  Convert 2nd operand
+      size_t sa = int_to_fft(Ta,k,AT,AL, digits_per_point); //  Convert 1st operand
+      size_t sb = int_to_fft(Tb,k,BT,BL, digits_per_point); //  Convert 2nd operand
 
       if (twiddle_table_size - 1 < k) {
         fft_forward_uncached(Ta,k,tds);
@@ -164,7 +164,17 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
       if (twiddle_table_size - 1 < k) {
         fft_inverse_uncached(Ta,k,tds);
       } else {
-        fft_inverse(Ta,k,tds);
+        // Check result
+        memcpy(Tb, Ta, length*sizeof(complex double));
+        tft_inverse(Ta, sa+sb+1, k);
+        fft_inverse(Tb,k,tds);
+
+        for(size_t i=0;i<length;i++) {
+          if(cabs(Ta[i] - Tb[i]) > 1e-7) {
+            fprintf(stderr, "Inverse check failed\n");
+            abort();
+          }
+        }
       }
 
       fft_to_int(Ta,k,target->coef,target->len, digits_per_point);   //  Convert back to word array.
