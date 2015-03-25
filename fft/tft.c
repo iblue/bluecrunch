@@ -20,19 +20,21 @@ complex double omega(int i, int N) {
   return val;
 }
 
-void tft_forward(complex double *T, size_t length, int k) {
-  size_t full_length = 1 << k;
+static inline size_t div_ceil(size_t dividend, size_t divisor) {
+  return (dividend + (divisor - 1))/divisor;
+}
 
-  //size_t left_length = full_length / 2;
-  //size_t right_length = full_length - left_length;
-
+void tft_forward1(complex double *T, size_t length, int k) {
   // (Bit reversed) 2-point DFT
   if(k==1) {
     dft_2p(T);
     return;
   }
 
-  size_t half_length = full_length / 2;
+  size_t m_s = 1 << k;
+  size_t j = div_ceil(length, m_s)*m_s - 1;
+
+  size_t half_length = div_ceil(j, 2);
 
   //  Get local twiddle table.
   complex double* local_table = twiddle_table[k];
@@ -43,9 +45,10 @@ void tft_forward(complex double *T, size_t length, int k) {
     fft_forward_butterfly(twiddles, (__m256d*)(T+n), (__m256d*)(T+n+half_length));
   }
 
-  //  No more threads.
-  fft_forward(T, k - 1, 1);
-  fft_forward(T + half_length, k - 1, 1);
+  size_t shift = 1 << (k-1);
+
+  fft_forward(T, k - 1, 1); // Calculate the left side completely.
+  tft_forward1(T + shift, length - shift, k - 1); // Calculate the right side partially
 }
 
 void tft_inverse1(complex double *T, size_t head, size_t tail, size_t last, size_t s) {
@@ -128,4 +131,20 @@ void tft_inverse(complex double *T, size_t len, int k) {
   }
 
   tft_inverse1(T, 0, l-1, n-1, 1);
+
+  // Clear unused
+  for(size_t i=l;i<n;i++) {
+    T[i] = 0;
+  }
+}
+
+void tft_forward(complex double *T, size_t length, int k) {
+  tft_forward1(T, length, k);
+
+  // Clear unused
+  size_t n = 1 << k;
+  size_t l = length;
+  for(size_t i=l;i<n;i++) {
+    T[i] = 0;
+  }
 }

@@ -21,7 +21,7 @@ int main() {
   {
     __attribute__ ((aligned (32))) complex double values[] = {1, 2, 3, 0};
 
-    tft_forward(values, 3);
+    tft_forward(values, 3, 2);
 
     assert_fp(values[0], 6);
     assert_fp(values[1], 2);
@@ -33,7 +33,7 @@ int main() {
   {
     __attribute__ ((aligned (32))) complex double values[] = {6, 2, -2+2*I, 0};
 
-    tft_inverse(values, 3);
+    tft_inverse(values, 3, 2);
 
     assert_fp(values[0], 4);
     assert_fp(values[1], 8);
@@ -62,7 +62,7 @@ int main() {
     };
 
 
-    tft_inverse(values, 7);
+    tft_inverse(values, 7, 3);
 
     assert_fp(values[0], 8);
     assert_fp(values[1], 16);
@@ -94,7 +94,7 @@ int main() {
       0, //-9.36396103-20.53553391*I,
     };
 
-    tft_inverse(values, 6);
+    tft_inverse(values, 6, 3);
 
     assert_fp(values[0],  2*8);
     assert_fp(values[1], 11*8);
@@ -127,7 +127,7 @@ int main() {
     };
 
 
-    tft_inverse(values, 5);
+    tft_inverse(values, 5, 3);
 
     assert_fp(values[0], 1*8);
     assert_fp(values[1], 34*8);
@@ -160,7 +160,7 @@ int main() {
     };
 
 
-    tft_inverse(values, 12);
+    tft_inverse(values, 12, 4);
 
     assert_fp(values[0],  51*16);
     assert_fp(values[1],  34*16);
