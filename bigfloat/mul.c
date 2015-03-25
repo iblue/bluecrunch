@@ -151,6 +151,12 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
       size_t sa = int_to_fft(Ta,k,AT,AL, digits_per_point); //  Convert 1st operand
       size_t sb = int_to_fft(Tb,k,BT,BL, digits_per_point); //  Convert 2nd operand
 
+      // FIXME
+      /*
+      tft_forward(Ta, k, sa+sb+1);
+      tft_forward(Tb, k, sa+sb+1);
+      */
+
       if (twiddle_table_size - 1 < k) {
         fft_forward_uncached(Ta,k,tds);
         fft_forward_uncached(Tb,k,tds);
