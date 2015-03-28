@@ -74,13 +74,9 @@ void tft_inverse1(complex double *T, size_t head, size_t tail, size_t last, size
 
     // Push down T[tail+1] .. T[last] from T[tail+1-left_middle] .. T[left_middle]
     for(size_t i=tail+1;i<=last;i++) {
-      complex double b = 0;
-
-      if(s > 1) {
-        b = T[i];
-      }
-
+      complex double b = T[i];
       complex double c = T[head+i-left_middle-1];
+
       T[i]  = c - b;
       T[i] *= omega(i-left_middle-1, last-head+1);
     }
@@ -101,7 +97,7 @@ void tft_inverse1(complex double *T, size_t head, size_t tail, size_t last, size
   } else if(tail < left_middle) {
     // Push down T[tail+1] to T[left_middle]
     assert(tail+1 <= left_middle); // FIXME?
-    for(size_t i=tail+1;i>=left_middle;i--) {
+    for(size_t i=tail+1;i<=left_middle;i++) {
       complex double a = T[i];
       complex double b = T[i+last-left_middle];
       T[i]  = (a+b)/2;
@@ -128,6 +124,11 @@ void tft_inverse(complex double *T, size_t len, int k) {
   if(n == l) {
     fft_inverse(T, k, 1);
     return;
+  }
+
+  // Clear unused
+  for(size_t i=l;i<n;i++) {
+    T[i] = 0;
   }
 
   tft_inverse1(T, 0, l-1, n-1, 1);
