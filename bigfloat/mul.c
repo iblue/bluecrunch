@@ -142,14 +142,17 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
         length <<= 1;
         k++;
       }
+      if(length/2 > points_per_word*target->len+10) {
+        length /= 2;
+      }
 
       //  Allocate FFT arrays
       complex double *Ta = (complex double*)_mm_malloc(length * sizeof(complex double), 32);
       complex double *Tb = (complex double*)_mm_malloc(length * sizeof(complex double), 32);
 
       //  Make sure the twiddle table is big enough.
-      size_t sa = int_to_fft(Ta,k,AT,AL, digits_per_point); //  Convert 1st operand
-      size_t sb = int_to_fft(Tb,k,BT,BL, digits_per_point); //  Convert 2nd operand
+      /*size_t sa =*/ int_to_fft(Ta,k,AT,AL, digits_per_point); //  Convert 1st operand
+      /*size_t sb =*/ int_to_fft(Tb,k,BT,BL, digits_per_point); //  Convert 2nd operand
 
       // FIXME
       /*
@@ -172,11 +175,11 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
       } else {
         // Check result
         memcpy(Tb, Ta, length*sizeof(complex double));
-        tft_inverse(Ta, sa+sb+1, k);
+        tft_inverse(Ta, points_per_word*target->len, k);
         fft_inverse(Tb,k,tds);
 
         for(size_t i=0;i<length;i++) {
-          if(cabs(Ta[i] - Tb[i]) > 1e-7) {
+          if(cabs(Ta[i] - Tb[i]) > 2) {
             fprintf(stderr, "Inverse check failed\n");
             abort();
           }

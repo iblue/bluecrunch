@@ -180,7 +180,7 @@ int main() {
   #endif
 
   #ifdef DEBUG
-  size_t digits = 10000;
+  size_t digits = 500000;
   #else
   size_t digits = 500000;
   #endif
