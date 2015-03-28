@@ -75,7 +75,6 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
 
     target->len  = AL + BL; // Add the lenghts for now. May need to correct later.
 
-    /*
     if(target->len == 2) {
       #ifdef DDEBUG
       printf("fastpath\n");
@@ -116,19 +115,19 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
           target->coef[j] = value;
         }
       }
-    } else */{
+    } else {
       #ifdef DDEBUG
       printf("fft\n");
       #endif
       //  Perform multiplication.
-      int digits_per_point;
-      if(target->len > 80000000) {
+      int digits_per_point = 2;
+      /*if(target->len > 8000000) {
         digits_per_point = 2;
-      } else if(target->len > 1000000) {
+      } else if(target->len > 100000) {
         digits_per_point = 3;
       } else {
         digits_per_point = 4;
-      }
+      }*/
 
       int points_per_word = 9/digits_per_point;
       if(9%digits_per_point) {
@@ -173,17 +172,7 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
       if (twiddle_table_size - 1 < k) {
         fft_inverse_uncached(Ta,k,tds);
       } else {
-        // Check result
-        memcpy(Tb, Ta, length*sizeof(complex double));
         tft_inverse(Ta, points_per_word*target->len, k);
-        fft_inverse(Tb,k,tds);
-
-        for(size_t i=0;i<length;i++) {
-          if(cabs(Ta[i] - Tb[i]) > 2) {
-            fprintf(stderr, "Inverse check failed\n");
-            abort();
-          }
-        }
       }
 
       fft_to_int(Ta,k,target->coef,target->len, digits_per_point);   //  Convert back to word array.
