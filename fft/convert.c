@@ -8,11 +8,11 @@ static inline size_t int_to_fft2(complex double *V, const uint32_t *A, size_t AL
   complex double *origV = V;
 
   for (size_t c = 0; c < AL/2+1; c++){
-    uint32_t word1 = A[2*c];
-
     if(2*c >= AL) {
       break;
     }
+
+    uint32_t word1 = A[2*c];
 
     *T++ = _mm_set_sd(word1 % 100);
     word1 /= 100;
