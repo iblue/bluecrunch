@@ -75,6 +75,7 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
 
     target->len  = AL + BL; // Add the lenghts for now. May need to correct later.
 
+    /*
     if(target->len == 2) {
       #ifdef DDEBUG
       printf("fastpath\n");
@@ -115,7 +116,7 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
           target->coef[j] = value;
         }
       }
-    } else {
+    } else*/ {
       #ifdef DDEBUG
       printf("fft\n");
       #endif

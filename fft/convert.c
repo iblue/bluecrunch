@@ -47,13 +47,13 @@ static inline void fft_to_int8(const complex double *T, uint32_t *A, size_t AL, 
     f_point = ((double*)T++)[0] * scale;    //  Load and scale
     i_point = (uint64_t)(f_point + 0.5);    //  Round
     carry += i_point;                       //  Add to carry
-    word1 += (carry % 100) * 256 * 256;     //  Get 8 bits.
+    word1 += (carry % 256) * 256 * 256;     //  Get 8 bits.
     carry /= 256;
 
     f_point = ((double*)T++)[0] * scale;    //  Load and scale
     i_point = (uint64_t)(f_point + 0.5);    //  Round
     carry += i_point;                       //  Add to carry
-    word1 += (carry % 100) * 256 * 256 * 256;  //  Get 8 bits.
+    word1 += (carry % 256) * 256 * 256 * 256;  //  Get 8 bits.
     carry /= 256;
 
     A[c] = word1;
