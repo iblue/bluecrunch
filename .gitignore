@@ -1,5 +1,7 @@
 e.txt
+e.dec
+e.hex
 *.o
 bluecrunch
-e.dec
 *.test
+callgrind.out.*
