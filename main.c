@@ -180,9 +180,9 @@ int main() {
   #endif
 
   #ifdef DEBUG
-  size_t digits = 500000;
+  size_t digits = 5000000;
   #else
-  size_t digits = 500000;
+  size_t digits = 5000000;
   #endif
 
   //  Determine minimum FFT size.
