@@ -34,14 +34,14 @@ void dump_to_file(const char *path, const char* str, size_t len){
 
 //  Returns the # of terms needed to reach a precision of p.
 //
-//  The taylor series converges to log(x!) / log(10) decimal digits after
+//  The taylor series converges to log(x!) / log(2) decimal digits after
 //  x terms. So to find the number of terms needed to reach a precision of p
 //  we need to solve this question for x:
-//      p = log(x!) / log(1000000000)
+//      p = log(x!) / log(4294967296)
 //
 //  This function solves this equation via binary search.
 size_t e_terms(size_t p) {
-  double sizeL = p * logl(1000000000.0) + 1;
+  double sizeL = p * logl(4294967296) + 1;
 
   size_t a = 0;
   size_t b = 1;
@@ -180,7 +180,7 @@ int main() {
   #endif
 
   #ifdef DEBUG
-  size_t digits = 5000000;
+  size_t digits = 100;
   #else
   size_t digits = 5000000;
   #endif

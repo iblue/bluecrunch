@@ -10,7 +10,7 @@ void bigfloat_print(const char* name, const bigfloat_t value) {
   } else {
     printf("{ ");
     for(size_t i=0; i<value->len; i++) {
-      printf("%d", value->coef[i]);
+      printf("0x%08x", value->coef[i]);
       if(i != value->len - 1) {
         printf(", ");
       }

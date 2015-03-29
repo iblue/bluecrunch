@@ -100,10 +100,11 @@ void _bigfloat_uadd(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, s
   //  Add
   uint32_t carry = 0;
   for (size_t c = 0; bot < top; bot++, c++){
-    uint32_t word = _bigfloat_word_at(a, bot) + _bigfloat_word_at(b, bot) + carry;
+    uint64_t word = (uint64_t)_bigfloat_word_at(a, bot) +
+      (uint64_t)_bigfloat_word_at(b, bot) + (uint64_t)carry;
     carry = 0;
-    if (word >= 1000000000){
-      word -= 1000000000;
+    if (word >= UINT32_MAX){
+      word -= UINT32_MAX;
       carry = 1;
     }
     target->coef[c] = word;
@@ -155,10 +156,11 @@ void _bigfloat_usub(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, s
     //  Subtract
     int32_t carry = 0;
     for (size_t c = 0; bot < top; bot++, c++) {
-        int32_t word = (int32_t)_bigfloat_word_at(a, bot) - (int32_t)_bigfloat_word_at(b, bot) - carry;
+        int64_t word = (int64_t)_bigfloat_word_at(a, bot) -
+          (int64_t)_bigfloat_word_at(b, bot) - (int64_t)carry;
         carry = 0;
         if (word < 0){
-            word += 1000000000;
+            word += UINT32_MAX;
             carry = 1;
         }
         target->coef[c] = word;
@@ -232,4 +234,3 @@ void bigfloat_sub(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
   bigfloat_print("t", target);
   #endif
 }
-

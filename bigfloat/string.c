@@ -13,11 +13,17 @@
 #include "bigfloat.h"
 
 size_t int_to_str(uint32_t val, char* str) {
-  for (int i=8;i>=0;i--){
-    str[i] = val % 10 + '0';
-    val   /= 10;
+  for (int i=7;i>=0;i--){
+    int nibble = val % 16;
+    if(nibble < 10) {
+      str[i] = nibble + '0';
+    } else {
+      str[i] = nibble - 10 + 'a';
+    }
+
+    val /= 16;
   }
-  return 9;
+  return 8;
 }
 
 // Skipps leading zeros

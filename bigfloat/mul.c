@@ -81,8 +81,8 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
       #endif
       // Fast path for really small multiplications
       uint64_t result = (uint64_t)AT[0]*BT[0];
-      target->coef[0] = result % 1000000000;
-      result /= 1000000000;
+      target->coef[0] = result % UINT32_MAX;
+      result /= UINT32_MAX;
       target->coef[1] = result;
     } else if(target->len < 350) {
       #ifdef DDEBUG
@@ -99,8 +99,8 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
           value += (uint64_t) AT[i] * (uint64_t) BT[j];
           value += carry;
 
-          carry  = value / 1000000000;
-          value %= 1000000000;
+          carry  = value / UINT32_MAX;
+          value %= UINT32_MAX;
           target->coef[i+j] = value;
         }
         for(size_t j=i+BL;j<target->len;j++) {
@@ -110,8 +110,8 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
           value = target->coef[j];
           value += carry;
 
-          carry  = value / 1000000000;
-          value %= 1000000000;
+          carry  = value / UINT32_MAX;
+          value %= UINT32_MAX;
           target->coef[j] = value;
         }
       }
@@ -120,19 +120,8 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
       printf("fft\n");
       #endif
       //  Perform multiplication.
-      int digits_per_point = 2;
-      /*if(target->len > 8000000) {
-        digits_per_point = 2;
-      } else if(target->len > 100000) {
-        digits_per_point = 3;
-      } else {
-        digits_per_point = 4;
-      }*/
-
-      int points_per_word = 9/digits_per_point;
-      if(9%digits_per_point) {
-        points_per_word++;
-      }
+      int bits_per_point = 8;
+      int points_per_word = 4;
 
       //  Determine minimum FFT size.
       int k = 0;
@@ -150,8 +139,8 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
       complex double *Tb = (complex double*)_mm_malloc(length * sizeof(complex double), 32);
 
       //  Make sure the twiddle table is big enough.
-      /*size_t sa =*/ int_to_fft(Ta,k,AT,AL, digits_per_point); //  Convert 1st operand
-      /*size_t sb =*/ int_to_fft(Tb,k,BT,BL, digits_per_point); //  Convert 2nd operand
+      /*size_t sa =*/ int_to_fft(Ta, k, AT, AL, bits_per_point); //  Convert 1st operand
+      /*size_t sb =*/ int_to_fft(Tb, k, BT, BL, bits_per_point); //  Convert 2nd operand
 
       #define USE_TFT
       #ifdef USE_TFT
@@ -179,7 +168,7 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
       }
       #endif
 
-      fft_to_int(Ta,k,target->coef,target->len, digits_per_point);   //  Convert back to word array.
+      fft_to_int(Ta,k,target->coef,target->len, bits_per_point);   //  Convert back to word array.
 
       _mm_free(Tb);
       _mm_free(Ta);

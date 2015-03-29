@@ -41,17 +41,17 @@ void bigfloat_rcp(bigfloat_t target, const bigfloat_t a, size_t p, int tds) {
       //  Convert number to floating-point.
       double val = AT[0];
       if (AL >= 2)
-          val += AT[1] * 1000000000.;
+          val += (double)AT[1] * (double)UINT32_MAX;
       if (AL >= 3)
-          val += AT[2] * 1000000000000000000.;
+          val += (double)AT[2] * (double)UINT32_MAX * (double)UINT32_MAX;
 
       //  Compute reciprocal.
       val = 1. / val;
       Aexp = -Aexp;
 
       //  Scale
-      while (val < 1000000000.){
-          val *= 1000000000.;
+      while (val < (double)UINT32_MAX){
+          val *= (double)UINT32_MAX;
           Aexp--;
       }
 
@@ -61,8 +61,8 @@ void bigfloat_rcp(bigfloat_t target, const bigfloat_t a, size_t p, int tds) {
       target->sign = a->sign;
 
       target->coef = (uint32_t*)malloc(sizeof(uint32_t)*2);
-      target->coef[0] = (uint32_t)(val64 % 1000000000);
-      target->coef[1] = (uint32_t)(val64 / 1000000000);
+      target->coef[0] = (uint32_t)(val64 % UINT32_MAX);
+      target->coef[1] = (uint32_t)(val64 / UINT32_MAX);
       target->len = 2;
       target->exp = Aexp;
 
