@@ -154,11 +154,10 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
       /*size_t sb =*/ int_to_fft(Tb,k,BT,BL, digits_per_point); //  Convert 2nd operand
 
       // FIXME
-      /*
-      tft_forward(Ta, k, sa+sb+1);
-      tft_forward(Tb, k, sa+sb+1);
-      */
+      tft_forward(Ta, points_per_word*target->len, k);
+      tft_forward(Tb, points_per_word*target->len, k);
 
+      /*
       if (twiddle_table_size - 1 < k) {
         fft_forward_uncached(Ta,k,tds);
         fft_forward_uncached(Tb,k,tds);
@@ -166,6 +165,7 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
         fft_forward(Ta,k,tds);
         fft_forward(Tb,k,tds);
       }
+      */
 
       fft_pointwise(Ta,Tb,k);//  Pointwise multiply
 

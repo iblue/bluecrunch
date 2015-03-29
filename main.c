@@ -180,9 +180,9 @@ int main() {
   #endif
 
   #ifdef DEBUG
-  size_t digits = 50000000;
+  size_t digits = 500000;
   #else
-  size_t digits = 50000000;
+  size_t digits = 500000;
   #endif
 
   //  Determine minimum FFT size.
@@ -194,6 +194,7 @@ int main() {
     length *= 2;
     k++;
   }
+  k++;
 
   printf("Configuration:\n");
   printf("Digits:           %ld\n", digits);

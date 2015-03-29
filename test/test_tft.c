@@ -29,6 +29,29 @@ int main() {
     assert_fp(values[3], 0);
   }
 
+  /*
+   * Forward FFT:
+   *          ----0-----  ----1----  ----2----  ----3----  ------4------  ----5-------  -------6-----   ------7-----
+   * stage 0:  1.000+0.j  2.000+0.j  3.000+0.j  4.000+0.j   5.000+0.000j  0.000+0.000j   0.000+0.000j   0.000+0.000j
+   * stage 1:  6.000+0.j  2.000+0.j  3.000+0.j  4.000+0.j  -4.000+0.000j  1.414+1.414j   0.000+3.000j  -2.828+2.828j
+   * stage 2 : 9.000+0.j  6.000+0.j  3.000+0.j -0.000-2.j  -4.000+3.000j -1.414+4.243j  -4.000-3.000j   1.414+4.243j
+   * stage 3: 15.000+0.j  3.000+0.j  3.000-2.j  3.000+2.j  -5.414+7.243j -2.586-1.243j  -2.586+1.243j  -5.414-7.243j
+   */
+  {
+    __attribute__ ((aligned (32))) complex double values[] = {1, 2, 3, 4, 5, 0, 0, 0};
+
+    tft_forward(values, 5, 3);
+
+    assert_fp(values[0], 15);
+    assert_fp(values[1], 3);
+    assert_fp(values[2], 3-2*I);
+    assert_fp(values[3], 3+2*I);
+    assert_fp(values[4], -5.4142135623730949+7.2426406871192857*I);
+    assert_fp(values[5], 0);
+    assert_fp(values[6], 0);
+    assert_fp(values[7], 0);
+  }
+
 
   {
     __attribute__ ((aligned (32))) complex double values[] = {6, 2, -2+2*I, 0};

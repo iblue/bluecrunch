@@ -34,21 +34,35 @@ void tft_forward1(complex double *T, size_t length, int k) {
   size_t m_s = 1 << k;
   size_t j = div_ceil(length, m_s)*m_s - 1;
 
-  size_t half_length = div_ceil(j, 2);
+  size_t iteration_half_length = div_ceil(j, 2);
+  size_t shift_half_length     = 1 << (k-1);
 
   //  Get local twiddle table.
   complex double* local_table = twiddle_table[k];
 
-  for (size_t n = 0; n < half_length; n+=2){
+  for (size_t n = 0; n < iteration_half_length; n+=2){
     //  Grab Twiddle Factors
     __m256d twiddles = _mm256_load_pd((double*)&local_table[n]); // tmp = [r0,i0,r1,i1]
-    fft_forward_butterfly(twiddles, (__m256d*)(T+n), (__m256d*)(T+n+half_length));
+    fft_forward_butterfly(twiddles, (__m256d*)(T+n), (__m256d*)(T+n+shift_half_length));
   }
 
   size_t shift = 1 << (k-1);
 
-  fft_forward(T, k - 1, 1); // Calculate the left side completely.
-  tft_forward1(T + shift, length - shift, k - 1); // Calculate the right side partially
+  if(shift == length) {
+    fft_forward(T, k - 1, 1); // Calculate the left side completely.
+    return;
+  }
+
+  if(shift < length) {
+    fft_forward(T, k - 1, 1); // Calculate the left side completely.
+    tft_forward1(T + shift, length - shift, k - 1); // Calculate the right side partially
+    return;
+  }
+
+  if(shift > length) {
+    tft_forward(T, length, k-1); // Calculate left side partially
+    return;
+  }
 }
 
 void tft_inverse1(complex double *T, size_t head, size_t tail, size_t last, size_t s) {
