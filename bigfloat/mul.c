@@ -75,6 +75,10 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
 
     target->len  = AL + BL; // Add the lenghts for now. May need to correct later.
 
+    #ifndef DEBUG
+    #define BASECASE_OPTIMIZATION
+    #endif
+    #ifdef BASECASE_OPTIMIZATION
     if(target->len == 2) {
       // Fast path for really small multiplications
       uint64_t result = (uint64_t)AT[0]*BT[0];
@@ -108,7 +112,9 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
           target->coef[j] = value;
         }
       }
-    } else {
+    } else
+    #endif
+    {
       //  Perform multiplication.
       int bits_per_point = 12;
       int points_per_word = 3;

@@ -196,6 +196,7 @@ static inline void fft_to_int12(const complex double *T, uint32_t *A, size_t AL,
     i_point = (uint64_t)(f_point + 0.5);    //  Round
     carry += i_point;                       //  Add to carry
     word3 |= (carry & 0xfff) << 20;         //  Get 12 bits.
+    carry >>= 12;
     A[3*c+2] = word3;
   }
 }
