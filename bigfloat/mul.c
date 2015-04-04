@@ -117,9 +117,6 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
         }
       }
     } else*/ {
-      #ifdef DDEBUG
-      printf("fft\n");
-      #endif
       //  Perform multiplication.
       int bits_per_point = 8;
       int points_per_word = 4;
@@ -174,19 +171,11 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
       _mm_free(Tb);
       _mm_free(Ta);
     }
-    #ifdef DDEBUG
-    for(size_t i=AL;i-->0;) {
-      printf("%09d", AT[i]);
-    }
-    printf(",");
-    for(size_t i=BL;i-->0;) {
-      printf("%09d", BT[i]);
-    }
-    printf(",");
-    for(size_t i=target->len;i-->0;) {
-      printf("%09d", target->coef[i]);
-    }
-    printf("\n");
+    #ifdef DEBUG
+    printf("mul a*b = t\n");
+    bigfloat_print("a", a);
+    bigfloat_print("b", b);
+    bigfloat_print("t", target);
     #endif
 
     //  Check top word and correct length.

@@ -202,6 +202,7 @@ void bigfloat_add(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
     }
 
   #ifdef DEBUG
+  printf("add a+b = t\n");
   bigfloat_print("a", a);
   bigfloat_print("b", b);
   bigfloat_print("t", target);
@@ -229,6 +230,7 @@ void bigfloat_sub(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
   }
 
   #ifdef DEBUG
+  printf("sub a-b = t\n");
   bigfloat_print("a", a);
   bigfloat_print("b", b);
   bigfloat_print("t", target);
