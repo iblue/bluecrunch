@@ -18,7 +18,7 @@ static inline size_t int_to_fft12(complex double *V, const uint32_t *A, size_t A
   complex double *origV = V;
 
   for (size_t c = 0; c < AL/3+2; c++){
-    if(3*c > AL) {
+    if(3*c >= AL) {
       break;
     }
 
@@ -29,7 +29,7 @@ static inline size_t int_to_fft12(complex double *V, const uint32_t *A, size_t A
     *T++ = _mm_set_sd(word1 & 0xfff);
     word1 <<= 12;
 
-    if(3*c+1 > AL) {
+    if(3*c+1 >= AL) {
       *T++ = _mm_set_sd(word1 & 0xff);
       break;
     }
@@ -45,7 +45,7 @@ static inline size_t int_to_fft12(complex double *V, const uint32_t *A, size_t A
     *T++ = _mm_set_sd(word2 & 0xfff);
     word2 <<= 12;
 
-    if(3*c+2 > AL) {
+    if(3*c+2 >= AL) {
       *T++ = _mm_set_sd(word2 & 0xf);
       break;
     }
@@ -132,6 +132,10 @@ static inline void fft_to_int12(const complex double *T, uint32_t *A, size_t AL,
     uint64_t i_point;
     uint32_t word1, word2, word3;
 
+    if(3*c >= AL) {
+      break;
+    }
+
     f_point = ((double*)T++)[0] * scale;    //  Load and scale
     i_point = (uint64_t)(f_point + 0.5);    //  Round
     carry += i_point;                       //  Add to carry
@@ -149,6 +153,11 @@ static inline void fft_to_int12(const complex double *T, uint32_t *A, size_t AL,
     carry += i_point;                       //  Add to carry
     word1 |= (carry & 0xff) << 24;          //  Get 8+4 bits.
     carry <<= 8;
+    A[3*c] = word1;
+    if(3*c+1 >= AL) {
+      break;
+    }
+
     word2 = carry & 0xf;                    // FIXME: DETECT END!
     carry <<= 4;
 
@@ -169,6 +178,11 @@ static inline void fft_to_int12(const complex double *T, uint32_t *A, size_t AL,
     carry += i_point;                       //  Add to carry
     word2 |= (carry & 0xf) << 28;           //  Get 4+8 bits.
     carry <<= 4;
+    A[3*c+1] = word2;
+    if(3*c+2 >= AL) {
+      break;
+    }
+
     word3 = carry & 0xff;                   // FIXME: DETECT END!
     carry <<= 8;
 
@@ -182,9 +196,6 @@ static inline void fft_to_int12(const complex double *T, uint32_t *A, size_t AL,
     i_point = (uint64_t)(f_point + 0.5);    //  Round
     carry += i_point;                       //  Add to carry
     word3 |= (carry & 0xfff) << 20;         //  Get 12 bits.
-
-    A[3*c]   = word1;
-    A[3*c+1] = word2;
     A[3*c+2] = word3;
   }
 }
