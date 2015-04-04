@@ -110,8 +110,8 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
       }
     } else {
       //  Perform multiplication.
-      int bits_per_point = 8;
-      int points_per_word = 4;
+      int bits_per_point = 12;
+      int points_per_word = 3;
 
       //  Determine minimum FFT size.
       int k = 0;
