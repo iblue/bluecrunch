@@ -75,20 +75,12 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
 
     target->len  = AL + BL; // Add the lenghts for now. May need to correct later.
 
-    /*
     if(target->len == 2) {
-      #ifdef DDEBUG
-      printf("fastpath\n");
-      #endif
       // Fast path for really small multiplications
       uint64_t result = (uint64_t)AT[0]*BT[0];
-      target->coef[0] = result % UINT32_MAX;
-      result /= UINT32_MAX;
-      target->coef[1] = result;
+      target->coef[0] = result & 0xffffffff;
+      target->coef[1] = result >> 32;
     } else if(target->len < 350) {
-      #ifdef DDEBUG
-      printf("basecase\n");
-      #endif
       for(size_t i=0;i<target->len;i++) {
         target->coef[i] = 0;
       }
@@ -100,8 +92,8 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
           value += (uint64_t) AT[i] * (uint64_t) BT[j];
           value += carry;
 
-          carry  = value / UINT32_MAX;
-          value %= UINT32_MAX;
+          carry  = value >> 32;
+          value &= 0xffffffff;
           target->coef[i+j] = value;
         }
         for(size_t j=i+BL;j<target->len;j++) {
@@ -116,7 +108,7 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
           target->coef[j] = value;
         }
       }
-    } else*/ {
+    } else {
       //  Perform multiplication.
       int bits_per_point = 8;
       int points_per_word = 4;
