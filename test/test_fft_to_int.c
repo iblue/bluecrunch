@@ -74,5 +74,23 @@ int main(void) {
     }
   }
 
+  // 8 bits, 1/1 words
+  {
+    complex double T[16];
+
+    uint32_t words[] = {0x1234abcd};
+
+    int_to_fft(T, 4, words, 1, 8);
+
+    assert_fp(T[0], 0xcd);
+    assert_fp(T[1], 0xab);
+    assert_fp(T[2], 0x34);
+    assert_fp(T[3], 0x12);
+
+    for(size_t i=4;i<16;i++) {
+      assert_fp(T[i], 0x0);
+    }
+  }
+
   return 0;
 }
