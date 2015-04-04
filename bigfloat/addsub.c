@@ -103,8 +103,8 @@ void _bigfloat_uadd(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, s
     uint64_t word = (uint64_t)_bigfloat_word_at(a, bot) +
       (uint64_t)_bigfloat_word_at(b, bot) + (uint64_t)carry;
     carry = 0;
-    if (word >= UINT32_MAX){
-      word -= UINT32_MAX;
+    if (word >= 0x100000000){
+      word -= 0x100000000;
       carry = 1;
     }
     target->coef[c] = word;
@@ -160,7 +160,7 @@ void _bigfloat_usub(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, s
           (int64_t)_bigfloat_word_at(b, bot) - (int64_t)carry;
         carry = 0;
         if (word < 0){
-            word += UINT32_MAX;
+            word += 0x100000000;
             carry = 1;
         }
         target->coef[c] = word;

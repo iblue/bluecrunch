@@ -49,7 +49,7 @@ File.open('debug-20150404.log').each do |line|
   end
 
   if(@t != @expected)
-    puts "Got 0x%x but expected 0x%x" % [@expected, @t]
+    puts "Got 0x%x but expected 0x%x" % [@t,@expected]
     puts @line_mode
     puts @line_a
     puts @line_b
