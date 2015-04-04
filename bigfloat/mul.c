@@ -115,9 +115,26 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
     } else
     #endif
     {
+      //#define USE_TFT
       //  Perform multiplication.
-      int bits_per_point = 12;
-      int points_per_word = 3;
+      int bits_per_point;
+      int points_per_word;
+      #ifdef USE_TFT
+      // Experimentally determined by checking accuracy vs 8 bit.
+      // too big:   175000
+      // too small: 100000
+      if(target->len < 137000) {
+        bits_per_point = 12;
+        points_per_word = 3;
+      } else {
+        bits_per_point = 8;
+        points_per_word = 4;
+      }
+      #else
+      bits_per_point = 12;
+      points_per_word = 3;
+      #endif
+
 
       //  Determine minimum FFT size.
       int k = 0;
@@ -138,7 +155,6 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
       /*size_t sa =*/ int_to_fft(Ta, k, AT, AL, bits_per_point); //  Convert 1st operand
       /*size_t sb =*/ int_to_fft(Tb, k, BT, BL, bits_per_point); //  Convert 2nd operand
 
-      #define USE_TFT
       #ifdef USE_TFT
       tft_forward(Ta, points_per_word*target->len, k);
       tft_forward(Tb, points_per_word*target->len, k);
