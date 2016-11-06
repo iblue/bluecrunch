@@ -26,6 +26,10 @@ void bigfloat_sub(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
 void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, size_t p, int tds);
 void bigfloat_div(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, size_t p, int tds);
 void bigfloat_rcp(bigfloat_t target, const bigfloat_t a,                     size_t p, int tds);
+void bigfloat_exp(bigfloat_t target, const bigfloat_t a,                     size_t p, int tds);
+
+// Radix conversion
+void bigfloat_radix(bigfloat_t target, const bigfloat_t a);
 
 // Output
 size_t bigfloat_to_string(char* string, const bigfloat_t value, size_t digits);
