@@ -1,6 +1,6 @@
 @mode = nil
 
-File.open('debug-20150404.log').each do |line|
+File.open('debug.log').each do |line|
   if line =~ /^mul/
     @mode = :mul
     @line_mode = line

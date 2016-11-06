@@ -7,12 +7,18 @@
 #include "bigfloat.h"
 #include "fft.h"
 
+#define DEBUG
 void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, size_t p, int tds) {
     //  Multiplication
 
     //  The target precision is p.
     //  If (p = 0), then no truncation is done. The entire operation is done
     //  at maximum precision with no data loss.
+    #ifdef DEBUG
+    printf("mul a*b = t\n");
+    bigfloat_print("a", a);
+    bigfloat_print("b", b);
+    #endif
 
     //  Either operand is zero.
     if (bigfloat_iszero(a) || bigfloat_iszero(b)) {
@@ -84,7 +90,8 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
       uint64_t result = (uint64_t)AT[0]*BT[0];
       target->coef[0] = result & 0xffffffff;
       target->coef[1] = result >> 32;
-    } else if(target->len < 350) {
+    } else if(target->len < 350 && target->coef != a->coef && target->coef != b->coef) {
+      // FIXME: This breaks if we are multiplying in-place. Fix that.
       for(size_t i=0;i<target->len;i++) {
         target->coef[i] = 0;
       }
@@ -148,6 +155,7 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
       }
 
       //  Allocate FFT arrays
+      // TODO: Can be optimited if a == b.
       complex double *Ta = (complex double*)_mm_malloc(length * sizeof(complex double), 32);
       complex double *Tb = (complex double*)_mm_malloc(length * sizeof(complex double), 32);
 
@@ -186,9 +194,6 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
       _mm_free(Ta);
     }
     #ifdef DEBUG
-    printf("mul a*b = t\n");
-    bigfloat_print("a", a);
-    bigfloat_print("b", b);
     bigfloat_print("t", target);
     #endif
 

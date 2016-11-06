@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stddef.h>
 
 #define YCL_BIGFLOAT_EXTRA_PRECISION    2
 
@@ -18,6 +19,7 @@ int  bigfloat_iszero(const bigfloat_t target);
 void bigfloat_set   (      bigfloat_t target, uint32_t value);
 void bigfloat_free  (      bigfloat_t target);
 void bigfloat_new   (      bigfloat_t target);
+void bigfloat_copy  (      bigfloat_t target, const bigfloat_t source);
 
 // Arithmatic
 void bigfloat_neg(bigfloat_t target);
@@ -26,7 +28,7 @@ void bigfloat_sub(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
 void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, size_t p, int tds);
 void bigfloat_div(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, size_t p, int tds);
 void bigfloat_rcp(bigfloat_t target, const bigfloat_t a,                     size_t p, int tds);
-void bigfloat_exp(bigfloat_t target, const bigfloat_t a,                     size_t p, int tds);
+void bigfloat_exp(bigfloat_t target, const bigfloat_t a, const uint64_t exp, int tds);
 
 // Radix conversion
 void bigfloat_radix(bigfloat_t target, const bigfloat_t a);
