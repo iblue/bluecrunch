@@ -17,11 +17,6 @@ void bigfloat_radix(bigfloat_t target, const bigfloat_t a) {
     double scale = -log*a->exp;
     uint64_t intscale = scale;
 
-    // Fix off by one.
-    if(target->coef[a->len-1] <= 0x2) {
-      intscale+=1;
-    }
-
     //printf("bigfloat_radix: %f =~ %ld\n", scale, intscale);
     newexp = -scale;
 

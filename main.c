@@ -194,7 +194,7 @@ int main() {
   #ifdef DEBUG
   size_t digits = 10000;
   #else
-  size_t digits = 1000;
+  size_t digits = 100;
   #endif
 
   //  Determine minimum FFT size.
