@@ -23,6 +23,7 @@ void bigfloat_copy  (      bigfloat_t target, const bigfloat_t source);
 
 // Arithmatic
 void bigfloat_neg(bigfloat_t target);
+void bigfloat_floor(bigfloat_t target);
 void bigfloat_add(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, size_t p);
 void bigfloat_sub(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, size_t p);
 void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, size_t p, int tds);
