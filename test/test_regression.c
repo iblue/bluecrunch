@@ -4,9 +4,9 @@
 
 
 int main() {
+  /*
   {
     bigfloat_t a;
-    bigfloat_t target;
 
     a->exp = 0;
     a->len = 4;
@@ -17,6 +17,8 @@ int main() {
     a->coef[2] = 0xce88deb8;
     a->coef[3] = 0x00000002;
 
+    bigfloat_t target;
+    bigfloat_new(target);
 
     bigfloat_mul(target, a, a, 0, 8);
 
@@ -31,7 +33,7 @@ int main() {
     assert(target->coef[5] == 0xe0c40a81);
     assert(target->coef[6] == 0x7);
   }
-
+  */
   {
     bigfloat_t a;
 
@@ -57,5 +59,7 @@ int main() {
     assert(a->coef[4] == 0x68a5465b);
     assert(a->coef[5] == 0xe0c40a81);
     assert(a->coef[6] == 0x7);
+
+    bigfloat_free(a);
   }
 }

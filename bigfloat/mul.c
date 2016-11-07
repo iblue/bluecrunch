@@ -7,7 +7,6 @@
 #include "bigfloat.h"
 #include "fft.h"
 
-#define DEBUG
 void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, size_t p, int tds) {
     //  Multiplication
 
@@ -65,12 +64,20 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
       // "In-place" mul
       if(AL+BL > target->len) {
         target->coef = (uint32_t*) realloc(target->coef, sizeof(uint32_t)*(AL+BL));
-        AT = target->coef; // Prevent use-after-free
+        // Prevent use-after-free
+        if(AT == BT) {
+          BT = target->coef;
+        }
+        AT = target->coef;
       }
     } else if(target->coef == b->coef) {
       if(AL+BL > target->len) {
         target->coef = (uint32_t*) realloc(target->coef, sizeof(uint32_t)*(AL+BL));
-        BT = target->coef; // Prevent use-after-free
+        // Prevent use-after-free
+        if(AT == BT) {
+          AT = target->coef;
+        }
+        BT = target->coef;
       }
     } else {
       if(target->coef != NULL) {
@@ -81,9 +88,9 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
 
     target->len  = AL + BL; // Add the lenghts for now. May need to correct later.
 
-    #ifndef DEBUG
+    /*#ifndef DEBUG
     #define BASECASE_OPTIMIZATION
-    #endif
+    #endif*/
     #ifdef BASECASE_OPTIMIZATION
     if(target->len == 2) {
       // Fast path for really small multiplications

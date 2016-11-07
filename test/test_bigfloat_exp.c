@@ -1,6 +1,5 @@
 #include <malloc.h>
 #include <assert.h>
-#define DEBUG
 #include "bigfloat.h"
 
 int main(void) {
@@ -12,8 +11,7 @@ int main(void) {
 
     bigfloat_new(b);
 
-    bigfloat_exp(b, a, 0x17, 8);
-    bigfloat_print("b", b);
+    bigfloat_exp(b, a, 0xd7, 1);
 
     // Expected result: 0x10298d253fecb89d491933590a085405544b42f1d9c940ca666a0b296a5c661fbcac60e9bbb478e26b3e640d61c2832cd6b61f7d67ea02df7c14ce8279e958b612d26d54ae6e5a7ce6e7c4b24156ff511648e672df968070750ec664af4ed6b56a11935c75d52781051282e03e2b55c4e9f9eef659e327a3ad9e7c1711345d7e26c9db89d3eb94e59f53f2c8924737736cbd1321f8d80ea626aaa0a8b9691847816ebfa322982ebd48bca0475d049403e81e57362d491b6625b25de3b364fe1ee0c4ddf80121e042a81231e258d627343b35c08b2e51eaa632b034342209cb69c7171de9c9bdc47e90d39de0b73703f46d15c8cc1bf1914405dc7de708e4c8814342828b0ba1f04c4cc854a672040e4a93c9400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
     assert(b->len  == 82);
@@ -101,6 +99,9 @@ int main(void) {
     assert(b->coef[ 2] == 0x00000000);
     assert(b->coef[ 1] == 0x00000000);
     assert(b->coef[ 0] == 0x00000000);
+
+    bigfloat_free(a);
+    bigfloat_free(b);
   }
 
   return 0;
