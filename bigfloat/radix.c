@@ -6,6 +6,21 @@
 // Converts to base 10
 // (Ok, we are converting from base 4294967296 to 100000000)
 void bigfloat_radix(bigfloat_t target, const bigfloat_t a) {
+  if(target->coef == a->coef && target->len == a->len) {
+    if(a->len == 1) {
+      return;
+    }
+
+    if(a->len == 2) {
+      uint64_t val = ((uint64_t)a->coef[1] << 32) + (uint64_t)a->coef[0];
+      uint64_t upper = val / 100000000;
+      uint64_t lower = val % 100000000;
+      target->coef[0] = lower;
+      target->coef[1] = upper;
+      return;
+    }
+  }
+
   // This is log_100000000(4294967296)
   double log = 1.204119982655924780854955578897972107072759525848434165241;
 
