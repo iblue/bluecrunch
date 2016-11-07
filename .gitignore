@@ -1,6 +1,7 @@
 e.txt
 e.dec
 e.hex
+e-hex.txt
 *.o
 bluecrunch
 *.test

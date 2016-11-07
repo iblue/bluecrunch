@@ -26,6 +26,19 @@ size_t int_to_str(uint32_t val, char* str) {
   return 8;
 }
 
+size_t int_to_str10(uint32_t val, char* str) {
+  size_t i = 0;
+
+  while(val > 0) {
+    int nibble = val%10;
+    str[i] = nibble + '0';
+    val /= 10;
+    i++;
+  }
+
+  return i;
+}
+
 // Skipps leading zeros
 size_t int_to_str_trimmed(uint32_t val, char* str) {
   if(val == 2) {
@@ -37,8 +50,13 @@ size_t int_to_str_trimmed(uint32_t val, char* str) {
   }
 }
 
+size_t int_to_str_trimmed10(uint32_t val, char* str) {
+  // FIXME
+  return int_to_str10(val, str);
+}
+
 // Returns length of string, fills char* string with value
-size_t bigfloat_to_string(char* string, const bigfloat_t value, size_t digits) {
+size_t bigfloat_to_string(char* string, const bigfloat_t value, size_t digits, int base) {
   char* initial_string = string;
   if(value->len == 0) {
     string[0] = '0';
@@ -51,7 +69,11 @@ size_t bigfloat_to_string(char* string, const bigfloat_t value, size_t digits) {
   size_t c = value->len-1;
 
   if(mag == 1) {
-    string += int_to_str_trimmed(value->coef[c], string);
+    if(base == 10) {
+      string += int_to_str_trimmed10(value->coef[c], string);
+    } else {
+      string += int_to_str_trimmed(value->coef[c], string);
+    }
   }
 
   *string++ = '.';
@@ -64,8 +86,14 @@ size_t bigfloat_to_string(char* string, const bigfloat_t value, size_t digits) {
     min_c = 0;
   }
 
-  while(c-->min_c) {
-    string += int_to_str(value->coef[c], string);
+  if(base == 10) {
+    while(c-->min_c) {
+      string += int_to_str10(value->coef[c], string);
+    }
+  } else {
+    while(c-->min_c) {
+      string += int_to_str(value->coef[c], string);
+    }
   }
 
   *string++ = '\0';

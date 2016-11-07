@@ -36,6 +36,6 @@ void bigfloat_exp(bigfloat_t target, const bigfloat_t a, const uint64_t exp, int
 void bigfloat_radix(bigfloat_t target, const bigfloat_t a);
 
 // Output
-size_t bigfloat_to_string(char* string, const bigfloat_t value, size_t digits);
+size_t bigfloat_to_string(char* string, const bigfloat_t value, size_t digits, int base);
 void bigfloat_print(const char* name,   const bigfloat_t value);
 void bigfloat_print10(const char* name, const bigfloat_t value);
