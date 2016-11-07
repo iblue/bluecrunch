@@ -83,10 +83,18 @@ size_t bigfloat_to_string(char* string, const bigfloat_t value, size_t digits, i
 
   size_t min_c;
 
-  if(value->len > digits/9) {
-    min_c = value->len-digits/9-1;
+  if(base == 10) {
+    if(value->len > digits/8) {
+      min_c = value->len-digits/8-1;
+    } else {
+      min_c = 0;
+    }
   } else {
-    min_c = 0;
+    if(value->len > digits/9) {
+      min_c = value->len-digits/9-1;
+    } else {
+      min_c = 0;
+    }
   }
 
   if(base == 10) {
