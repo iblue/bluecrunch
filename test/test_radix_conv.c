@@ -90,7 +90,27 @@ int main(void) {
     a->coef[13] = 0x00000002;
 
     bigfloat_radix(a, a);
-    bigfloat_print10("a", a);
+
+    assert(a->len  == 16);
+    assert(a->sign == 1);
+    assert(a->exp  == -15);
+
+    assert(a->coef[0]  == 3059921);
+    assert(a->coef[1]  == 63919320);
+    assert(a->coef[2]  == 42742746);
+    assert(a->coef[3]  == 78525166);
+    assert(a->coef[4]  == 45713821);
+    assert(a->coef[5]  == 35354759);
+    assert(a->coef[6]  == 24076630);
+    assert(a->coef[7]  == 69676277);
+    assert(a->coef[8]  == 95957496);
+    assert(a->coef[9]  == 47093699);
+    assert(a->coef[10] == 24977572);
+    assert(a->coef[11] == 47135266);
+    assert(a->coef[12] == 35360287);
+    assert(a->coef[13] == 84590452);
+    assert(a->coef[14] == 71828182);
+    assert(a->coef[15] == 2);
   }
 
 

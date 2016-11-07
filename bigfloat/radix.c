@@ -77,5 +77,15 @@ void bigfloat_radix(bigfloat_t target, const bigfloat_t a) {
   bigfloat_free(low);
   bigfloat_free(high);
 
-  target->exp = newexp;
+  if(newexp != 0) {
+    target->exp = newexp;
+
+    // Fix overflow by carry.
+    if(target->coef[target->len-1] > 100000000) {
+      target->len++;
+      target->coef = (uint32_t*) realloc(target->coef, target->len*sizeof(uint32_t));
+      target->coef[target->len-1] = target->coef[target->len-2]/100000000;
+      target->coef[target->len-2] %= 100000000;
+    }
+  }
 }

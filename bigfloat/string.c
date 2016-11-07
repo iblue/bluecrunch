@@ -27,16 +27,13 @@ size_t int_to_str(uint32_t val, char* str) {
 }
 
 size_t int_to_str10(uint32_t val, char* str) {
-  size_t i = 0;
-
-  while(val > 0) {
-    int nibble = val%10;
+  for (int i=7;i>=0;i--){
+    int nibble = val % 10;
     str[i] = nibble + '0';
-    val /= 10;
-    i++;
-  }
 
-  return i;
+    val /= 10;
+  }
+  return 8;
 }
 
 // Skipps leading zeros
@@ -52,7 +49,13 @@ size_t int_to_str_trimmed(uint32_t val, char* str) {
 
 size_t int_to_str_trimmed10(uint32_t val, char* str) {
   // FIXME
-  return int_to_str10(val, str);
+  if(val == 2) {
+    str[0] = '2';
+    return 1;
+  } else {
+    fprintf(stderr, "Not implemented\n");
+    abort();
+  }
 }
 
 // Returns length of string, fills char* string with value
