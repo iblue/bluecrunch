@@ -1,20 +1,19 @@
 #include <malloc.h>
+#include <string.h> // memmove
+#include "math.h"
 #include "bigfloat.h"
-
-#define CEIL_POS(X) ((X-(int)(X)) > 0 ? (int)(X+1) : (int)(X))
-#define CEIL_NEG(X) ((X-(int)(X)) < 0 ? (int)(X-1) : (int)(X))
-#define CEIL(X) ( ((X) > 0) ? CEIL_POS(X) : CEIL_NEG(X) )
 
 // Converts to base 10
 // (Ok, we are converting from base 4294967296 to 100000000)
 void bigfloat_radix(bigfloat_t target, const bigfloat_t a) {
   // This is log_100000000(4294967296)
-  //double scale = 1.204119982655924780854955578897972107072759525848434165241;
+  double scale = 1.204119982655924780854955578897972107072759525848434165241;
   // Now multiply by 1000000000^exponent
   //assert(exponent == 0); // Fix that later.
 
-  // FIXME: Need bigfloat_exp first.
-  size_t limbs = 2; // FIXME!
+  // Actually that could be refined to (may require 1 limb less)
+  // size_t limbs = ceil(log(a->coef[a->len-1])/scale + (a->len-1)*scale)
+  size_t limbs = ceil(a->len*scale);
   size_t upper_len = limbs/2;
 
   // Convert upper
@@ -35,4 +34,23 @@ void bigfloat_radix(bigfloat_t target, const bigfloat_t a) {
   bigfloat_mul(low, exp, high, 0, 8);
   bigfloat_neg(low);
   bigfloat_add(low, low, a, 0);
+
+  // Recurse
+  if(low->len > 1) {
+    bigfloat_radix(low, low);
+  }
+
+  if(high->len > 1) {
+    bigfloat_radix(high, high);
+  }
+
+  // Write target
+  bigfloat_alloc(target, low->len + high->len);
+  memmove(target->coef, low->coef, low->len*sizeof(uint32_t));
+  memmove(target->coef+low->len, high->coef, high->len*sizeof(uint32_t));
+
+  // FIXME: We can skip this by writing directly into target by manipulating
+  // some shit.
+  bigfloat_free(low);
+  bigfloat_free(high);
 }

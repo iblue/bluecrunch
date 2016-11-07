@@ -20,6 +20,7 @@ void bigfloat_set   (      bigfloat_t target, uint32_t value);
 void bigfloat_free  (      bigfloat_t target);
 void bigfloat_new   (      bigfloat_t target);
 void bigfloat_copy  (      bigfloat_t target, const bigfloat_t source);
+void bigfloat_alloc(bigfloat_t target, size_t size);
 
 // Arithmatic
 void bigfloat_neg(bigfloat_t target);
@@ -37,3 +38,4 @@ void bigfloat_radix(bigfloat_t target, const bigfloat_t a);
 // Output
 size_t bigfloat_to_string(char* string, const bigfloat_t value, size_t digits);
 void bigfloat_print(const char* name,   const bigfloat_t value);
+void bigfloat_print10(const char* name, const bigfloat_t value);
