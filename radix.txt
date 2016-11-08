@@ -1,5 +1,6 @@
 Example: X = 0x1234567890 to decimal.
 
+0. Scale
 1. Compute S = log_10(X) = 10.8931 => 11 decimal digits.
 2. Reallocate X = 0x01234567890
 3. Round down S to nearest power of two that is < S (R = 8)

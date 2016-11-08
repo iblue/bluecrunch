@@ -1,5 +1,5 @@
 #include <malloc.h>
-#include <string.h> // memmove
+#include <string.h> // memcpy
 #include "math.h"
 #include "bigfloat.h"
 
@@ -28,22 +28,102 @@ size_t bigfloat_radix_decimals(bigfloat_t target) {
   return ceil(digits + epsilon);
 }
 
+// XXX untested
+int64_t _scale(bigfloat_t a) {
+  // Already scaled
+  if(a->exp == 0) {
+    return 0;
+  }
+
+  double scale = -LOG*a->exp;
+  int64_t intscale = scale;
+
+  printf("bigfloat_radix: %f =~ %ld\n", scale, intscale);
+
+  // Multiply by scaling.
+  bigfloat_t mul;
+  bigfloat_new(mul);
+  bigfloat_set(mul, 100000000);
+  bigfloat_exp(mul, mul, intscale, 8);
+  bigfloat_mul(a, a, mul, 0, 8);
+
+  // FIXME: Check if exp is zero
+  bigfloat_floor(a);
+
+  return -intscale;
+}
+
+void _radix_recurse(uint32_t *coef, size_t len) {
+  if(len == 1) {
+    return;
+  }
+
+  bigfloat_t high;
+  bigfloat_new(high);
+
+  bigfloat_t low;
+  bigfloat_new(low);
+
+  // We are cheating here...
+  bigfloat_t src;
+  src->coef = coef;
+  src->len  = len;
+  src->exp  = 0;
+  src->sign = 1;
+
+  size_t split = 1;
+  while(split < len) {
+    split <<= 1;
+  }
+  split >>= 1;
+
+  printf("%ld split to (%ld,%ld)\n", len, split, len-split);
+
+  // TODO: Performance: This will be in the precalculated base conv table
+  bigfloat_t exp;
+  bigfloat_new(exp);
+  bigfloat_set(exp, NEWBASE);
+  bigfloat_exp(exp, exp, split, 8);
+
+  // FIXME: Performance: We calculate more than we need.
+  bigfloat_div(high, src, exp, 0, 8);
+  bigfloat_floor(high);
+
+  bigfloat_mul(low, exp, high, 0, 8);
+  bigfloat_neg(low);
+  bigfloat_add(low, low, src, 0);
+
+  // Write target
+  memcpy(coef, low->coef, low->len*sizeof(uint32_t));
+  memcpy(coef+low->len, high->coef, high->len*sizeof(uint32_t));
+
+  size_t lowlen = low->len;
+  size_t highlen = high->len;
+
+  bigfloat_free(low);
+  bigfloat_free(high);
+
+  // Recurse
+  _radix_recurse(coef, lowlen);
+  _radix_recurse(coef+lowlen, highlen);
+}
+
 // Converts from OLDBASE to NEWBASE
 void bigfloat_radix(bigfloat_t target, const bigfloat_t a) {
-  bigfloat_t scaled;
-  bigfloat_new(scaled);
-  int64_t newexp = 0;
+  if(target->coef != a->coef) {
+    bigfloat_copy(target, a);
+  }
 
+  // Scale digits
+  int64_t newexp = _scale(target);
+
+  size_t new_digits = bigfloat_radix_decimals(target);
+  bigfloat_realloc(target, new_digits);
+
+  // This is the recursion
+  _radix_recurse(target->coef, new_digits);
 
   if(newexp != 0) {
     target->exp = newexp;
-
-    // Fix overflow by carry.
-    if(target->coef[target->len-1] > NEWBASE) {
-      target->len++;
-      target->coef = (uint32_t*) realloc(target->coef, target->len*sizeof(uint32_t));
-      target->coef[target->len-1] = target->coef[target->len-2]/NEWBASE;
-      target->coef[target->len-2] %= NEWBASE;
-    }
   }
 }

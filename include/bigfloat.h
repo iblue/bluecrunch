@@ -21,6 +21,7 @@ void bigfloat_free  (      bigfloat_t target);
 void bigfloat_new   (      bigfloat_t target);
 void bigfloat_copy  (      bigfloat_t target, const bigfloat_t source);
 void bigfloat_alloc(bigfloat_t target, size_t size);
+void bigfloat_realloc(bigfloat_t target, size_t size);
 
 // Arithmatic
 void bigfloat_neg(bigfloat_t target);
