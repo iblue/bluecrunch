@@ -12,20 +12,21 @@ size_t bigfloat_radix_decimals(bigfloat_t target) {
   double approx = 0.0;
 
   if(target->len >= 3) {
-    approx += (double)target->coef[target->len-3] * pow((double)OLDBASE, target->len-3);
+    approx += (double)target->coef[target->len-3];
   }
 
   if(target->len >= 2) {
-    approx += (double)target->coef[target->len-2] * pow((double)OLDBASE, target->len-2);
+    approx += (double)target->coef[target->len-2] * (double)OLDBASE;
   }
 
-  approx += (double)target->coef[target->len-1] * pow((double)OLDBASE, target->len-1);
+  approx += (double)target->coef[target->len-1] * (double)OLDBASE * (double)OLDBASE;
 
   double digits = log(approx)/log(NEWBASE);
+  double additional = ((double)target->len-3.0)*log(OLDBASE)/log(NEWBASE);
 
   double epsilon = 1e-10;
 
-  return ceil(digits + epsilon);
+  return ceil(digits + additional + epsilon);
 }
 
 // XXX untested
