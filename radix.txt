@@ -56,3 +56,14 @@ _bigfloat_radix(*uint32_t coef, size_t len) {
   _bigfloat_radix(coef, split);
   _bigfloat_radix(coef+split, len-split);
 }
+
+HOW TO HANDLE OFF BY ONE ERRORS:
+-----------------------------------------------------------------------
+Example X = 0xf423f ( = 999999)
+1. Compute S = log_10(X) = 5.99 => 7 decimal digits (off by one)
+2. Reallocate X = 0xf423f00 (7 nibbles)
+3. Compute base conversion 10^4, 10^2, 10
+5. Splitting:
+  5.1: high = 0x63 (99) (len = 2)     (offset 0, len 2)
+  5.2: low  = 0x270f (9999) (len = 4) (offset 2, len 4)
+  5.3: notice: added lens = 6. decrement length (and probably fix exponent later)

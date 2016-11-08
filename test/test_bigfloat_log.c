@@ -46,7 +46,7 @@ int main(void) {
     a->coef[4] = 0x940f6a24;
     a->coef[5] = 0x04140c78;
 
-    assert(bigfloat_radix_decimals(a) == 7);
+    assert(bigfloat_radix_decimals(a) == 8);
 
     bigfloat_free(a);
   }
@@ -65,8 +65,7 @@ int main(void) {
 
     // This is a case where we are off by one. We need to correct this after
     // the conversion
-    //assert(bigfloat_radix_decimals(a) == 6);
-    assert(bigfloat_radix_decimals(a) == 7);
+    assert(bigfloat_radix_decimals(a) == 8);
 
     bigfloat_free(a);
   }

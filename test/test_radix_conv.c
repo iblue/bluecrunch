@@ -113,6 +113,34 @@ int main(void) {
     assert(a->coef[15] == 2);
   }
 
+  {
+    // = 99999999999999999999999999999999999999999999999999999999
+    bigfloat_t a;
+    bigfloat_new(a);
+    bigfloat_alloc(a, 6);
+    a->coef[0] = 0xffffffff;
+    a->coef[1] = 0x20ffffff;
+    a->coef[2] = 0x73d4490d;
+    a->coef[3] = 0xfdffc788;
+    a->coef[4] = 0x940f6a24;
+    a->coef[5] = 0x04140c78;
+
+    bigfloat_radix(a, a);
+
+    assert(a->len  == 7);
+    assert(a->sign == 1);
+    assert(a->exp  == 0);
+    assert(a->coef[0] == 99999999);
+    assert(a->coef[1] == 99999999);
+    assert(a->coef[2] == 99999999);
+    assert(a->coef[3] == 99999999);
+    assert(a->coef[4] == 99999999);
+    assert(a->coef[5] == 99999999);
+    assert(a->coef[6] == 99999999);
+
+    bigfloat_free(a);
+  }
+
 
   return 0;
 }
