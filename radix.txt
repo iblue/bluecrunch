@@ -1,0 +1,58 @@
+Example: X = 0x1234567890 to decimal.
+
+1. Compute S = log_10(X) = 10.8931 => 11 decimal digits.
+2. Reallocate X = 0x01234567890
+3. Round down S to nearest power of two that is < S (R = 8)
+4. Precalculate Base Conversion Tables for R (10^8, 10^4, 10^2, 10^1) [Further optimization: Precompute RCP, FFT of EXP and RCP]
+5. Spliting stage:
+  5.1: high = floor(x/10^8) = 0x30d to offset 0 (len = 3)
+  5.2: low  = x - 10^8*high = 0x05370b90 to offset 3 (len = S-len(high))
+6. X = 0x3d005370b90
+7. Recurse on X[0..2], X[3..10]
+  high:
+  1. S = log_10(X) = 2.98 => 3 decimal digits
+  3. R = 2
+  5.1 high = floor(x/10^2) = 0x7 to offset 0 (len = 1) DONE
+  5.2 low  = x - 10^2*high = 0x51 to offset 1 (len = 2)
+  [ X = 0x75105370b90 now]
+
+    --> Recurse here
+
+  low:
+  1. S = log_10(X) = 7.9419 => 8 decimals
+  3. R = 4
+  5.1 high = floor(x/10^4) = 0x222d (offset 0, len = 4) --> Recurse
+  5.2 low  = x - 10^4*high = 0x0dc0 (offset 4, len = 4) --> Recurse
+
+  [ X = 0x751222d0dc0 now]
+
+  etc.
+
+Result: 0x78187493520, which is correct.
+
+Implementation:
+bigfloat_radix(bigfloat_t target) {
+  - scale first
+  - compute_log
+  - reallocate
+  - precompute tables
+
+  _bigfloat_radix(*uint32_t coef, bigfloat_t *table, size_t len);
+
+  - set correct exponent.
+}
+
+
+_bigfloat_radix(*uint32_t coef, size_t len) {
+  if(len == 1) {
+    return;
+  }
+
+  size_t split = nearest_power_of_two(len);
+
+  // Calculate high
+  // Calulate low
+
+  _bigfloat_radix(coef, split);
+  _bigfloat_radix(coef+split, len-split);
+}

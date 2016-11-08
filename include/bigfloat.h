@@ -31,6 +31,7 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
 void bigfloat_div(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, size_t p, int tds);
 void bigfloat_rcp(bigfloat_t target, const bigfloat_t a,                     size_t p, int tds);
 void bigfloat_exp(bigfloat_t target, const bigfloat_t a, const uint64_t exp, int tds);
+size_t bigfloat_radix_decimals(bigfloat_t target);
 
 // Radix conversion
 void bigfloat_radix(bigfloat_t target, const bigfloat_t a);

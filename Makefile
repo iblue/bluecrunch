@@ -3,7 +3,7 @@ CC=gcc
 #CC=clang
 VALGRIND=valgrind --tool=memcheck --leak-check=yes
 STRIP=strip
-CFLAGS=-std=c11 -Wall -Werror -ggdb -O2 -fopenmp -msse3 -mavx
+CFLAGS=-std=c11 -Wall -Werror -ggdb -O0 -fopenmp -msse3 -mavx
 BINARY=bluecrunch
 LIBS=-lm
 ifeq ($(CC),icc)
