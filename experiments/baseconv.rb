@@ -380,9 +380,9 @@ def algo4(a, e)
   end
 
   n = -e
-  k = (n*Math.log(2)/Math.log(10)).ceil - 1 # Anz garantiert korrekte Ziffern in Basis 10
+  k = (n*Math.log(2)/Math.log(10)).ceil - 2 # Anz garantiert korrekte Ziffern in Basis 10
   g = [(Math.log(k)/Math.log(2)).ceil + 1, kt].max
-  y = a - 1
+  y = a
 
   s = convert_rec(a, k, y, n, g)
   puts "#{k} digits"

@@ -1,5 +1,6 @@
 #include <malloc.h>
 #include <string.h> // memcpy
+#include <stdlib.h> // abort
 #include "math.h"
 #include "bigfloat.h"
 
@@ -39,7 +40,7 @@ int64_t _scale(bigfloat_t a) {
   double scale = -LOG*a->exp;
   int64_t intscale = scale;
 
-  printf("bigfloat_radix: %f =~ %ld\n", scale, intscale);
+  //printf("bigfloat_radix: %f =~ %ld\n", scale, intscale);
 
   // Multiply by scaling.
   bigfloat_t mul;
@@ -55,7 +56,7 @@ int64_t _scale(bigfloat_t a) {
 }
 
 void _radix_recurse(uint32_t *coef, size_t len) {
-  if(len == 1) {
+  if(len <= 1) {
     return;
   }
 
@@ -78,7 +79,7 @@ void _radix_recurse(uint32_t *coef, size_t len) {
   }
   split >>= 1;
 
-  printf("%ld split to (%ld,%ld)\n", len, split, len-split);
+  //printf("%ld split to (%ld,%ld)\n", len, split, len-split);
 
   // TODO: Performance: This will be in the precalculated base conv table
   bigfloat_t exp;
@@ -87,12 +88,21 @@ void _radix_recurse(uint32_t *coef, size_t len) {
   bigfloat_exp(exp, exp, split, 8);
 
   // FIXME: Performance: We calculate more than we need.
+  // FIXME: Performance: Precalculate bigfloat_rcp(exp)
   bigfloat_div(high, src, exp, 0, 8);
   bigfloat_floor(high);
 
   bigfloat_mul(low, exp, high, 0, 8);
   bigfloat_neg(low);
   bigfloat_add(low, low, src, 0);
+
+  if(low->len + high->len != len) {
+    fprintf(stderr, "radix conversion error\n");
+    abort();
+  }
+
+  bigfloat_realloc(low, bigfloat_radix_decimals(low));
+  bigfloat_realloc(high, bigfloat_radix_decimals(high));
 
   // Write target
   memcpy(coef, low->coef, low->len*sizeof(uint32_t));

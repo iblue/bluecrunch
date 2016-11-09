@@ -12,10 +12,14 @@ def to_base(value, base, rep)
   nil
 end
 
-def to16(value)
+def tocoef16(value)
   to_base(value, 2**32, 16)
 end
 
-def to10(value)
+def tocoef10(value)
   to_base(value, 100000000, 10)
+end
+
+def fromcoef(coef)
+  coef.map{|x| "%08x" % x}.reverse.join.to_i(16)
 end
