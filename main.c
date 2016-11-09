@@ -169,12 +169,14 @@ void e(size_t digits, int tds){
 
   printf("Converting to decimal...");
   fflush(stdout);
-  bigfloat_radix(P, P);
+  bigfloat_t dec;
+  bigfloat_new(dec);
+  bigfloat_radix(dec, P);
   double time4 = wall_clock();
   printf("ok [%f seconds]\n", time4 - time3);
 
   printf("Writing decimal digits...");
-  len = bigfloat_to_string(out, P, output_len, 10);
+  len = bigfloat_to_string(out, dec, output_len, 10);
   dump_to_file("e.txt", out, len);
   bigfloat_free(P);
   double time5 = wall_clock();
@@ -194,7 +196,7 @@ int main() {
   #ifdef DEBUG
   size_t digits = 10000;
   #else
-  size_t digits = 10000000;
+  size_t digits = 1000000;
   #endif
 
   //  Determine minimum FFT size.

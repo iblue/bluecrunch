@@ -3,7 +3,7 @@
 #include "bigfloat.h"
 
 int main(void) {
-  /* FIXME: Enable when finished debugging
+  /*
   {
     // = 111222333444555666777888999000
     bigfloat_t a;
@@ -138,7 +138,7 @@ int main(void) {
     assert(a->coef[28] == 2);
   }
 
-  /* FIXME: Enable when finished debugging
+  /*
   {
     // = 99999999999999999999999999999999999999999999999999999999
     bigfloat_t a;

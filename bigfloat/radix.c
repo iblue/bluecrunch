@@ -4,9 +4,13 @@
 #include "math.h"
 #include "bigfloat.h"
 
-#define OLDBASE 4294967296
-#define NEWBASE 100000000
+#define OLDBASE (4294967296)
+#define NEWBASE (100000000)
 #define LOG (log(OLDBASE)/log(NEWBASE))
+#define KT (3500)
+
+#define max(a,b) ({ __typeof__(a) _a = (a); __typeof__(b) _b = (b); _a > _b ? _a : _b; })
+#define min(a,b) ({ __typeof__(a) _a = (a); __typeof__(b) _b = (b); _a < _b ? _a : _b; })
 
 // Calculates approximate number of digits in base 100000000 of a number.
 size_t bigfloat_radix_decimals(bigfloat_t target) {
@@ -30,111 +34,100 @@ size_t bigfloat_radix_decimals(bigfloat_t target) {
   return ceil(digits + additional + epsilon);
 }
 
-// XXX untested
-int64_t _scale(bigfloat_t a) {
-  // Already scaled
-  if(a->exp == 0) {
-    return 0;
+void convert_trunc(bigfloat_t s, const bigfloat_t y0, size_t k, size_t n) {
+  double alpha = 1./LOG;
+
+  bigfloat_t t;
+  bigfloat_new(t);
+  bigfloat_copy(t, y0);
+  bigfloat_realloc(t, t->len+1); // To make multiplication succeed
+
+  // FIXME: Performance: realloc is not needed
+  // Same probably goes for copy. Move into one new function
+
+  // Save original t ptr for deallocation;
+  uint32_t *coef_ptr = t->coef;
+
+  for(size_t i=1;i<=k;i++) {
+    //printf("i = %ld\n", i);
+
+    // Multiplication stage: t[i] = b*y[i-1]
+    bigfloat_mului(t, NEWBASE);
+    //bigfloat_print("t", t);
+
+    // n_{i-1} = n - floor(i*a)
+    size_t ni_1 = n - floor(alpha*(double)(i-1));
+    size_t ni   = n - floor(alpha*(double)i);
+    //printf("ni_1, ni = %ld, %ld\n", ni_1, ni);
+
+    // This is the digit: s[k-i] = t[i] / (2^32)^n_{i-1};
+    s->coef[k-i] = t->coef[ni_1];
+    //printf("-> %d\n", s->coef[k-i]);
+
+    // Truncate stage: z[i] = t[i] mod 2^{n_{i-1}}
+    /*for(size_t j=ni+1;j<t->len;j++) {
+      t->coef[j] = 0;
+    }*/
+    t->len = ni_1;
+
+    // Truncate other side: y[i] = zi bdiv 2^(n_(i-1) - n_i)
+    t->coef += (ni_1 - ni);
+    t->len  -= (ni_1 - ni);
+
+    // Add a zero to fix multiplication in next iter
+    t->len  += 1;
+    t->coef[t->len-1] = 0;
   }
 
-  double scale = -LOG*a->exp;
-  int64_t intscale = scale;
+  s->len = k+1;
 
-  //printf("bigfloat_radix: %f =~ %ld\n", scale, intscale);
-
-  // Multiply by scaling.
-  bigfloat_t mul;
-  bigfloat_new(mul);
-  bigfloat_set(mul, 100000000);
-  bigfloat_exp(mul, mul, intscale, 8);
-  bigfloat_mul(a, a, mul, 0, 8);
-
-  // FIXME: Check if exp is zero
-  bigfloat_floor(a);
-
-  return -intscale;
+  // Restore ptr and deallocate
+  t->coef = coef_ptr;
+  bigfloat_free(t);
 }
 
-void _radix_recurse(uint32_t *coef, size_t len) {
-  if(len <= 1) {
-    return;
-  }
-
-  bigfloat_t high;
-  bigfloat_new(high);
-
-  bigfloat_t low;
-  bigfloat_new(low);
-
-  // We are cheating here...
-  bigfloat_t src;
-  src->coef = coef;
-  src->len  = len;
-  src->exp  = 0;
-  src->sign = 1;
-
-  size_t split = 1;
-  while(split < len) {
-    split <<= 1;
-  }
-  split >>= 1;
-
-  //printf("%ld split to (%ld,%ld)\n", len, split, len-split);
-
-  // TODO: Performance: This will be in the precalculated base conv table
-  bigfloat_t exp;
-  bigfloat_new(exp);
-  bigfloat_set(exp, NEWBASE);
-  bigfloat_exp(exp, exp, split, 8);
-
-  // FIXME: Performance: We calculate more than we need.
-  // FIXME: Performance: Precalculate bigfloat_rcp(exp)
-  bigfloat_div(high, src, exp, 0, 8);
-  bigfloat_floor(high);
-
-  bigfloat_mul(low, exp, high, 0, 8);
-  bigfloat_neg(low);
-  bigfloat_add(low, low, src, 0);
-
-  if(low->len + high->len != len) {
-    fprintf(stderr, "radix conversion error\n");
-    abort();
-  }
-
-  bigfloat_realloc(low, bigfloat_radix_decimals(low));
-  bigfloat_realloc(high, bigfloat_radix_decimals(high));
-
-  // Write target
-  memcpy(coef, low->coef, low->len*sizeof(uint32_t));
-  memcpy(coef+low->len, high->coef, high->len*sizeof(uint32_t));
-
-  size_t lowlen = low->len;
-  size_t highlen = high->len;
-
-  bigfloat_free(low);
-  bigfloat_free(high);
-
-  // Recurse
-  _radix_recurse(coef, lowlen);
-  _radix_recurse(coef+lowlen, highlen);
+void convert_rec(bigfloat_t s, size_t k, const bigfloat_t y, size_t n, size_t g) {
+  //if(k <= KT) {
+    convert_trunc(s, y, k, n);
+  //} else {
+    // TODO
+  //}
 }
 
 // Converts from OLDBASE to NEWBASE
 void bigfloat_radix(bigfloat_t target, const bigfloat_t a) {
-  if(target->coef != a->coef) {
-    bigfloat_copy(target, a);
+  size_t n, k, g;
+  if(-a->exp+1 == a->len) {
+    // Special case where no scaling is needed
+    n = -a->exp;
+    k = ceil((double)n*LOG) - 2;
+    g = max(ceil(log(k)/log(OLDBASE)) + 1, KT);
+  } else {
+    // Fuck it. We need scaling by division
+    fprintf(stderr, "Not implemented\n");
+    abort();
   }
 
-  // Scale digits
-  int64_t newexp = _scale(target);
+  bigfloat_alloc(target, k);
+  convert_rec(target, k, a, n, g);
 
-  size_t new_digits = bigfloat_radix_decimals(target);
-  bigfloat_realloc(target, new_digits);
-
-  // This is the recursion
-  _radix_recurse(target->coef, new_digits);
-
-  if(newexp != 0) {
-    target->exp = newexp;
+  // Carry if needed
+  if(target->coef[target->len-2] > NEWBASE) {
+    target->coef[target->len-1] = target->coef[target->len-2]/NEWBASE;
+    target->coef[target->len-2] = target->coef[target->len-2]%NEWBASE;
+  } else {
+    target->len--;
   }
+
+  // Fix exponent
+  if(-a->exp+1 == a->len) {
+    target->exp = -target->len+1;
+  } else {
+    // Fix that case later
+    fprintf(stderr, "Not implemented\n");
+    abort();
+  }
+
+
+  return;
 }
