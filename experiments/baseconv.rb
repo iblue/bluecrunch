@@ -111,27 +111,28 @@ def algo3(a)
     z = []
     (1..k).each do |i|
       t[i] = b*y[i-1]
-      puts "  t[#{i}] = #{t[i]}"
+      #puts "  t[#{i}] = #{t[i]}"
 
       s[k-i] = t[i] / 2**nn(i-1, n, alpha)
-      puts "  s[#{k-i}] = #{s[k-i]}"
+      #puts "  s[#{k-i}] = #{s[k-i]}"
 
       z[i] = t[i] % 2**nn(i-1, n, alpha)
-      puts "  z[#{i}] = #{z[i]}"
+      #puts "  z[#{i}] = #{z[i]}"
 
       y[i] = bdiv(z[i], nn(i-1, n, alpha) - nn(i, n, alpha))
-      puts "  y[#{i}] = #{y[i]}"
+      #puts "  y[#{i}] = #{y[i]}"
     end
 
     return s
   end
 
-  def convert_rec(k, y, n, g)
+  def convert_rec(a, k, y, n, g)
     kt = 4 # Of k <= 4, return to basecase. kt MUST be >= 3
     b = 10
 
     if(k <= kt)
-      return convert_trunc(y, k, n)
+      s = convert_trunc(y, k, n)
+      return s
     else
       kh = (k+1)/2
       kl = k - kh + 1
@@ -147,34 +148,66 @@ def algo3(a)
         nl+=1
       end
 
+      # Not required?
+      ah = (a*b**(kh - k)).floor
+      al = a % b**kl
+
       # yh <- floor y*2^(nh-n)
       yh = y/2**(n-nh)
       yl = bdiv(b**(k-kl)*y % 2**n, n-nl)
 
-      sh = convert_rec(kh, yh, nh, g)
-      sl = convert_rec(kl, yl, nl, g)
-
+      sh = convert_rec(ah, kh, yh, nh, g)
+      sl = convert_rec(al, kl, yl, nl, g)
 
       def carry(s)
-        # Yeah, this will be efficient in the real code
-        (s.reverse.join("").to_i + 1).to_s.chars.reverse.map(&:to_i)
+        add(s, [1])
       end
+
+      def shiftdown(s)
+        s[1..-1]
+      end
+
+      def shiftup(s, p)
+        [0]*p + s
+      end
+
+      def add(s1,s2)
+        l = [s1.length, s2.length].max
+
+        val = (s1.reverse.join("").to_i + s2.reverse.join("").to_i)
+        str = "%0#{l}d" % val
+        str.chars.reverse.map(&:to_i)
+      end
+
+      def a_to_s(a, k)
+        ("%0#{k}d" % a).chars.map(&:to_i).reverse
+      end
+
+
 
       # if the trailing digit of sh is b-1 and the leading digit of sl is 0
       if(sh[0] == b-1 && sl[-1] == 0)
-        byebug
         sh = carry(sh)
       end
 
+      # FIXME: Does this ever happen?
       # if the trailing digit of sh is 0 and the leading digit of sl is b-1
       if(sh[0] == 0 && sl[-1] == b-1)
         byebug
-        # sl <-- [0, 0, 0, ..., 0] (kl times)
-        sl = [0]*kl
+        sl = [0] * kl
       end
 
+      # Breaks if bug
+      #byebug if sh != a_to_s(ah, kh)
+      #byebug if sl != a_to_s(al, kl)
+      # fill upper
+      # sh = sh[1..-1]
+      #
+      ret = add(shiftup(shiftdown(sh), kl), sl)
+      #byebug if ret != a_to_s(a, k)
+
       #??? floor(sh/b)*b^(kl) + sl
-      return sl + sh[1..-1]
+      return ret
     end
   end
 
@@ -187,7 +220,28 @@ def algo3(a)
     n+=1
   end
   y = ((a+1)*2**n)/b**k - 1
-  return convert_rec(k, y, n, g)
+  return convert_rec(a, k, y, n, g)
 end
 
-puts algo3(90090909099990909090990909090909000000999909009090900).reverse.join("")
+=begin
+while x = rand(2**64) do
+  y = algo3(x).reverse.join("").to_i
+  if(x != y)
+    puts x
+    puts y
+    puts "---"
+  end
+end
+=end
+
+=begin
+(9999999...99999999).each do |x|
+  y = algo3(x).reverse.join("").to_i
+  if(x != y)
+    puts x
+    puts y
+    puts "---"
+  end
+end
+=end
+
