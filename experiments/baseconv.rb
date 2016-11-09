@@ -294,7 +294,7 @@ def algo4(a, e)
     return s
   end
 
-  def convert_rec(a, k, y, n, g)
+  def convert_rec(k, y, n, g)
     kt = 4 # Of k <= 4, return to basecase. kt MUST be >= 3
     b = 10
 
@@ -316,16 +316,12 @@ def algo4(a, e)
         nl+=1
       end
 
-      # Not required?
-      ah = (a*b**(kh - k)).floor
-      al = a % b**kl
-
       # yh <- floor y*2^(nh-n)
       yh = y/2**(n-nh)
       yl = bdiv(b**(k-kl)*y % 2**n, n-nl)
 
-      sh = convert_rec(ah, kh, yh, nh, g)
-      sl = convert_rec(al, kl, yl, nl, g)
+      sh = convert_rec(kh, yh, nh, g)
+      sl = convert_rec(kl, yl, nl, g)
 
       def carry(s)
         add(s, [1])
@@ -384,10 +380,75 @@ def algo4(a, e)
   g = [(Math.log(k)/Math.log(2)).ceil + 1, kt].max
   y = a
 
-  s = convert_rec(a, k, y, n, g)
+  s = convert_rec(k, y, n, g)
   puts "#{k} digits"
   return s
 end
 
 #puts algo3(2718281828459045235360287471352662497756)
-puts algo4(0x2b7e151628aed2a6abf7158809cf4f3c7, -128).reverse.join("")
+#puts algo4(0x2b7e151628aed2a6abf7158809cf4f3c7, -128).reverse.join("")
+
+def algo5(a, e)
+  # See above
+  def convert_trunc(y0, k, n)
+    b = 10000_0000
+
+    # Choose FP value alpha <= log_2(b)
+    alpha = Math.log(b)/Math.log(2**32)
+
+    y = []
+    y[0] = y0
+
+    # Write nn(i) for n - floor(i*a)
+    def nn(i, n, alpha)
+      n - (i*alpha).to_i
+    end
+
+    # Truncate p bits
+    def bdiv(z, p)
+      z/(2**32)**p
+    end
+
+    s = []
+    t = []
+    z = []
+    (1..k).each do |i|
+      puts "i = #{i}"
+      byebug if i == 2
+      t[i] = b*y[i-1]
+
+      ni_1 = nn(i-1, n, alpha)
+      ni = nn(i, n, alpha)
+
+      puts "ni_1, ni = #{ni_1}, #{ni}"
+      puts "t = #{t[i].to_s(16)}"
+      #puts "  t[#{i}] = #{t[i]}"
+
+      s[k-i] = t[i] / (2**32)**ni_1
+      #puts "  s[#{k-i}] = #{s[k-i]}"
+
+      z[i] = t[i] % (2**32)**ni_1
+      #puts "  z[#{i}] = #{z[i]}"
+
+      y[i] = bdiv(z[i], ni_1 - ni)
+      #puts "  y[#{i}] = #{y[i]}"
+    end
+
+    return s
+  end
+
+  #n = -e
+  #k = (n*Math.log(2**32)/Math.log(100000000)).ceil - 2 # Anz garantiert korrekte Ziffern in Basis 10
+  #y = a
+
+  n = 22
+  k = 25
+  y = a
+
+  s = convert_trunc(y, k, n)
+  puts "#{k} digits"
+  return s
+end
+
+s = algo5(228776509382463697450290884140869401551305345104850785467877452727290000022059215493424723739701291948663852630304610978205778895706868485166037611507017266201971612553383158879956605321441860961188689115602691286, -22)
+puts s.reverse.join("")
