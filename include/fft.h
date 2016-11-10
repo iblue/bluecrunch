@@ -27,3 +27,6 @@ void fft_to_int(const complex double*, int,       uint32_t*, size_t, int);
 void tft_forward(complex double*, size_t, int);
 void tft_inverse(complex double*, size_t, int);
 //void tft_pointwise(complex double *a, complex double *b, size_t len);
+
+// Baileys FFT
+void baileys_forward(complex double*, int, int);
