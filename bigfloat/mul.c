@@ -66,16 +66,9 @@ void static inline _fft_mul(uint32_t *CT, size_t CL, uint32_t *AT, size_t AL, ui
   }
 
   // If numbers are too big, use multiplication without table.
-  if (twiddle_table_size - 1 < k) {
-    fft_forward_uncached(Ta, k, tds);
-    if(needB) {
-      fft_forward_uncached(Tb, k, tds);
-    }
-  } else {
-    fft_forward(Ta, k, tds);
-    if(needB) {
-      fft_forward(Tb, k, tds);
-    }
+  tft_forward(Ta, points_per_word*CL, k, tds);
+  if(needB) {
+    tft_forward(Tb, points_per_word*CL, k, tds);
   }
 
   // Pointwise multiply
@@ -86,11 +79,7 @@ void static inline _fft_mul(uint32_t *CT, size_t CL, uint32_t *AT, size_t AL, ui
   }
 
   // Inverse transform
-  if (twiddle_table_size - 1 < k) {
-    fft_inverse_uncached(Ta, k, tds);
-  } else {
-    fft_inverse(Ta, k, tds);
-  }
+  tft_inverse(Ta, points_per_word*CL, k, tds);
 
   // Convert including carryout
   fft_to_int(Ta, k, CT, CL, bits_per_point);
