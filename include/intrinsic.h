@@ -24,9 +24,9 @@ static inline int bitlog2(int N) {
 #define max(a,b) ({ __typeof__(a) _a = (a); __typeof__(b) _b = (b); _a > _b ? _a : _b; })
 #define min(a,b) ({ __typeof__(a) _a = (a); __typeof__(b) _b = (b); _a < _b ? _a : _b; })
 
-// Runs a forward butterfly on 2 elements simultaniously
+// Runs a forward butterfly on 2 elements simultaneously
 // Arguments:
-// - twiddles: Vektor of twiddles [r0, i0, r1, i1]
+// - twiddles: Vector of twiddles [r0, i0, r1, i1]
 // - T0:       Pointer to 2 complex doubles (first half)
 // - T1:       Pointer to 2 complex doubles (second half)
 //
@@ -65,9 +65,9 @@ static inline void fft_forward_butterfly(__m256d twiddles, __m256d* T0, __m256d*
   _mm256_store_pd((double*)T1, c); // T[c+N/2] <- c
 }
 
-// Runs a inverse butterfly on 2 elements simultaniously
+// Runs an inverse butterfly on 2 elements simultaneously
 // Arguments:
-// - twiddles: Vektor of twiddles [r0, i0, r1, i1]
+// - twiddles: Vector of twiddles [r0, i0, r1, i1]
 // - T0:       Pointer to 2 complex doubles (first half)
 // - T1:       Pointer to 2 complex doubles (second half)
 static inline void fft_inverse_butterfly(__m256d twiddle, __m256d* T0, __m256d* T1) {
