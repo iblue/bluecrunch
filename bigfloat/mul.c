@@ -47,25 +47,43 @@ void static inline _fft_mul(uint32_t *CT, size_t CL, uint32_t *AT, size_t AL, ui
     length /= 2;
   }
 
+  // If the arguments are the same, we skip one conversion.
+  char needB = (AT != BT || AL != BL);
+
   //  Allocate FFT arrays
   complex double *Ta = (complex double*)_mm_malloc(length * sizeof(complex double), 32);
-  complex double *Tb = (complex double*)_mm_malloc(length * sizeof(complex double), 32);
+  complex double *Tb = NULL;
+
+  if(needB) {
+    Tb = (complex double*)_mm_malloc(length * sizeof(complex double), 32);
+  }
 
   //  Convert Numbers to FFT
-  int_to_fft(Ta, k, AT, AL, bits_per_point); //  Convert 1st operand
-  int_to_fft(Tb, k, BT, BL, bits_per_point); //  Convert 2nd operand
+  int_to_fft(Ta, k, AT, AL, bits_per_point);
+
+  if(needB) {
+    int_to_fft(Tb, k, BT, BL, bits_per_point);
+  }
 
   // If numbers are too big, use multiplication without table.
   if (twiddle_table_size - 1 < k) {
     fft_forward_uncached(Ta, k, tds);
-    fft_forward_uncached(Tb, k, tds);
+    if(needB) {
+      fft_forward_uncached(Tb, k, tds);
+    }
   } else {
     fft_forward(Ta, k, tds);
-    fft_forward(Tb, k, tds);
+    if(needB) {
+      fft_forward(Tb, k, tds);
+    }
   }
 
   // Pointwise multiply
-  fft_pointwise(Ta, Tb, k);
+  if(needB) {
+    fft_pointwise(Ta, Tb, k);
+  } else {
+    fft_pointwise(Ta, Ta, k);
+  }
 
   // Inverse transform
   if (twiddle_table_size - 1 < k) {
@@ -78,7 +96,9 @@ void static inline _fft_mul(uint32_t *CT, size_t CL, uint32_t *AT, size_t AL, ui
   fft_to_int(Ta, k, CT, CL, bits_per_point);
 
   // Free FFT arrays
-  _mm_free(Tb);
+  if(needB) {
+    _mm_free(Tb);
+  }
   _mm_free(Ta);
 }
 
