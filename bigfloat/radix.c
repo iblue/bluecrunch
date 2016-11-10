@@ -9,7 +9,7 @@
 #define NEWBASE (100000000)
 #define LOG (log(OLDBASE)/log(NEWBASE))
 #define ALPHA (log(NEWBASE)/log(OLDBASE))
-#define KT (4)
+#define KT (3000)
 
 #define max(a,b) ({ __typeof__(a) _a = (a); __typeof__(b) _b = (b); _a > _b ? _a : _b; })
 #define min(a,b) ({ __typeof__(a) _a = (a); __typeof__(b) _b = (b); _a < _b ? _a : _b; })
@@ -81,7 +81,7 @@ void convert_trunc(bigfloat_t s, const bigfloat_t y0, size_t k, size_t n) {
     t->coef[t->len-1] = 0;
   }
 
-  s->len = k+1;
+  s->len = k;
 
   // Restore ptr and deallocate
   t->coef = coef_ptr;
@@ -90,19 +90,17 @@ void convert_trunc(bigfloat_t s, const bigfloat_t y0, size_t k, size_t n) {
 
 void convert_rec(bigfloat_t s, size_t k, const bigfloat_t y, size_t n, size_t g) {
   if(k <= KT) {
+    bigfloat_alloc(s, k);
     convert_trunc(s, y, k, n);
   } else {
     size_t kh = (k+1)/2;
     size_t kl = k - kh + 1;
 
-    double P = log(4.0*(double)NEWBASE)/log((double)OLDBASE);
-    double log_G = log((double)g);
-
     // Choose nh such that 4gb^kh < 2^nh
-    size_t nh = floor((double)kh*P*log_G+1);
+    size_t nh = floor((double)(kh*log((double)NEWBASE)+log(4.)+log(g))/log((double)OLDBASE)+1);
 
     // Choose nl such that 4gb^kl < 2^nl
-    size_t nl = floor((double)kh*P*log_G+1);
+    size_t nl = floor((double)(kl*log((double)NEWBASE)+log(4.)+log(g))/log((double)OLDBASE)+1);
 
     // yh = floor(y*(2^32)^(nh-n)) = y/[(2^32)^(n-nh)]
     bigfloat_t yh;
@@ -135,7 +133,6 @@ void convert_rec(bigfloat_t s, size_t k, const bigfloat_t y, size_t n, size_t g)
     convert_rec(sh, kh, yh, nh, g);
     convert_rec(sl, kl, yl, nl, g);
 
-
     // fixups. if the trailing digit of sh is b-1 and the leading digit of sl is 0
     if(sh->coef[0] == NEWBASE-1 && sl->coef[sl->len-1] == 0) {
       // add 1. FIXME: Move into a bigfloat_addu()
@@ -161,15 +158,14 @@ void convert_rec(bigfloat_t s, size_t k, const bigfloat_t y, size_t n, size_t g)
     }
 
     // s = floor(sh/b)*b^(kl) + sl (s is now in base b)
-    bigfloat_t s;
-    bigfloat_new(s);
     bigfloat_alloc(s, sh->len-1+kl);
-    memcpy(s->coef+kl-1, sh->coef, sh->len*sizeof(uint32_t));
+    memset(s->coef, 0, kl*sizeof(uint32_t)); // fill unitialized mem
+    memcpy(s->coef+kl, sh->coef+1, (sh->len-1)*sizeof(uint32_t)); // skip the first digit (this is equiv to div by 2^32 and flooring)
     if(!sl_is_zero) {
+      // FIXME: Do we really need to add? There should be no carrying, so we
+      // can just copy. Test this.
       bigfloat_add(s, s, sl, 0);
     }
-
-    // DEBUG HERE
 
     bigfloat_free(sh);
     bigfloat_free(sl);
@@ -186,7 +182,7 @@ void bigfloat_radix(bigfloat_t target, const bigfloat_t a) {
   if(-a->exp+1 == a->len) {
     // Special case where no scaling is needed
     n = -a->exp;
-    k = ceil((double)n*LOG) - 2;
+    k = ceil((double)n*LOG) - 1;
     g = max(ceil(log(k)/log(OLDBASE)) + 1, KT);
   } else {
     // Fuck it. We need scaling by division
@@ -198,11 +194,10 @@ void bigfloat_radix(bigfloat_t target, const bigfloat_t a) {
   convert_rec(target, k, a, n, g);
 
   // Carry if needed
-  if(target->coef[target->len-2] > NEWBASE) {
+  if(target->coef[target->len-1] > NEWBASE) {
+    bigfloat_realloc(target, target->len+1);
     target->coef[target->len-1] = target->coef[target->len-2]/NEWBASE;
     target->coef[target->len-2] = target->coef[target->len-2]%NEWBASE;
-  } else {
-    target->len--;
   }
 
   // Fix exponent

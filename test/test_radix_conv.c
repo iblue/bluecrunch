@@ -100,42 +100,43 @@ int main(void) {
     a->coef[21] = 0xb7e15162;
     a->coef[22] = 0x00000002;
 
-    bigfloat_radix(a, a);
+    bigfloat_t b;
+    bigfloat_new(b);
 
-    assert(a->len  == 16);
-    assert(a->sign == 1);
-    assert(a->exp  == -15);
+    bigfloat_radix(b, a);
+
+    assert(b->len  == 27);
+    assert(b->sign == 1);
+    assert(b->exp  == -26);
 
     // FIXME: Fix length
-    assert(a->coef[0]  == 15408914);
-    assert(a->coef[1]  == 87930702);
-    assert(a->coef[2]  == 15738341);
-    assert(a->coef[3]  == 25101901);
-    assert(a->coef[4]  == 80753195);
-    assert(a->coef[5]  == 32338298);
-    assert(a->coef[6]  == 94349076);
-    assert(a->coef[7]  == 32328627);
-    assert(a->coef[8]  == 56307381);
-    assert(a->coef[9]  == 29526059);
-    assert(a->coef[10] == 72900334);
-    assert(a->coef[11] == 66290435);
-    assert(a->coef[12] == 81741359);
-    assert(a->coef[13] == 3059921);
-    assert(a->coef[14] == 63919320);
-    assert(a->coef[15] == 42742746);
-    assert(a->coef[16] == 78525166);
-    assert(a->coef[17] == 45713821);
-    assert(a->coef[18] == 35354759);
-    assert(a->coef[19] == 24076630);
-    assert(a->coef[20] == 69676277);
-    assert(a->coef[21] == 95957496);
-    assert(a->coef[22] == 47093699);
-    assert(a->coef[23] == 24977572);
-    assert(a->coef[24] == 47135266);
-    assert(a->coef[25] == 35360287);
-    assert(a->coef[26] == 84590452);
-    assert(a->coef[27] == 71828182);
-    assert(a->coef[28] == 2);
+    assert(b->coef[0] == 15738341);
+    assert(b->coef[1] == 25101901);
+    assert(b->coef[2] == 80753195);
+    assert(b->coef[3] == 32338298);
+    assert(b->coef[4] == 94349076);
+    assert(b->coef[5] == 32328627);
+    assert(b->coef[6] == 56307381);
+    assert(b->coef[7] == 29526059);
+    assert(b->coef[8] == 72900334);
+    assert(b->coef[9] == 66290435);
+    assert(b->coef[10] == 81741359);
+    assert(b->coef[11] == 3059921);
+    assert(b->coef[12] == 63919320);
+    assert(b->coef[13] == 42742746);
+    assert(b->coef[14] == 78525166);
+    assert(b->coef[15] == 45713821);
+    assert(b->coef[16] == 35354759);
+    assert(b->coef[17] == 24076630);
+    assert(b->coef[18] == 69676277);
+    assert(b->coef[19] == 95957496);
+    assert(b->coef[20] == 47093699);
+    assert(b->coef[21] == 24977572);
+    assert(b->coef[22] == 47135266);
+    assert(b->coef[23] == 35360287);
+    assert(b->coef[24] == 84590452);
+    assert(b->coef[25] == 71828182);
+    assert(b->coef[26] == 2);
   }
 
   /*
