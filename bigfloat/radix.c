@@ -2,6 +2,7 @@
 #include <string.h> // memcpy
 #include <stdlib.h> // abort
 #include <assert.h>
+#include <omp.h>    // More oomph!
 #include "math.h"
 #include "bigfloat.h"
 
@@ -88,7 +89,7 @@ void convert_trunc(bigfloat_t s, const bigfloat_t y0, size_t k, size_t n) {
   bigfloat_free(t);
 }
 
-void convert_rec(bigfloat_t s, size_t k, const bigfloat_t y, size_t n, size_t g) {
+void convert_rec(bigfloat_t s, size_t k, const bigfloat_t y, size_t n, size_t g, int tds) {
   if(k <= KT) {
     bigfloat_alloc(s, k);
     convert_trunc(s, y, k, n);
@@ -130,8 +131,26 @@ void convert_rec(bigfloat_t s, size_t k, const bigfloat_t y, size_t n, size_t g)
     bigfloat_t sl;
     bigfloat_new(sl);
 
-    convert_rec(sh, kh, yh, nh, g);
-    convert_rec(sl, kl, yl, nl, g);
+    // Run parallel
+    if(tds < 2) {
+      convert_rec(sh, kh, yh, nh, g, 1);
+      convert_rec(sl, kl, yl, nl, g, 1);
+    } else {
+      int tds0 = tds / 2;
+      int tds1 = tds - tds0;
+
+      #pragma omp parallel num_threads(2)
+      {
+        int tid = omp_get_thread_num();
+        if(tid == 0) {
+          convert_rec(sh, kh, yh, nh, g, tds0);
+        }
+
+        if(tid != 0 || omp_get_num_threads() < 2) {
+          convert_rec(sl, kl, yl, nl, g, tds1);
+        }
+      }
+    }
 
     // fixups. if the trailing digit of sh is b-1 and the leading digit of sl is 0
     if(sh->coef[0] == NEWBASE-1 && sl->coef[sl->len-1] == 0) {
@@ -191,7 +210,7 @@ void bigfloat_radix(bigfloat_t target, const bigfloat_t a) {
   }
 
   bigfloat_alloc(target, k);
-  convert_rec(target, k, a, n, g);
+  convert_rec(target, k, a, n, g, 8);
 
   // Carry if needed
   if(target->coef[target->len-1] > NEWBASE) {
