@@ -171,7 +171,7 @@ void e(size_t digits, int tds){
   fflush(stdout);
   bigfloat_t dec;
   bigfloat_new(dec);
-  bigfloat_radix(dec, P);
+  bigfloat_radix(dec, P, tds);
   double time4 = wall_clock();
   printf("ok [%f seconds]\n", time4 - time3);
 

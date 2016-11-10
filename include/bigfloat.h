@@ -36,7 +36,7 @@ void bigfloat_exp(bigfloat_t target, const bigfloat_t a, const uint64_t exp, int
 size_t bigfloat_radix_decimals(bigfloat_t target);
 
 // Radix conversion
-void bigfloat_radix(bigfloat_t target, const bigfloat_t a);
+void bigfloat_radix(bigfloat_t target, const bigfloat_t a, int tds);
 
 // Output
 size_t bigfloat_to_string(char* string, const bigfloat_t value, size_t digits, int base);

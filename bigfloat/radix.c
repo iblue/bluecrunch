@@ -106,7 +106,6 @@ void convert_rec(bigfloat_t s, size_t k, const bigfloat_t y, size_t n, size_t g,
     // yh = floor(y*(2^32)^(nh-n)) = y/[(2^32)^(n-nh)]
     bigfloat_t yh;
     bigfloat_new(yh);
-    assert(n >= nh); // FIXME: Remove. Eats Performance.
     bigfloat_alloc(yh, y->len-(n-nh));
     memcpy(yh->coef, y->coef+(n-nh), yh->len*sizeof(uint32_t));
 
@@ -196,7 +195,7 @@ void convert_rec(bigfloat_t s, size_t k, const bigfloat_t y, size_t n, size_t g,
 }
 
 // Converts from OLDBASE to NEWBASE
-void bigfloat_radix(bigfloat_t target, const bigfloat_t a) {
+void bigfloat_radix(bigfloat_t target, const bigfloat_t a, int tds) {
   size_t n, k, g;
   if(-a->exp+1 == a->len) {
     // Special case where no scaling is needed
@@ -210,7 +209,7 @@ void bigfloat_radix(bigfloat_t target, const bigfloat_t a) {
   }
 
   bigfloat_alloc(target, k);
-  convert_rec(target, k, a, n, g, 8);
+  convert_rec(target, k, a, n, g, tds);
 
   // Carry if needed
   if(target->coef[target->len-1] > NEWBASE) {

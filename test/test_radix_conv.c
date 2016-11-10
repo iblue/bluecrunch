@@ -103,7 +103,7 @@ int main(void) {
     bigfloat_t b;
     bigfloat_new(b);
 
-    bigfloat_radix(b, a);
+    bigfloat_radix(b, a, 8);
 
     assert(b->len  == 27);
     assert(b->sign == 1);
