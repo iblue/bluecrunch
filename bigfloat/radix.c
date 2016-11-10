@@ -1,13 +1,15 @@
 #include <malloc.h>
 #include <string.h> // memcpy
 #include <stdlib.h> // abort
+#include <assert.h>
 #include "math.h"
 #include "bigfloat.h"
 
 #define OLDBASE (4294967296)
 #define NEWBASE (100000000)
 #define LOG (log(OLDBASE)/log(NEWBASE))
-#define KT (3500)
+#define ALPHA (log(NEWBASE)/log(OLDBASE))
+#define KT (4)
 
 #define max(a,b) ({ __typeof__(a) _a = (a); __typeof__(b) _b = (b); _a > _b ? _a : _b; })
 #define min(a,b) ({ __typeof__(a) _a = (a); __typeof__(b) _b = (b); _a < _b ? _a : _b; })
@@ -35,7 +37,7 @@ size_t bigfloat_radix_decimals(bigfloat_t target) {
 }
 
 void convert_trunc(bigfloat_t s, const bigfloat_t y0, size_t k, size_t n) {
-  double alpha = 1./LOG;
+  double alpha = ALPHA;
 
   bigfloat_t t;
   bigfloat_new(t);
@@ -87,11 +89,95 @@ void convert_trunc(bigfloat_t s, const bigfloat_t y0, size_t k, size_t n) {
 }
 
 void convert_rec(bigfloat_t s, size_t k, const bigfloat_t y, size_t n, size_t g) {
-  //if(k <= KT) {
+  if(k <= KT) {
     convert_trunc(s, y, k, n);
-  //} else {
-    // TODO
-  //}
+  } else {
+    size_t kh = (k+1)/2;
+    size_t kl = k - kh + 1;
+
+    double P = log(4.0*(double)NEWBASE)/log((double)OLDBASE);
+    double log_G = log((double)g);
+
+    // Choose nh such that 4gb^kh < 2^nh
+    size_t nh = floor((double)kh*P*log_G+1);
+
+    // Choose nl such that 4gb^kl < 2^nl
+    size_t nl = floor((double)kh*P*log_G+1);
+
+    // yh = floor(y*(2^32)^(nh-n)) = y/[(2^32)^(n-nh)]
+    bigfloat_t yh;
+    bigfloat_new(yh);
+    assert(n >= nh); // FIXME: Remove. Eats Performance.
+    bigfloat_alloc(yh, y->len-(n-nh));
+    memcpy(yh->coef, y->coef+(n-nh), yh->len*sizeof(uint32_t));
+
+    // yl = b^(k-kl)*y mod (2^32)^n bdiv (2^32)^(n-nl)
+    bigfloat_t b_exp; // TODO: Performance: Construct from table
+    bigfloat_new(b_exp);
+    bigfloat_set(b_exp, NEWBASE);
+    bigfloat_exp(b_exp, b_exp, k - kl, 0);
+    bigfloat_t yl;
+    bigfloat_new(yl);
+
+    // TODO: Performance: This can be done as middle product
+    bigfloat_mul(yl, y, b_exp, 0, 8);
+    yl->len = n; // yl <- yl mod (2^32)^n
+    uint32_t *yl_coef_ptr = yl->coef;
+    yl->coef += (n - nl); // bdiv (2^32)^(n-nl)
+    yl->len  -= (n - nl); // vvvvvvvvvvvvvvvvv
+
+    // Recurse
+    bigfloat_t sh;
+    bigfloat_new(sh);
+    bigfloat_t sl;
+    bigfloat_new(sl);
+
+    convert_rec(sh, kh, yh, nh, g);
+    convert_rec(sl, kl, yl, nl, g);
+
+
+    // fixups. if the trailing digit of sh is b-1 and the leading digit of sl is 0
+    if(sh->coef[0] == NEWBASE-1 && sl->coef[sl->len-1] == 0) {
+      // add 1. FIXME: Move into a bigfloat_addu()
+      uint32_t carry = 1;
+      for(size_t i=0;i<sh->len;i++) {
+        uint64_t sum = sh->coef[i] + carry;
+        uint32_t upper = sum / NEWBASE;
+        uint32_t lower = sum % NEWBASE;
+        carry = upper;
+        sh->coef[i] = lower;
+
+        if(carry == 0) {
+          break;
+        }
+      }
+    }
+
+    // fixup. if the trailing digit of sh is 0 and the leading digit of sl is b-1
+    char sl_is_zero = 0;
+    if(sh->coef[0] == 0 && sl->coef[sl->len-1] == NEWBASE-1) {
+      // sl = 0
+      sl_is_zero = 1;
+    }
+
+    // s = floor(sh/b)*b^(kl) + sl (s is now in base b)
+    bigfloat_t s;
+    bigfloat_new(s);
+    bigfloat_alloc(s, sh->len-1+kl);
+    memcpy(s->coef+kl-1, sh->coef, sh->len*sizeof(uint32_t));
+    if(!sl_is_zero) {
+      bigfloat_add(s, s, sl, 0);
+    }
+
+    // DEBUG HERE
+
+    bigfloat_free(sh);
+    bigfloat_free(sl);
+
+    bigfloat_free(yh);
+    yl->coef = yl_coef_ptr;
+    bigfloat_free(yl);
+  }
 }
 
 // Converts from OLDBASE to NEWBASE
