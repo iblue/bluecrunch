@@ -102,6 +102,48 @@ void static inline _fft_mul(uint32_t *CT, size_t CL, uint32_t *AT, size_t AL, ui
   _mm_free(Ta);
 }
 
+void static inline _basecase_mul(uint32_t *CT, size_t CL, uint32_t *AT, size_t AL, uint32_t *BT, size_t BL, int tds) {
+  char inplaceOverride = (CT == AT || CT == BT);
+
+  if(inplaceOverride) {
+    uint32_t* PT = malloc(CL*sizeof(uint32_t));
+    _basecase_mul(PT, CL, AT, AL, BT, BL, tds);
+    memcpy(CT, PT, CL*sizeof(uint32_t));
+    free(PT);
+    return;
+  }
+
+  // Zero target
+  memset(CT, 0, sizeof(uint32_t)*CL);
+
+  for(size_t i=0;i<AL;i++) {
+    uint64_t carry = 0;
+    uint64_t value;
+    for(size_t j=0;j<BL;j++) {
+      value = CT[i+j];
+      value += (uint64_t) AT[i] * (uint64_t) BT[j];
+      value += carry;
+
+      carry  = value >> 32;
+      value &= 0xffffffff;
+      CT[i+j] = value;
+    }
+    for(size_t j=i+BL;j<CL;j++) {
+      if(carry == 0) {
+        break;
+      }
+      value = CT[j];
+      value += carry;
+
+      carry  = value >> 32;
+      value &= 0xffffffff;
+      CT[j] = value;
+    }
+  }
+}
+
+#define BASECASE_THRESH 1500
+
 void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, size_t p, int tds) {
     //  Multiplication
 
@@ -183,50 +225,17 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
 
     target->len  = AL + BL; // Add the lenghts for now. May need to correct later.
 
-    /*#ifndef DEBUG
-    #define BASECASE_OPTIMIZATION
-    #endif*/
-    #ifdef BASECASE_OPTIMIZATION
-    if(target->len == 2) {
+    uint32_t *CT = target->coef;
+    uint32_t CL = target->len;
+
+    if(CL == 2) {
       // Fast path for really small multiplications
-      uint64_t result = (uint64_t)AT[0]*BT[0];
-      target->coef[0] = result & 0xffffffff;
-      target->coef[1] = result >> 32;
-    } else if(target->len < 350 && target->coef != a->coef && target->coef != b->coef) {
-      // FIXME: This breaks if we are multiplying in-place. Fix that.
-      for(size_t i=0;i<target->len;i++) {
-        target->coef[i] = 0;
-      }
-      for(size_t i=0;i<AL;i++) {
-        uint64_t carry = 0;
-        uint64_t value;
-        for(size_t j=0;j<BL;j++) {
-          value = target->coef[i+j];
-          value += (uint64_t) AT[i] * (uint64_t) BT[j];
-          value += carry;
-
-          carry  = value >> 32;
-          value &= 0xffffffff;
-          target->coef[i+j] = value;
-        }
-        for(size_t j=i+BL;j<target->len;j++) {
-          if(carry == 0) {
-            break;
-          }
-          value = target->coef[j];
-          value += carry;
-
-          carry  = value / UINT32_MAX;
-          value %= UINT32_MAX;
-          target->coef[j] = value;
-        }
-      }
-    } else
-    #endif
-    {
-      uint32_t *CT = target->coef;
-      uint32_t CL = target->len;
-
+      uint64_t r = (uint64_t)AT[0]*BT[0];
+      CT[0] = r & 0xffffffff;
+      CT[1] = r >> 32;
+    } else if(CL < BASECASE_THRESH) {
+      _basecase_mul(CT, CL, AT, AL, BT, BL, tds);
+    } else {
       _fft_mul(CT, CL, AT, AL, BT, BL, tds);
     }
     #ifdef DEBUG
