@@ -5,7 +5,7 @@ VALGRIND=valgrind --tool=memcheck --leak-check=yes
 STRIP=strip
 CFLAGS=-std=c11 -Wall -Werror -ggdb -O2 -fopenmp -msse3 -mavx
 BINARY=bluecrunch
-LIBS=-lm
+LIBS=-lm #-ltcmalloc # Needs libgoogle-perftools-dev
 ifeq ($(CC),icc)
 	CFLAGS += -ipo
 endif

@@ -26,6 +26,62 @@ void bigfloat_mului(bigfloat_t a, uint32_t b) {
   }
 }
 
+// Multiplies C = A*B using FFT where C = CL integers in CT, etc.
+// CT, CL = target ptr and length
+// AT, AL = source 1 ptr and length
+// BT, BL = source 2 ptr and length
+// tds = numbers of threads to be used
+void static inline _fft_mul(uint32_t *CT, size_t CL, uint32_t *AT, size_t AL, uint32_t *BT, size_t BL, int tds) {
+  int bits_per_point = 12;
+  int points_per_word = 3;
+
+  //  Determine minimum FFT size.
+  int k = 0;
+  size_t length = 1;
+  while (length < points_per_word*CL) {
+    length <<= 1;
+    k++;
+  }
+
+  if(length/2 > points_per_word*CL+10) {
+    length /= 2;
+  }
+
+  //  Allocate FFT arrays
+  complex double *Ta = (complex double*)_mm_malloc(length * sizeof(complex double), 32);
+  complex double *Tb = (complex double*)_mm_malloc(length * sizeof(complex double), 32);
+
+  //  Convert Numbers to FFT
+  int_to_fft(Ta, k, AT, AL, bits_per_point); //  Convert 1st operand
+  int_to_fft(Tb, k, BT, BL, bits_per_point); //  Convert 2nd operand
+
+  // If numbers are too big, use multiplication without table.
+  if (twiddle_table_size - 1 < k) {
+    fft_forward_uncached(Ta, k, tds);
+    fft_forward_uncached(Tb, k, tds);
+  } else {
+    fft_forward(Ta, k, tds);
+    fft_forward(Tb, k, tds);
+  }
+
+  // Pointwise multiply
+  fft_pointwise(Ta, Tb, k);
+
+  // Inverse transform
+  if (twiddle_table_size - 1 < k) {
+    fft_inverse_uncached(Ta, k, tds);
+  } else {
+    fft_inverse(Ta, k, tds);
+  }
+
+  // Convert including carryout
+  fft_to_int(Ta, k, CT, CL, bits_per_point);
+
+  // Free FFT arrays
+  _mm_free(Tb);
+  _mm_free(Ta);
+}
+
 void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, size_t p, int tds) {
     //  Multiplication
 
@@ -148,76 +204,10 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
     } else
     #endif
     {
-      //#define USE_TFT
-      //  Perform multiplication.
-      int bits_per_point;
-      int points_per_word;
-      #ifdef USE_TFT
-      // Experimentally determined by checking accuracy vs 8 bit.
-      // too big:   175000
-      // too small: 100000
-      if(target->len < 137000) {
-        bits_per_point = 12;
-        points_per_word = 3;
-      } else {
-        bits_per_point = 8;
-        points_per_word = 4;
-      }
-      #else
-      bits_per_point = 12;
-      points_per_word = 3;
-      #endif
+      uint32_t *CT = target->coef;
+      uint32_t CL = target->len;
 
-
-      //  Determine minimum FFT size.
-      int k = 0;
-      size_t length = 1;
-      while (length < points_per_word*target->len) {
-        length <<= 1;
-        k++;
-      }
-      if(length/2 > points_per_word*target->len+10) {
-        length /= 2;
-      }
-
-      //  Allocate FFT arrays
-      // TODO: Can be optimited if a == b.
-      complex double *Ta = (complex double*)_mm_malloc(length * sizeof(complex double), 32);
-      complex double *Tb = (complex double*)_mm_malloc(length * sizeof(complex double), 32);
-
-      //  Make sure the twiddle table is big enough.
-      /*size_t sa =*/ int_to_fft(Ta, k, AT, AL, bits_per_point); //  Convert 1st operand
-      /*size_t sb =*/ int_to_fft(Tb, k, BT, BL, bits_per_point); //  Convert 2nd operand
-
-      #ifdef USE_TFT
-      tft_forward(Ta, points_per_word*target->len, k);
-      tft_forward(Tb, points_per_word*target->len, k);
-      #else
-      if (twiddle_table_size - 1 < k) {
-        fft_forward_uncached(Ta,k,tds);
-        fft_forward_uncached(Tb,k,tds);
-      } else {
-        fft_forward(Ta,k,tds);
-        fft_forward(Tb,k,tds);
-      }
-      #endif
-
-      fft_pointwise(Ta,Tb,k);//  Pointwise multiply
-
-      #ifdef USE_TFT
-      tft_inverse(Ta, points_per_word*target->len, k);
-      #else
-      if (twiddle_table_size - 1 < k) {
-        fft_inverse_uncached(Ta,k,tds);
-      } else {
-        fft_inverse(Ta,k,tds);
-      }
-      #endif
-
-      fft_to_int(Ta,k,target->coef,target->len, bits_per_point);   //  Convert back to word array.
-
-      _mm_free(Tb);
-      _mm_free(Ta);
+      _fft_mul(CT, CL, AT, AL, BT, BL, tds);
     }
     #ifdef DEBUG
     bigfloat_print("t", target);
