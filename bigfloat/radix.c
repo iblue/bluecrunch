@@ -94,10 +94,10 @@ void convert_trunc(bigfloat_t s, const bigfloat_t y0, size_t k, size_t n) {
 
 
 size_t val_at_idx[RADIX_CONV_TABLE_SIZE] = {0};
-bigfloat_t radix_conv_table[RADIX_CONV_TABLE_SIZE];
+bigfloat_t radix_conv_table[128];
 
-// FIXME: Clean up this mess
 void ensure_radix_conversion(size_t k) {
+  printf("Ensuring table (k = %ld\n)", k);
   size_t max_k = k;
   size_t len   = 0;
   while(k >= KT) {
@@ -114,29 +114,19 @@ void ensure_radix_conversion(size_t k) {
   printf("ensured %ld -> 0\n", k);
   val_at_idx[0] = k;
 
-  size_t j=0;
-  for(size_t i=1;i<len;i++) {
-    j++;
+  for(size_t i=1;i<=len;i++) {
     size_t gen_k = max_k >> (len-i);
     bigfloat_new(radix_conv_table[i]);
+    k *= 2;
     bigfloat_exp(current, current, 2);
-    k = gen_k;
-    printf("ensured %ld -> %ld\n", k, j);
-    val_at_idx[j] = k;
-    bigfloat_copy(radix_conv_table[j], current);
-    // FIXME: We are sometimes off by one, so we calculate that shit as well.
-    // But we could do this in the radix, just taking the other value and
-    // running a quick bigfloat_mului on the table entry. This eats ram.
-    {
-      j++;
+    printf("ensured %ld -> %ld\n", k, i);
+    val_at_idx[i] = k;
+    bigfloat_copy(radix_conv_table[i], current);
+    if(gen_k & 1 == 1) {
       k += 1;
       bigfloat_realloc(current, current->len+1); // Prevent overflow
       bigfloat_mului(current, NEWBASE);
-      printf("ensured %ld -> %ld\n", k, j);
-      val_at_idx[j] = k;
-      bigfloat_copy(radix_conv_table[j], current);
     }
-
     // FIXME: Cache the FFT transforms where needed
   }
 
@@ -148,7 +138,7 @@ void ensure_radix_conversion(size_t k) {
 }
 
 size_t exp_to_radix_tbl_entry(size_t k) {
-  for(size_t i=0;i<RADIX_CONV_TABLE_SIZE;i++) {
+  for(size_t i=0;i<128;i++) {
     if(val_at_idx[i] == k) {
       return i;
     }
@@ -193,8 +183,16 @@ void convert_rec(bigfloat_t s, size_t k, const bigfloat_t y, size_t n, size_t g)
     bigfloat_t yl;
     bigfloat_new(yl);
     // TODO: Performance: This can be done as middle product
-    printf("using table for %ld\n", k-kl);
-    bigfloat_mul(yl, y, radix_conv_table[exp_to_radix_tbl_entry(k-kl)], 0);
+    if((k-kl) & 1 == 0) {
+      printf("using table for %ld\n", k-kl);
+      bigfloat_mul(yl, y, radix_conv_table[exp_to_radix_tbl_entry(k-kl)], 0);
+    } else {
+      printf("using table for %ld [+1]\n", k-kl-1);
+      bigfloat_mul(yl, y, radix_conv_table[exp_to_radix_tbl_entry(k-kl-1)], 0);
+      bigfloat_realloc(yl, yl->len+1);
+      bigfloat_mului(yl, NEWBASE);
+    }
+
     yl->len = n; // yl <- yl mod (2^32)^n
     uint32_t *yl_coef_ptr = yl->coef;
     yl->coef += (n - nl); // bdiv (2^32)^(n-nl)
