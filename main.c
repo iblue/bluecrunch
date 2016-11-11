@@ -174,7 +174,7 @@ void e(size_t digits){
 }
 
 int main() {
-  size_t digits = 10000000;
+  size_t digits = 1000;
 
   //  Determine minimum FFT size.
   size_t p      = 2*digits / 9 + 10;

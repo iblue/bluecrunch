@@ -7,7 +7,7 @@
 #include "bigfloat.h"
 
 #define OLDBASE (4294967296)
-#define NEWBASE (100000000) // If we increase this by one digit, it will be faster (but more risk of overflow)
+#define NEWBASE (1000000000) // If we increase this by one digit, it will be faster (but more risk of overflow)
 #define LOG (log(OLDBASE)/log(NEWBASE))
 #define ALPHA (log(NEWBASE)/log(OLDBASE))
 #define KT (1000) /* This seems to be optimal on my machine */
@@ -204,6 +204,10 @@ void generate_factors() {
 }
 
 void ensure_radix_conversion(size_t k) {
+  if(k < KT) {
+    return;
+  }
+
   printf("Ensuring table (k = %ld)\n", k);
   build_table(k);
   sort();

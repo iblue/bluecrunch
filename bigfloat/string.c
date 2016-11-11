@@ -27,13 +27,13 @@ size_t int_to_str(uint32_t val, char* str) {
 }
 
 size_t int_to_str10(uint32_t val, char* str) {
-  for (int i=7;i>=0;i--){
+  for (int i=8;i>=0;i--){
     int nibble = val % 10;
     str[i] = nibble + '0';
 
     val /= 10;
   }
-  return 8;
+  return 9;
 }
 
 // Skipps leading zeros
