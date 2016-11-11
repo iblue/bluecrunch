@@ -8,11 +8,9 @@
 #include <pmmintrin.h>
 #include <string.h>
 
-#include <omp.h>
-#include "fft.h"
 #include "bigfloat.h"
 
-void bigfloat_exp(bigfloat_t target, const bigfloat_t a, uint64_t exp, int tds) {
+void bigfloat_exp(bigfloat_t target, const bigfloat_t a, uint64_t exp) {
   bigfloat_t cp; // current potency
   bigfloat_new(cp);
   bigfloat_copy(cp, a);
@@ -21,10 +19,10 @@ void bigfloat_exp(bigfloat_t target, const bigfloat_t a, uint64_t exp, int tds) 
 
   while(exp > 0) {
     if(exp % 2 == 1) {
-      bigfloat_mul(target, target, cp, 0, tds);
+      bigfloat_mul(target, target, cp, 0);
     }
 
-    bigfloat_mul(cp, cp, cp, 0, tds);
+    bigfloat_mul(cp, cp, cp, 0);
 
     exp /= 2;
   }

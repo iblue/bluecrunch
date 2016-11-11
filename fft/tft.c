@@ -49,12 +49,12 @@ void tft_forward1(complex double *T, size_t length, int k) {
   size_t shift = 1 << (k-1);
 
   if(shift == length) {
-    fft_forward(T, k - 1, 1); // Calculate the left side completely.
+    fft_forward(T, k - 1); // Calculate the left side completely.
     return;
   }
 
   if(shift < length) {
-    fft_forward(T, k - 1, 1); // Calculate the left side completely.
+    fft_forward(T, k - 1); // Calculate the left side completely.
     tft_forward1(T + shift, length - shift, k - 1); // Calculate the right side partially
     return;
   }
@@ -84,7 +84,7 @@ void tft_inverse1(complex double *T, size_t head, size_t tail, size_t last, size
     }
 
     // Push up the self-contained region T[head] to T[left_middle]
-    fft_inverse(T+head, bitlog2(left_middle - head + 1), 1);
+    fft_inverse(T+head, bitlog2(left_middle - head + 1));
 
     // Push down T[tail+1] .. T[last] from T[tail+1-left_middle] .. T[left_middle]
     for(size_t i=tail+1;i<=last;i++) {
@@ -136,7 +136,7 @@ void tft_inverse(complex double *T, size_t len, int k) {
 
   // If 2^k normal sized FFT, use FFT algoritmn, because it's faster.
   if(n == l) {
-    fft_inverse(T, k, 1);
+    fft_inverse(T, k);
     return;
   }
 

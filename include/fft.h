@@ -11,10 +11,10 @@ extern int twiddle_table_size;
 void fft_ensure_table(int);
 
 // Forward and inverse FFT transforms
-void fft_forward(complex double*, int, int);
-void fft_inverse(complex double*, int, int);
-void fft_forward_uncached(complex double*, int, int);
-void fft_inverse_uncached(complex double*, int, int);
+void fft_forward(complex double*, int);
+void fft_inverse(complex double*, int);
+void fft_forward_uncached(complex double*, int);
+void fft_inverse_uncached(complex double*, int);
 
 // Pointwise multiply an array of complex data points.
 void fft_pointwise(complex double*, complex double*, int);
@@ -29,4 +29,4 @@ void tft_inverse(complex double*, size_t, int);
 //void tft_pointwise(complex double *a, complex double *b, size_t len);
 
 // Baileys FFT
-void baileys_forward(complex double*, int, int);
+void baileys_forward(complex double*, int);

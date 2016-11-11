@@ -8,11 +8,10 @@
 #include <pmmintrin.h>
 #include <string.h>
 
-#include <omp.h>
 #include "fft.h"
 #include "bigfloat.h"
 
-void bigfloat_div(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, size_t p, int tds) {
+void bigfloat_div(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, size_t p) {
   //  Division
   bigfloat_t rcp;
   bigfloat_new(rcp);
@@ -22,7 +21,7 @@ void bigfloat_div(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
     p = a->len + b->len;
   }
 
-  bigfloat_rcp(rcp, b, p, tds);
-  bigfloat_mul(target, a, rcp, p, tds);
+  bigfloat_rcp(rcp, b, p);
+  bigfloat_mul(target, a, rcp, p);
   bigfloat_free(rcp);
 }

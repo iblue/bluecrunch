@@ -3,7 +3,7 @@
 #include <pmmintrin.h>
 #include <string.h>
 
-#include <omp.h>
+#include <cilk/cilk.h>
 #include "bigfloat.h"
 #include "fft.h"
 
@@ -31,7 +31,7 @@ void bigfloat_mului(bigfloat_t a, uint32_t b) {
 // AT, AL = source 1 ptr and length
 // BT, BL = source 2 ptr and length
 // tds = numbers of threads to be used
-void static inline _fft_mul(uint32_t *CT, size_t CL, uint32_t *AT, size_t AL, uint32_t *BT, size_t BL, int tds) {
+void static inline _fft_mul(uint32_t *CT, size_t CL, uint32_t *AT, size_t AL, uint32_t *BT, size_t BL) {
   int bits_per_point = 12;
   int points_per_word = 3;
 
@@ -67,15 +67,17 @@ void static inline _fft_mul(uint32_t *CT, size_t CL, uint32_t *AT, size_t AL, ui
 
   // If numbers are too big, use multiplication without table.
   if (twiddle_table_size - 1 < k) {
-    fft_forward_uncached(Ta, k, tds);
+    cilk_spawn fft_forward_uncached(Ta, k);
     if(needB) {
-      fft_forward_uncached(Tb, k, tds);
+      fft_forward_uncached(Tb, k);
     }
+    cilk_sync;
   } else {
-    fft_forward(Ta, k, tds);
+    cilk_spawn fft_forward(Ta, k);
     if(needB) {
-      fft_forward(Tb, k, tds);
+      fft_forward(Tb, k);
     }
+    cilk_sync;
   }
 
   // Pointwise multiply
@@ -87,9 +89,9 @@ void static inline _fft_mul(uint32_t *CT, size_t CL, uint32_t *AT, size_t AL, ui
 
   // Inverse transform
   if (twiddle_table_size - 1 < k) {
-    fft_inverse_uncached(Ta, k, tds);
+    fft_inverse_uncached(Ta, k);
   } else {
-    fft_inverse(Ta, k, tds);
+    fft_inverse(Ta, k);
   }
 
   // Convert including carryout
@@ -102,12 +104,12 @@ void static inline _fft_mul(uint32_t *CT, size_t CL, uint32_t *AT, size_t AL, ui
   _mm_free(Ta);
 }
 
-void static inline _basecase_mul(uint32_t *CT, size_t CL, uint32_t *AT, size_t AL, uint32_t *BT, size_t BL, int tds) {
+void static inline _basecase_mul(uint32_t *CT, size_t CL, uint32_t *AT, size_t AL, uint32_t *BT, size_t BL) {
   char inplaceOverride = (CT == AT || CT == BT);
 
   if(inplaceOverride) {
     uint32_t* PT = malloc(CL*sizeof(uint32_t));
-    _basecase_mul(PT, CL, AT, AL, BT, BL, tds);
+    _basecase_mul(PT, CL, AT, AL, BT, BL);
     memcpy(CT, PT, CL*sizeof(uint32_t));
     free(PT);
     return;
@@ -144,7 +146,7 @@ void static inline _basecase_mul(uint32_t *CT, size_t CL, uint32_t *AT, size_t A
 
 #define BASECASE_THRESH 1500
 
-void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, size_t p, int tds) {
+void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, size_t p) {
     //  Multiplication
 
     //  The target precision is p.
@@ -234,9 +236,9 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
       CT[0] = r & 0xffffffff;
       CT[1] = r >> 32;
     } else if(CL < BASECASE_THRESH) {
-      _basecase_mul(CT, CL, AT, AL, BT, BL, tds);
+      _basecase_mul(CT, CL, AT, AL, BT, BL);
     } else {
-      _fft_mul(CT, CL, AT, AL, BT, BL, tds);
+      _fft_mul(CT, CL, AT, AL, BT, BL);
     }
     #ifdef DEBUG
     bigfloat_print("t", target);

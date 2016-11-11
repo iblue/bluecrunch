@@ -6,7 +6,6 @@
 #include <malloc.h>
 #include <pmmintrin.h>
 #include <immintrin.h> // More Magic!
-#include <omp.h>
 #include "fft.h"
 
 #ifndef M_PI

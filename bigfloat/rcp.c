@@ -8,11 +8,10 @@
 #include <pmmintrin.h>
 #include <string.h>
 
-#include <omp.h>
 #include "fft.h"
 #include "bigfloat.h"
 
-void bigfloat_rcp(bigfloat_t target, const bigfloat_t a, size_t p, int tds) {
+void bigfloat_rcp(bigfloat_t target, const bigfloat_t a, size_t p) {
   //  Compute reciprocal using Newton's Method.
 
   //  r1 = r0 - (r0 * x - 1) * r0
@@ -77,7 +76,7 @@ void bigfloat_rcp(bigfloat_t target, const bigfloat_t a, size_t p, int tds) {
   //  Recurse at half the precision
   bigfloat_t T;
   bigfloat_new(T);
-  bigfloat_rcp(T, a, s, tds);
+  bigfloat_rcp(T, a, s);
 
   //  r1 = r0 - (r0 * x - 1) * r0
   bigfloat_t one;
@@ -85,14 +84,14 @@ void bigfloat_rcp(bigfloat_t target, const bigfloat_t a, size_t p, int tds) {
   bigfloat_set(one, 1);
   bigfloat_t tmp;
   bigfloat_new(tmp);
-  bigfloat_mul(tmp, a, T, p, tds);
+  bigfloat_mul(tmp, a, T, p);
   bigfloat_t tmp2;
   bigfloat_new(tmp2);
   bigfloat_sub(tmp2, tmp, one, p);
   bigfloat_free(tmp);
   bigfloat_t tmp3;
   bigfloat_new(tmp3);
-  bigfloat_mul(tmp3, tmp2, T, p, tds);
+  bigfloat_mul(tmp3, tmp2, T, p);
   bigfloat_free(tmp2);
   bigfloat_sub(target, T, tmp3, p);
   bigfloat_free(tmp3);

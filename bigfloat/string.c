@@ -8,7 +8,6 @@
 #include <pmmintrin.h>
 #include <string.h>
 
-#include <omp.h>
 #include "fft.h"
 #include "bigfloat.h"
 

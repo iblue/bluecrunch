@@ -5,7 +5,8 @@
 #include <malloc.h>
 #include <pmmintrin.h>
 
-#include <omp.h>
+#include <cilk/cilk.h>
+#include <cilk/cilk_api.h>
 
 #include <time.h>
 #include "fft.h"
@@ -65,7 +66,7 @@ size_t e_terms(size_t p) {
   return b + 2;
 }
 
-void e_BSR(bigfloat_t P, bigfloat_t Q, uint32_t a, uint32_t b, int tds) {
+void e_BSR(bigfloat_t P, bigfloat_t Q, uint32_t a, uint32_t b) {
   //  Binary Splitting recursion for exp(1).
 
   if (b - a == 1){
@@ -82,41 +83,29 @@ void e_BSR(bigfloat_t P, bigfloat_t Q, uint32_t a, uint32_t b, int tds) {
   bigfloat_new(P1);
   bigfloat_new(Q1);
 
-  if (b - a < 1000 || tds < 2) {
+  if (b - a < 1000) {
     //  No more threads.
-    e_BSR(P0, Q0, a, m, 1);
-    e_BSR(P1, Q1, m, b, 1);
+    e_BSR(P0, Q0, a, m);
+    e_BSR(P1, Q1, m, b);
   } else {
-    //  Run sub-recursions in parallel.
-    int tds0 = tds / 2;
-    int tds1 = tds - tds0;
-    #pragma omp parallel num_threads(2)
-    {
-      int tid = omp_get_thread_num();
-
-      if (tid == 0){
-        e_BSR(P0,Q0,a,m,tds0);
-      }
-
-      if (tid != 0 || omp_get_num_threads() < 2){
-          e_BSR(P1,Q1,m,b,tds1);
-      }
-    }
+    cilk_spawn e_BSR(P0, Q0, a, m);
+    e_BSR(P1, Q1, m, b);
+    cilk_sync;
   }
 
   bigfloat_t tmp;
   bigfloat_new(tmp);
-  bigfloat_mul(tmp, P0, Q1, 0, tds);
+  bigfloat_mul(tmp, P0, Q1, 0);
   bigfloat_free(P0);
   bigfloat_add(P, tmp, P1, 0);
   bigfloat_free(tmp);
   bigfloat_free(P1);
-  bigfloat_mul(Q, Q0, Q1, 0, tds);
+  bigfloat_mul(Q, Q0, Q1, 0);
   bigfloat_free(Q1);
   bigfloat_free(Q0);
 }
 
-void e(size_t digits, int tds){
+void e(size_t digits){
   //  The leading 2 doesn't count.
   digits++;
 
@@ -137,7 +126,7 @@ void e(size_t digits, int tds){
   bigfloat_t P, Q;
   bigfloat_new(P);
   bigfloat_new(Q);
-  e_BSR(P, Q, 0, (uint32_t)terms, tds);
+  e_BSR(P, Q, 0, (uint32_t)terms);
   double time1 = wall_clock();
 
   printf("ok [%f seconds]\n", time1 - time0);
@@ -150,7 +139,7 @@ void e(size_t digits, int tds){
   bigfloat_set(one, 1);
   bigfloat_t tmp;
   bigfloat_new(tmp);
-  bigfloat_div(tmp, P, Q, p, tds);
+  bigfloat_div(tmp, P, Q, p);
   bigfloat_free(Q);
   bigfloat_add(P, tmp, one, p);
   bigfloat_free(tmp);
@@ -171,7 +160,7 @@ void e(size_t digits, int tds){
   fflush(stdout);
   bigfloat_t dec;
   bigfloat_new(dec);
-  bigfloat_radix(dec, P, tds);
+  bigfloat_radix(dec, P);
   double time4 = wall_clock();
   printf("ok [%f seconds]\n", time4 - time3);
 
@@ -184,20 +173,7 @@ void e(size_t digits, int tds){
 }
 
 int main() {
-  // Enable threads and nested threading
-  omp_set_nested(1);
-
-  #ifdef DEBUG
-  int threads = 1;
-  #else
-  int threads = omp_get_max_threads();
-  #endif
-
-  #ifdef DEBUG
-  size_t digits = 10000;
-  #else
-  size_t digits = 1000000;
-  #endif
+  size_t digits = 10000000;
 
   //  Determine minimum FFT size.
   size_t p      = 2*digits / 9 + 10;
@@ -212,7 +188,7 @@ int main() {
 
   printf("Configuration:\n");
   printf("Digits:           %ld\n", digits);
-  printf("Threads:          %d\n", threads);
+  printf("Threads:          %d\n", __cilkrts_get_nworkers());
   printf("CPU Features:     Using AVX\n");
   printf("Output File:      ./e.txt\n");
   printf("Max FFT required: 2^%ld\n", k);
@@ -229,7 +205,7 @@ int main() {
   printf("ok [%f seconds]\n", time2 - time1);
 
   // Calculate e
-  e(digits, threads);
+  e(digits);
   double time3 = wall_clock();
 
   printf("\nCalculation complete [%f seconds]\n", time3 - time1);

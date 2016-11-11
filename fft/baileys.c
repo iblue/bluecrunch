@@ -6,7 +6,6 @@
 #include <malloc.h>
 #include <pmmintrin.h>
 #include <immintrin.h> // More Magic!
-#include <omp.h>
 #include "fft.h"
 #include "intrinsic.h"
 
@@ -14,7 +13,7 @@
 #define M_PI       3.14159265358979323846
 #endif
 
-void baileys_forward(complex double *T, int k, int tds) {
+void baileys_forward(complex double *T, int k) {
   size_t k1 = k / 2;
   size_t k2 = k - k1;
   size_t n1 = 1 << k1;
@@ -24,7 +23,7 @@ void baileys_forward(complex double *T, int k, int tds) {
   // Do n1 transforms of size n2
   for(size_t i=0;i<n1;i++) {
     // FIXME: Parallelize
-    fft_forward(T+i*n2, k1, tds);
+    fft_forward(T+i*n2, k1);
   }
 
   // Do transpose and multiply by twiddle
@@ -54,6 +53,6 @@ void baileys_forward(complex double *T, int k, int tds) {
   // Do n2 transforms of size n1
   for(size_t i=0;i<n2;i++) {
     // FIXME: Parallelize
-    fft_forward(T+i*n1, k2, tds);
+    fft_forward(T+i*n1, k2);
   }
 }
