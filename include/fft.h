@@ -3,7 +3,7 @@
 #include <complex.h>
 
 // When do we start to decompose FFTs for parallization
-#define FFT_THRESHOLD_K 10
+#define FFT_THRESHOLD_K 16
 
 extern complex double* twiddle_table[32];
 extern int twiddle_table_size;

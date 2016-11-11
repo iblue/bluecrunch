@@ -10,7 +10,7 @@
 #define NEWBASE (100000000) // If we increase this by one digit, it will be faster (but more risk of overflow)
 #define LOG (log(OLDBASE)/log(NEWBASE))
 #define ALPHA (log(NEWBASE)/log(OLDBASE))
-#define KT (30) /* This seems to be optimal on my machine */
+#define KT (1000) /* This seems to be optimal on my machine */
 
 #define max(a,b) ({ __typeof__(a) _a = (a); __typeof__(b) _b = (b); _a > _b ? _a : _b; })
 #define min(a,b) ({ __typeof__(a) _a = (a); __typeof__(b) _b = (b); _a < _b ? _a : _b; })
