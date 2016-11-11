@@ -112,15 +112,15 @@ void e(size_t digits){
     abort();
   }
 
-  task_start("Summing");
+  task_start(1, "Summing");
   bigfloat_t P, Q;
   bigfloat_new(P);
   bigfloat_new(Q);
   e_BSR(P, Q, 0, (uint32_t)terms);
-  task_end();
+  task_end(1);
 
 
-  task_start("Dividing");
+  task_start(1, "Dividing");
   bigfloat_t one;
   bigfloat_new(one);
   bigfloat_set(one, 1);
@@ -131,9 +131,9 @@ void e(size_t digits){
   bigfloat_add(P, tmp, one, p);
   bigfloat_free(tmp);
   bigfloat_free(one);
-  task_end();
+  task_end(1);
 
-  task_start("Writing hex digits");
+  task_start(1, "Writing hex digits");
   size_t output_len = digits+2; // comma, first '2'
   // We add 1 byte for the null terminator and 21 for overflows
   // We write 9 bytes at a time and stop when shit gets too large.
@@ -141,24 +141,30 @@ void e(size_t digits){
   char *out = (char*) malloc(output_len+22);
   size_t len = bigfloat_to_string(out, P, output_len, 16);
   dump_to_file("e-hex.txt", out, len);
-  task_end();
+  task_end(1);
 
-  task_start("Converting to decimal");
+  task_start(1, "Converting to decimal");
   fflush(stdout);
   bigfloat_t dec;
   bigfloat_new(dec);
   bigfloat_radix(dec, P);
-  task_end();
+  task_end(1);
 
-  task_start("Writing decimal digits");
+  task_start(1, "Writing decimal digits");
   len = bigfloat_to_string(out, dec, output_len, 10);
   dump_to_file("e.txt", out, len);
   bigfloat_free(P);
-  task_end();
+  task_end(1);
 }
 
-int main() {
-  size_t digits = 1000000;
+int main(int argc, char *argv[]) {
+  if(argc != 2) {
+    printf("Usage %s <number of digits> - Computes Eulers constant\n", argv[0]);
+    exit(0);
+  }
+
+  size_t digits;
+  sscanf(argv[1], "%ld", &digits);
 
   //  Determine minimum FFT size.
   size_t p      = 2*digits / 9 + 10;
@@ -184,10 +190,12 @@ int main() {
     k = 26;
   }
 
-  task_start("Precomputing twiddle factors");
+  task_start(0, "Starting calculation");
+  task_start(1, "Precomputing twiddle factors");
   fft_ensure_table(k);
-  task_end();
+  task_end(1);
 
   // Calculate e
   e(digits);
+  task_end(0);
 }

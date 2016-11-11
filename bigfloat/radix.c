@@ -3,6 +3,7 @@
 #include <stdlib.h> // abort
 #include <assert.h>
 #include <cilk/cilk.h>    // More oomph!
+#include "bench.h"
 #include "math.h"
 #include "bigfloat.h"
 
@@ -330,9 +331,13 @@ void bigfloat_radix(bigfloat_t target, const bigfloat_t a) {
     abort();
   }
 
+  task_start(2, "Precomputing base conversion table");
   ensure_radix_conversion(k);
+  task_end(2);
   bigfloat_alloc(target, k);
+  task_start(2, "Conversion");
   convert_rec(target, k, a, n, g);
+  task_end(2);
   free_radix_conversion();
 
   // Carry if needed
