@@ -1,5 +1,6 @@
 #include <x86intrin.h>
 #include <stdint.h>
+#include <cilk/cilk.h>
 #include "fft.h"
 
 // Inline pointwise multiply of complex numbers
@@ -10,7 +11,7 @@ void fft_pointwise(complex double *a, complex double *b, int k) {
   // FFT length
   size_t len = 1 << k;
 
-  for (size_t i = 0; i < len; i++) {
+  cilk_for (size_t i = 0; i < len; i++) {
     // TODO: AVX
     // Complex multiplication in SSE3
     __m128d a0 = ((__m128d*)a)[i];

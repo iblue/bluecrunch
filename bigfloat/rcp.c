@@ -28,44 +28,44 @@ void bigfloat_rcp(bigfloat_t target, const bigfloat_t a, size_t p) {
 
   //  End of recursion. Generate starting point.
   if (p == 0){
-      //  Truncate precision to 3.
-      p = 3;
-      if (AL > p){
-          size_t chop = AL - p;
-          AL = p;
-          Aexp += chop;
-          AT += chop;
-      }
+    //  Truncate precision to 3.
+    p = 3;
+    if (AL > p){
+        size_t chop = AL - p;
+        AL = p;
+        Aexp += chop;
+        AT += chop;
+    }
 
-      //  Convert number to floating-point.
-      double val = AT[0];
-      if (AL >= 2)
-          val += (double)AT[1] * (double)UINT32_MAX;
-      if (AL >= 3)
-          val += (double)AT[2] * (double)UINT32_MAX * (double)UINT32_MAX;
+    //  Convert number to floating-point.
+    double val = AT[0];
+    if (AL >= 2)
+        val += (double)AT[1] * (double)UINT32_MAX;
+    if (AL >= 3)
+        val += (double)AT[2] * (double)UINT32_MAX * (double)UINT32_MAX;
 
-      //  Compute reciprocal.
-      val = 1. / val;
-      Aexp = -Aexp;
+    //  Compute reciprocal.
+    val = 1. / val;
+    Aexp = -Aexp;
 
-      //  Scale
-      while (val < (double)UINT32_MAX){
-          val *= (double)UINT32_MAX;
-          Aexp--;
-      }
+    //  Scale
+    while (val < (double)UINT32_MAX){
+      val *= (double)UINT32_MAX;
+      Aexp--;
+    }
 
-      //  Rebuild a bigfloat_t.
-      uint64_t val64 = (uint64_t)val;
+    //  Rebuild a bigfloat_t.
+    uint64_t val64 = (uint64_t)val;
 
-      target->sign = a->sign;
+    target->sign = a->sign;
 
-      target->coef = (uint32_t*)malloc(sizeof(uint32_t)*2);
-      target->coef[0] = (uint32_t)(val64 % UINT32_MAX);
-      target->coef[1] = (uint32_t)(val64 / UINT32_MAX);
-      target->len = 2;
-      target->exp = Aexp;
+    target->coef = (uint32_t*)malloc(sizeof(uint32_t)*2);
+    target->coef[0] = (uint32_t)(val64 % UINT32_MAX);
+    target->coef[1] = (uint32_t)(val64 / UINT32_MAX);
+    target->len = 2;
+    target->exp = Aexp;
 
-      return;
+    return;
   }
 
   //  Half the precision

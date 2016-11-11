@@ -6,6 +6,7 @@
 #include <malloc.h>
 #include <pmmintrin.h>
 #include <immintrin.h> // More Magic!
+#include <cilk/cilk.h>
 #include "fft.h"
 
 #ifndef M_PI
@@ -31,11 +32,11 @@ void fft_ensure_table(int k) {
   //  Build the sub-table.
   complex double *sub_table = (complex double*)_mm_malloc(length*sizeof(complex double), 32);
 
-  for (size_t c = 0; c < length; c++){
-      //  Generate Twiddle Factor
-      double angle = omega * c;
-      complex double twiddle_factor = cos(angle)+I*sin(angle);
-      sub_table[c] = twiddle_factor;
+  cilk_for(size_t c = 0; c < length; c++) {
+    //  Generate Twiddle Factor
+    double angle = omega * c;
+    complex double twiddle_factor = cos(angle)+I*sin(angle);
+    sub_table[c] = twiddle_factor;
   }
 
   //  Push into main table.
