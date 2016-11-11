@@ -3,7 +3,7 @@ CC=/opt/intel/bin/icc
 #CC=/opt/magic/bin/clang # Needs to be compiled with cilk support (see https://cilkplus.github.io/)
 VALGRIND=valgrind --tool=memcheck --leak-check=yes
 STRIP=strip
-CFLAGS=-std=c11 -Wall -Werror -ggdb -O2 -mavx
+CFLAGS=-std=c11 -Wall -Werror -ggdb -O3 -mavx
 BINARY=bluecrunch
 LIBS=-lm #-ltcmalloc # Needs libgoogle-perftools-dev
 ifeq ($(CC),icc)
