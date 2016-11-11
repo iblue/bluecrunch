@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h> // abort
 #include "fft.h"
 
 // Puts 12 bits per complex point

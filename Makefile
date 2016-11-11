@@ -1,9 +1,9 @@
-#CC=icc
-#CC=gcc-6 # Will run into inling errors with cilk plus and intrinsics
-CC=/opt/magic/bin/clang # Needs to be compiled with cilk support (see https://cilkplus.github.io/)
+CC=/opt/intel/bin/icc
+#CC=gcc-5 # Will run into inling errors with cilk plus and intrinsics
+#CC=/opt/magic/bin/clang # Needs to be compiled with cilk support (see https://cilkplus.github.io/)
 VALGRIND=valgrind --tool=memcheck --leak-check=yes
 STRIP=strip
-CFLAGS=-std=c11 -Wall -Werror -ggdb -O2 -fcilkplus -msse3 -mavx -I/opt/magic/include
+CFLAGS=-std=c11 -Wall -Werror -ggdb -O2 -mavx
 BINARY=bluecrunch
 LIBS=-lm #-ltcmalloc # Needs libgoogle-perftools-dev
 ifeq ($(CC),icc)

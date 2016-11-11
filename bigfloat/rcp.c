@@ -2,6 +2,7 @@
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h> // abort
 
 //  SIMD
 #include <malloc.h>
