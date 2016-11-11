@@ -10,7 +10,7 @@
 #define NEWBASE (100000000) // If we increase this by one digit, it will be faster (but more risk of overflow)
 #define LOG (log(OLDBASE)/log(NEWBASE))
 #define ALPHA (log(NEWBASE)/log(OLDBASE))
-#define KT (3000) /* This seems to be optimal on my machine */
+#define KT (30) /* This seems to be optimal on my machine */
 
 #define max(a,b) ({ __typeof__(a) _a = (a); __typeof__(b) _b = (b); _a > _b ? _a : _b; })
 #define min(a,b) ({ __typeof__(a) _a = (a); __typeof__(b) _b = (b); _a < _b ? _a : _b; })
@@ -127,7 +127,8 @@ void sort() {
   // Calculate length
   for(size_t i=0;i<RADIX_CONV_TABLE_SIZE;i++) {
     if(val_at_idx[i] == 0) {
-      len = i;
+      len = i-1;
+      break;
     }
   }
 
@@ -159,7 +160,8 @@ void generate_factors() {
 
   printf("ensured %ld -> 0 by inital\n", val_at_idx[0]);
 
-  for(size_t i=0;i<RADIX_CONV_TABLE_SIZE;i++) {
+  for(size_t i=1;i<RADIX_CONV_TABLE_SIZE;i++) {
+    printf("processing %ld -> %ld\n", val_at_idx[i], i);
     if(val_at_idx[i] == 0) {
       break;
     }
@@ -174,7 +176,7 @@ void generate_factors() {
       bigfloat_alloc(radix_conv_table[i], radix_conv_table[idx]->len+1);
       bigfloat_mulu(radix_conv_table[i], radix_conv_table[idx], NEWBASE);
       printf("ensured %ld -> %ld by multiplication\n", current_exp, i);
-      break;
+      continue;
     }
 
     // Check if we find exp/2
@@ -193,7 +195,7 @@ void generate_factors() {
       } else {
         printf("ensured %ld -> %ld by squaring\n", current_exp, i);
       }
-      break; // Either way, we're done
+      continue; // Either way, we're done
     }
 
     fprintf(stderr, "did not find previous value for %ld in tbl\n", current_exp);
