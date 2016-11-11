@@ -91,6 +91,65 @@ void convert_trunc(bigfloat_t s, const bigfloat_t y0, size_t k, size_t n) {
 
 #define CONVERT_DECOMPOSE_TRESH 10000
 
+bigfloat_t* radix_conv_table = NULL;
+
+void ensure_radix_conversion(size_t k) {
+  size_t max_k = k;
+  size_t len   = 0;
+  while(k >= KT) {
+    k >>= 1;
+    len++;
+  }
+
+  radix_conv_table = malloc((len+1)*sizeof(bigfloat_t));
+
+  bigfloat_t current;
+  bigfloat_new(current);
+  bigfloat_set(current, NEWBASE);
+  bigfloat_exp(current, current, k);
+  bigfloat_new(radix_conv_table[0]);
+  bigfloat_copy(radix_conv_table[0], current);
+
+  for(size_t i=1;i<len;i++) {
+    size_t gen_k = max_k >> (len-i);
+    bigfloat_new(radix_conv_table[i]);
+    bigfloat_exp(current, current, 2);
+    if(gen_k & 1 == 1) {
+      bigfloat_mului(current, NEWBASE);
+    }
+    bigfloat_copy(radix_conv_table[i], current);
+
+    // FIXME: Cache the FFT transforms where needed
+  }
+
+  // Terminator
+  bigfloat_new(radix_conv_table[len]);
+  radix_conv_table[len]->coef = NULL;
+
+  bigfloat_free(current);
+}
+
+size_t exp_to_radix_tbl_entry(size_t k) {
+  size_t i = 0;
+  size_t orig_k = k;
+  while(k >= KT) {
+    k >>= 1;
+    i++;
+  }
+  return i;
+}
+
+void free_radix_conversion() {
+  size_t i = 0;
+  while(1) {
+    bigfloat_free(radix_conv_table[i]);
+    i++;
+    if(radix_conv_table[i]->coef == NULL) {
+      break;
+    }
+  }
+}
+
 void convert_rec(bigfloat_t s, size_t k, const bigfloat_t y, size_t n, size_t g) {
   if(k <= KT) {
     bigfloat_alloc(s, k);
@@ -112,15 +171,10 @@ void convert_rec(bigfloat_t s, size_t k, const bigfloat_t y, size_t n, size_t g)
     memcpy(yh->coef, y->coef+(n-nh), yh->len*sizeof(uint32_t));
 
     // yl = b^(k-kl)*y mod (2^32)^n bdiv (2^32)^(n-nl)
-    bigfloat_t b_exp; // TODO: Performance: Construct from table
-    bigfloat_new(b_exp);
-    bigfloat_set(b_exp, NEWBASE);
-    bigfloat_exp(b_exp, b_exp, k - kl);
     bigfloat_t yl;
     bigfloat_new(yl);
-
     // TODO: Performance: This can be done as middle product
-    bigfloat_mul(yl, y, b_exp, 0);
+    bigfloat_mul(yl, y, radix_conv_table[exp_to_radix_tbl_entry(k-kl)], 0);
     yl->len = n; // yl <- yl mod (2^32)^n
     uint32_t *yl_coef_ptr = yl->coef;
     yl->coef += (n - nl); // bdiv (2^32)^(n-nl)
@@ -199,8 +253,10 @@ void bigfloat_radix(bigfloat_t target, const bigfloat_t a) {
     abort();
   }
 
+  ensure_radix_conversion(k);
   bigfloat_alloc(target, k);
   convert_rec(target, k, a, n, g);
+  free_radix_conversion();
 
   // Carry if needed
   if(target->coef[target->len-1] > NEWBASE) {
