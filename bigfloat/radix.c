@@ -158,10 +158,10 @@ void generate_factors() {
   bigfloat_set(radix_conv_table[0], NEWBASE);
   bigfloat_exp(radix_conv_table[0], radix_conv_table[0], val_at_idx[0]);
 
-  printf("ensured %ld -> 0 by inital\n", val_at_idx[0]);
+  //printf("ensured %ld -> 0 by inital\n", val_at_idx[0]);
 
   for(size_t i=1;i<RADIX_CONV_TABLE_SIZE;i++) {
-    printf("processing %ld -> %ld\n", val_at_idx[i], i);
+    //printf("processing %ld -> %ld\n", val_at_idx[i], i);
     if(val_at_idx[i] == 0) {
       break;
     }
@@ -175,7 +175,7 @@ void generate_factors() {
       bigfloat_new(radix_conv_table[i]);
       bigfloat_alloc(radix_conv_table[i], radix_conv_table[idx]->len+1);
       bigfloat_mulu(radix_conv_table[i], radix_conv_table[idx], NEWBASE);
-      printf("ensured %ld -> %ld by multiplication\n", current_exp, i);
+      //printf("ensured %ld -> %ld by multiplication\n", current_exp, i);
       continue;
     }
 
@@ -191,9 +191,9 @@ void generate_factors() {
       if(current_exp & 1 == 1) {
         bigfloat_realloc(radix_conv_table[i], radix_conv_table[i]->len+1);
         bigfloat_mului(radix_conv_table[i], NEWBASE);
-        printf("ensured %ld -> %ld by squaring and multiplication\n", current_exp, i);
+        //printf("ensured %ld -> %ld by squaring and multiplication\n", current_exp, i);
       } else {
-        printf("ensured %ld -> %ld by squaring\n", current_exp, i);
+        //printf("ensured %ld -> %ld by squaring\n", current_exp, i);
       }
       continue; // Either way, we're done
     }
@@ -208,7 +208,7 @@ void ensure_radix_conversion(size_t k) {
     return;
   }
 
-  printf("Ensuring table (k = %ld)\n", k);
+  //printf("Ensuring table (k = %ld)\n", k);
   build_table(k);
   sort();
   generate_factors();
@@ -249,7 +249,7 @@ void convert_rec(bigfloat_t s, size_t k, const bigfloat_t y, size_t n, size_t g)
     bigfloat_new(yl);
 
     // TODO: Performance: This can be done as middle product
-    printf("using table for %ld\n", k-kl);
+    //printf("using table for %ld\n", k-kl);
     bigfloat_mul(yl, y, radix_conv_table[find(k-kl)], 0);
 
     yl->len = n; // yl <- yl mod (2^32)^n

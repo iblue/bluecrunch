@@ -20,6 +20,7 @@ MAIN_O = $(MAIN_C:.c=.o)
 INCLUDES = -I./include -I.
 SOURCES  = $(shell find -path "./bigfloat/*" -name "*.c")
 SOURCES += $(shell find -path "./fft/*"      -name "*.c")
+SOURCES += $(shell find -path "./util/*"     -name "*.c")
 HEADERS  = $(shell find -path "./include/*"  -name "*.h")
 OBJECTS  = $(SOURCES:.c=.o)
 

@@ -1,4 +1,3 @@
-#define _POSIX_C_SOURCE 199309L
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -9,19 +8,13 @@
 #include <cilk/cilk.h>
 #include <cilk/cilk_api.h>
 
-#include <time.h>
 #include "fft.h"
 #include "bigfloat.h"
+#include "bench.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 //  Helpers
-double wall_clock() {
-  struct timespec t;
-  clock_gettime(CLOCK_MONOTONIC, &t);
-  return (double)t.tv_sec + 1.0e-9*t.tv_nsec;
-}
-
 void dump_to_file(const char *path, const char* str, size_t len){
     FILE *file = fopen(path, "wb");
 
@@ -119,22 +112,15 @@ void e(size_t digits){
     abort();
   }
 
-  double time0 = wall_clock();
-
-  printf("Summing (%ld terms)...", terms);
-  fflush(stdout);
-
+  task_start("Summing");
   bigfloat_t P, Q;
   bigfloat_new(P);
   bigfloat_new(Q);
   e_BSR(P, Q, 0, (uint32_t)terms);
-  double time1 = wall_clock();
+  task_end();
 
-  printf("ok [%f seconds]\n", time1 - time0);
 
-  printf("Dividing...");
-  fflush(stdout);
-
+  task_start("Dividing");
   bigfloat_t one;
   bigfloat_new(one);
   bigfloat_set(one, 1);
@@ -145,36 +131,34 @@ void e(size_t digits){
   bigfloat_add(P, tmp, one, p);
   bigfloat_free(tmp);
   bigfloat_free(one);
-  double time2 = wall_clock();
-  printf("ok [%f seconds]\n", time2 - time1);
+  task_end();
 
-  printf("Writing hex digits...");
-  fflush(stdout);
+  task_start("Writing hex digits");
   size_t output_len = digits+2; // comma, first '2'
-  char *out = (char*) malloc(output_len+1);
+  // We add 1 byte for the null terminator and 21 for overflows
+  // We write 9 bytes at a time and stop when shit gets too large.
+  // So just malloc a bit more and truncate, because I'm lazy.
+  char *out = (char*) malloc(output_len+22);
   size_t len = bigfloat_to_string(out, P, output_len, 16);
   dump_to_file("e-hex.txt", out, len);
-  double time3 = wall_clock();
-  printf("ok [%f seconds]\n", time3 - time2);
+  task_end();
 
-  printf("Converting to decimal...");
+  task_start("Converting to decimal");
   fflush(stdout);
   bigfloat_t dec;
   bigfloat_new(dec);
   bigfloat_radix(dec, P);
-  double time4 = wall_clock();
-  printf("ok [%f seconds]\n", time4 - time3);
+  task_end();
 
-  printf("Writing decimal digits...");
+  task_start("Writing decimal digits");
   len = bigfloat_to_string(out, dec, output_len, 10);
   dump_to_file("e.txt", out, len);
   bigfloat_free(P);
-  double time5 = wall_clock();
-  printf("ok [%f seconds]\n", time5 - time4);
+  task_end();
 }
 
 int main() {
-  size_t digits = 1000;
+  size_t digits = 1000000;
 
   //  Determine minimum FFT size.
   size_t p      = 2*digits / 9 + 10;
@@ -195,19 +179,15 @@ int main() {
   printf("Max FFT required: 2^%ld\n", k);
   printf("\n");
 
-  if(k>26) {
+  // Cap table sizes.
+  if(k > 26) {
     k = 26;
   }
-  double time1 = wall_clock();
-  printf("Building FFT tables of size 2^%ld...", k);
-  fflush(stdout);
+
+  task_start("Precomputing twiddle factors");
   fft_ensure_table(k);
-  double time2 = wall_clock();
-  printf("ok [%f seconds]\n", time2 - time1);
+  task_end();
 
   // Calculate e
   e(digits);
-  double time3 = wall_clock();
-
-  printf("\nCalculation complete [%f seconds]\n", time3 - time1);
 }

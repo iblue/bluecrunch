@@ -100,10 +100,16 @@ size_t bigfloat_to_string(char* string, const bigfloat_t value, size_t digits, i
   if(base == 10) {
     while(c-->min_c) {
       string += int_to_str10(value->coef[c], string);
+      if((string - initial_string) >= digits) {
+        break;
+      }
     }
   } else {
     while(c-->min_c) {
       string += int_to_str(value->coef[c], string);
+      if((string - initial_string) >= digits) {
+        break;
+      }
     }
   }
 
@@ -112,7 +118,7 @@ size_t bigfloat_to_string(char* string, const bigfloat_t value, size_t digits, i
   // Truncate if required
   if(string - initial_string > digits) {
     initial_string[digits+1] = '\0';
-    return digits;
+    return digits-1;
   }
 
   return string - initial_string-1;
