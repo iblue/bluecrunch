@@ -33,7 +33,7 @@ void fft_forward(complex double *T, int k){
     fft_forward_butterfly(twiddles, (__m256d*)(T+n), (__m256d*)(T+n+half_length));
   }
 
-  if(k > FFT_THRESHOLD_K) {
+  if(k >= FFT_THRESHOLD_K) {
     cilk_spawn fft_forward(T, k - 1);
     fft_forward(T + half_length, k - 1);
     cilk_sync;
@@ -85,13 +85,23 @@ void fft_forward_uncached(complex double *T, int k){
   }
 
   if(k-1 < twiddle_table_size) {
-    cilk_spawn fft_forward(T, k - 1);
-    fft_forward(T + half_length, k - 1);
-    cilk_sync;
+    if(k >= FFT_THRESHOLD_K) {
+      cilk_spawn fft_forward(T, k - 1);
+      fft_forward(T + half_length, k - 1);
+      cilk_sync;
+    } else {
+      fft_forward(T, k - 1);
+      fft_forward(T + half_length, k - 1);
+    }
   } else {
-    cilk_spawn fft_forward_uncached(T, k - 1);
-    fft_forward_uncached(T + half_length, k - 1);
-    cilk_sync;
+    if(k >= FFT_THRESHOLD_K) {
+      cilk_spawn fft_forward_uncached(T, k - 1);
+      fft_forward_uncached(T + half_length, k - 1);
+      cilk_sync;
+    } else {
+      fft_forward_uncached(T, k - 1);
+      fft_forward_uncached(T + half_length, k - 1);
+    }
   }
 }
 
@@ -129,9 +139,9 @@ void fft_inverse(complex double *T, int k){
 
   //  Perform FFT reduction into two halves.
   for (size_t n = 0; n < half_length; n+=2){
-      //  Grab Twiddle Factors
-      __m256d twiddle = _mm256_load_pd((double*)&local_table[n]); // tmp = [r0,i0,r1,i1]
-      fft_inverse_butterfly(twiddle, (__m256d*)(T+n), (__m256d*)(T+n+half_length));
+    //  Grab Twiddle Factors
+    __m256d twiddle = _mm256_load_pd((double*)&local_table[n]); // tmp = [r0,i0,r1,i1]
+    fft_inverse_butterfly(twiddle, (__m256d*)(T+n), (__m256d*)(T+n+half_length));
   }
 }
 
@@ -157,13 +167,23 @@ void fft_inverse_uncached(complex double *T, int k){
   size_t half_length = length / 2;
 
   if(k - 1 < twiddle_table_size) {
-    cilk_spawn fft_inverse(T, k - 1);
-    fft_inverse(T + half_length, k - 1);
-    cilk_sync;
+    if(k >= FFT_THRESHOLD_K) {
+      cilk_spawn fft_inverse(T, k - 1);
+      fft_inverse(T + half_length, k - 1);
+      cilk_sync;
+    } else {
+      fft_inverse(T, k - 1);
+      fft_inverse(T + half_length, k - 1);
+    }
   } else {
-    cilk_spawn fft_inverse_uncached(T, k - 1);
-    fft_inverse_uncached(T + half_length, k - 1);
-    cilk_sync;
+    if(k >= FFT_THRESHOLD_K) {
+      cilk_spawn fft_inverse_uncached(T, k - 1);
+      fft_inverse_uncached(T + half_length, k - 1);
+      cilk_sync;
+    } else {
+      fft_inverse_uncached(T, k - 1);
+      fft_inverse_uncached(T + half_length, k - 1);
+    }
   }
 
   //  Perform FFT reduction into two halves.

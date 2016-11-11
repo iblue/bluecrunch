@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <complex.h>
 
-#define FFT_THRESHOLD_K     20
+#define FFT_THRESHOLD_K     18
 
 extern complex double* twiddle_table[32];
 extern int twiddle_table_size;

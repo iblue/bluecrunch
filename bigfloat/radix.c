@@ -89,6 +89,8 @@ void convert_trunc(bigfloat_t s, const bigfloat_t y0, size_t k, size_t n) {
   bigfloat_free(t);
 }
 
+#define CONVERT_DECOMPOSE_TRESH 10000
+
 void convert_rec(bigfloat_t s, size_t k, const bigfloat_t y, size_t n, size_t g) {
   if(k <= KT) {
     bigfloat_alloc(s, k);
@@ -107,11 +109,7 @@ void convert_rec(bigfloat_t s, size_t k, const bigfloat_t y, size_t n, size_t g)
     bigfloat_t yh;
     bigfloat_new(yh);
     bigfloat_alloc(yh, y->len-(n-nh));
-    // http://stackoverflow.com/q/31846389/773690
-    //memcpy(yh->coef, y->coef+(n-nh), yh->len*sizeof(uint32_t));
-    for(size_t c = 0; c < yh->len; c++) {
-      yh->coef[c] = (y->coef+(n-nh))[c];
-    }
+    memcpy(yh->coef, y->coef+(n-nh), yh->len*sizeof(uint32_t));
 
     // yl = b^(k-kl)*y mod (2^32)^n bdiv (2^32)^(n-nl)
     bigfloat_t b_exp; // TODO: Performance: Construct from table
@@ -135,9 +133,14 @@ void convert_rec(bigfloat_t s, size_t k, const bigfloat_t y, size_t n, size_t g)
     bigfloat_new(sl);
 
     // Run parallel
-    cilk_spawn convert_rec(sh, kh, yh, nh, g);
-    convert_rec(sl, kl, yl, nl, g);
-    cilk_sync;
+    if(k > CONVERT_DECOMPOSE_TRESH) {
+      cilk_spawn convert_rec(sh, kh, yh, nh, g);
+      convert_rec(sl, kl, yl, nl, g);
+      cilk_sync;
+    } else {
+      convert_rec(sh, kh, yh, nh, g);
+      convert_rec(sl, kl, yl, nl, g);
+    }
 
     // fixups. if the trailing digit of sh is b-1 and the leading digit of sl is 0
     if(sh->coef[0] == NEWBASE-1 && sl->coef[sl->len-1] == 0) {
@@ -165,16 +168,8 @@ void convert_rec(bigfloat_t s, size_t k, const bigfloat_t y, size_t n, size_t g)
 
     // s = floor(sh/b)*b^(kl) + sl (s is now in base b)
     bigfloat_alloc(s, sh->len-1+kl);
-    //http://stackoverflow.com/q/31846389/773690
-    //memset(s->coef, 0, kl*sizeof(uint32_t)); // fill unitialized mem
-    for(size_t c=0; c < kl; c++) {
-      s->coef[c] = 0;
-    }
-    //http://stackoverflow.com/q/31846389/773690
-    //memcpy(s->coef+kl, sh->coef+1, (sh->len-1)*sizeof(uint32_t)); // skip the first digit (this is equiv to div by 2^32 and flooring)
-    for(size_t c=0; c<(sh->len-1); c++) {
-      (s->coef+kl)[c] = (sh->coef+1)[c];
-    }
+    memset(s->coef, 0, kl*sizeof(uint32_t)); // fill unitialized mem
+    memcpy(s->coef+kl, sh->coef+1, (sh->len-1)*sizeof(uint32_t)); // skip the first digit (this is equiv to div by 2^32 and flooring)
     if(!sl_is_zero) {
       // FIXME: Do we really need to add? There should be no carrying, so we
       // can just copy. Test this.
