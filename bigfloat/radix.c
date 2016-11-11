@@ -90,9 +90,13 @@ void convert_trunc(bigfloat_t s, const bigfloat_t y0, size_t k, size_t n) {
 }
 
 #define CONVERT_DECOMPOSE_TRESH 10000
+#define RADIX_CONV_TABLE_SIZE 128
 
-bigfloat_t* radix_conv_table = NULL;
 
+size_t val_at_idx[RADIX_CONV_TABLE_SIZE] = {0};
+bigfloat_t radix_conv_table[RADIX_CONV_TABLE_SIZE];
+
+// FIXME: Clean up this mess
 void ensure_radix_conversion(size_t k) {
   size_t max_k = k;
   size_t len   = 0;
@@ -101,24 +105,37 @@ void ensure_radix_conversion(size_t k) {
     len++;
   }
 
-  radix_conv_table = malloc((len+1)*sizeof(bigfloat_t));
-
   bigfloat_t current;
   bigfloat_new(current);
   bigfloat_set(current, NEWBASE);
   bigfloat_exp(current, current, k);
   bigfloat_new(radix_conv_table[0]);
   bigfloat_copy(radix_conv_table[0], current);
+  printf("ensured %ld -> 0\n", k);
+  val_at_idx[0] = k;
 
+  size_t j=0;
   for(size_t i=1;i<len;i++) {
+    j++;
     size_t gen_k = max_k >> (len-i);
     bigfloat_new(radix_conv_table[i]);
     bigfloat_exp(current, current, 2);
-    if(gen_k & 1 == 1) {
+    k = gen_k;
+    printf("ensured %ld -> %ld\n", k, j);
+    val_at_idx[j] = k;
+    bigfloat_copy(radix_conv_table[j], current);
+    // FIXME: We are sometimes off by one, so we calculate that shit as well.
+    // But we could do this in the radix, just taking the other value and
+    // running a quick bigfloat_mului on the table entry. This eats ram.
+    {
+      j++;
+      k += 1;
       bigfloat_realloc(current, current->len+1); // Prevent overflow
       bigfloat_mului(current, NEWBASE);
+      printf("ensured %ld -> %ld\n", k, j);
+      val_at_idx[j] = k;
+      bigfloat_copy(radix_conv_table[j], current);
     }
-    bigfloat_copy(radix_conv_table[i], current);
 
     // FIXME: Cache the FFT transforms where needed
   }
@@ -131,13 +148,14 @@ void ensure_radix_conversion(size_t k) {
 }
 
 size_t exp_to_radix_tbl_entry(size_t k) {
-  size_t i = 0;
-  size_t orig_k = k;
-  while(k >= KT) {
-    k >>= 1;
-    i++;
+  for(size_t i=0;i<RADIX_CONV_TABLE_SIZE;i++) {
+    if(val_at_idx[i] == k) {
+      return i;
+    }
   }
-  return i;
+
+  fprintf(stderr, "did not find %ld in tbl\n", k);
+  abort();
 }
 
 void free_radix_conversion() {
@@ -175,6 +193,7 @@ void convert_rec(bigfloat_t s, size_t k, const bigfloat_t y, size_t n, size_t g)
     bigfloat_t yl;
     bigfloat_new(yl);
     // TODO: Performance: This can be done as middle product
+    printf("using table for %ld\n", k-kl);
     bigfloat_mul(yl, y, radix_conv_table[exp_to_radix_tbl_entry(k-kl)], 0);
     yl->len = n; // yl <- yl mod (2^32)^n
     uint32_t *yl_coef_ptr = yl->coef;
