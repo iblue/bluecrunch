@@ -30,6 +30,7 @@ void bigfloat_add(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
 void bigfloat_sub(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, size_t p);
 void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, size_t p);
 void bigfloat_mului(bigfloat_t a, uint32_t b);
+void bigfloat_mulu(bigfloat_t target, const bigfloat_t a, uint32_t b);
 void bigfloat_div(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, size_t p);
 void bigfloat_rcp(bigfloat_t target, const bigfloat_t a,                     size_t p);
 void bigfloat_exp(bigfloat_t target, const bigfloat_t a, const uint64_t exp);

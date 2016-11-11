@@ -92,68 +92,127 @@ void convert_trunc(bigfloat_t s, const bigfloat_t y0, size_t k, size_t n) {
 #define CONVERT_DECOMPOSE_TRESH 10000
 #define RADIX_CONV_TABLE_SIZE 128
 
-
 size_t val_at_idx[RADIX_CONV_TABLE_SIZE] = {0};
 bigfloat_t radix_conv_table[128];
 
-void ensure_radix_conversion(size_t k) {
-  printf("Ensuring table (k = %ld\n)", k);
-  size_t max_k = k;
-  size_t len   = 0;
-  while(k >= KT) {
-    k >>= 1;
-    len++;
-  }
-
-  bigfloat_t current;
-  bigfloat_new(current);
-  bigfloat_set(current, NEWBASE);
-  bigfloat_exp(current, current, k);
-  bigfloat_new(radix_conv_table[0]);
-  bigfloat_copy(radix_conv_table[0], current);
-  printf("ensured %ld -> 0\n", k);
-  val_at_idx[0] = k;
-
-  for(size_t i=1;i<=len;i++) {
-    size_t gen_k = max_k >> (len-i);
-    bigfloat_new(radix_conv_table[i]);
-    k *= 2;
-    bigfloat_exp(current, current, 2);
-    printf("ensured %ld -> %ld\n", k, i);
-    val_at_idx[i] = k;
-    bigfloat_copy(radix_conv_table[i], current);
-    if(gen_k & 1 == 1) {
-      k += 1;
-      bigfloat_realloc(current, current->len+1); // Prevent overflow
-      bigfloat_mului(current, NEWBASE);
-    }
-    // FIXME: Cache the FFT transforms where needed
-  }
-
-  // Terminator
-  bigfloat_new(radix_conv_table[len]);
-  radix_conv_table[len]->coef = NULL;
-
-  bigfloat_free(current);
-}
-
-size_t exp_to_radix_tbl_entry(size_t k) {
-  for(size_t i=0;i<128;i++) {
+size_t find(size_t k) {
+  for(size_t i=0;i<RADIX_CONV_TABLE_SIZE;i++) {
     if(val_at_idx[i] == k) {
       return i;
     }
   }
 
-  fprintf(stderr, "did not find %ld in tbl\n", k);
-  abort();
+  return -1;
+}
+
+void insert_unless_exists(size_t k) {
+  for(size_t i=0;i<RADIX_CONV_TABLE_SIZE;i++) {
+    if(val_at_idx[i] == k) {
+      break;
+    }
+    if(val_at_idx[i] == 0) {
+      val_at_idx[i] = k;
+      break;
+    }
+  }
+}
+
+int compare(const void *a, const void* b) {
+  return (int)(*(size_t*)a - *(size_t*)b);
+}
+
+void sort() {
+  size_t len = 0;
+
+  // Calculate length
+  for(size_t i=0;i<RADIX_CONV_TABLE_SIZE;i++) {
+    if(val_at_idx[i] == 0) {
+      len = i;
+    }
+  }
+
+  qsort(val_at_idx, len, sizeof(size_t), compare);
+}
+
+void build_table(size_t k) {
+  if(k < KT) {
+    return;
+  }
+
+  size_t kh  = (k+1)/2;
+  size_t kl  = k - kh + 1;
+  size_t exp = k - kl;
+
+  build_table(kh);
+  if(kl != kh) {
+    build_table(kl);
+  }
+
+  insert_unless_exists(exp);
+}
+
+void generate_factors() {
+  // Generate first
+  bigfloat_new(radix_conv_table[0]);
+  bigfloat_set(radix_conv_table[0], NEWBASE);
+  bigfloat_exp(radix_conv_table[0], radix_conv_table[0], val_at_idx[0]);
+
+  printf("ensured %ld -> 0 by inital\n", val_at_idx[0]);
+
+  for(size_t i=0;i<RADIX_CONV_TABLE_SIZE;i++) {
+    if(val_at_idx[i] == 0) {
+      break;
+    }
+
+    size_t current_exp = val_at_idx[i];
+
+    // Check if we find exp - 1
+    size_t idx = find(current_exp - 1);
+    if(idx != -1) {
+      // Simple job. We have B^(exp-1). Just multiply by B.
+      bigfloat_new(radix_conv_table[i]);
+      bigfloat_alloc(radix_conv_table[i], radix_conv_table[idx]->len+1);
+      bigfloat_mulu(radix_conv_table[i], radix_conv_table[idx], NEWBASE);
+      printf("ensured %ld -> %ld by multiplication\n", current_exp, i);
+      break;
+    }
+
+    // Check if we find exp/2
+    idx = find(current_exp/2);
+    if(idx != -1) {
+      // Ok, just square
+      bigfloat_new(radix_conv_table[i]);
+      bigfloat_mul(radix_conv_table[i], radix_conv_table[idx], radix_conv_table[idx], 0);
+
+      // New, if exp is odd, we are missing a multiplication. We have
+      // 2*(exp/2), we need 2*(exp/2)+2.
+      if(current_exp & 1 == 1) {
+        bigfloat_realloc(radix_conv_table[i], radix_conv_table[i]->len+1);
+        bigfloat_mului(radix_conv_table[i], NEWBASE);
+        printf("ensured %ld -> %ld by squaring and multiplication\n", current_exp, i);
+      } else {
+        printf("ensured %ld -> %ld by squaring\n", current_exp, i);
+      }
+      break; // Either way, we're done
+    }
+
+    fprintf(stderr, "did not find previous value for %ld in tbl\n", current_exp);
+    abort();
+  }
+}
+
+void ensure_radix_conversion(size_t k) {
+  printf("Ensuring table (k = %ld)\n", k);
+  build_table(k);
+  sort();
+  generate_factors();
 }
 
 void free_radix_conversion() {
-  size_t i = 0;
-  while(1) {
+  for(size_t i=0;i<RADIX_CONV_TABLE_SIZE;i++) {
     bigfloat_free(radix_conv_table[i]);
-    i++;
-    if(radix_conv_table[i]->coef == NULL) {
+
+    if(val_at_idx[i] == 0) {
       break;
     }
   }
@@ -182,16 +241,10 @@ void convert_rec(bigfloat_t s, size_t k, const bigfloat_t y, size_t n, size_t g)
     // yl = b^(k-kl)*y mod (2^32)^n bdiv (2^32)^(n-nl)
     bigfloat_t yl;
     bigfloat_new(yl);
+
     // TODO: Performance: This can be done as middle product
-    if((k-kl) & 1 == 0) {
-      printf("using table for %ld\n", k-kl);
-      bigfloat_mul(yl, y, radix_conv_table[exp_to_radix_tbl_entry(k-kl)], 0);
-    } else {
-      printf("using table for %ld [+1]\n", k-kl-1);
-      bigfloat_mul(yl, y, radix_conv_table[exp_to_radix_tbl_entry(k-kl-1)], 0);
-      bigfloat_realloc(yl, yl->len+1);
-      bigfloat_mului(yl, NEWBASE);
-    }
+    printf("using table for %ld\n", k-kl);
+    bigfloat_mul(yl, y, radix_conv_table[find(k-kl)], 0);
 
     yl->len = n; // yl <- yl mod (2^32)^n
     uint32_t *yl_coef_ptr = yl->coef;

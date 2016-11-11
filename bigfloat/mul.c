@@ -26,6 +26,25 @@ void bigfloat_mului(bigfloat_t a, uint32_t b) {
   }
 }
 
+// Multiplies by a uint32_t with target.
+void bigfloat_mulu(bigfloat_t target, const bigfloat_t a, uint32_t b) {
+  // Make sure there is enough mem for the result (because we modify the coef
+  // pointer and the realloc goes BOOM). If there is not enough mem, the result
+  // will be truncated or just be dead wrong.
+  //bigfloat_realloc(a, a->len+1);
+  a->coef[a->len-1] = 0;
+
+  uint32_t carry = 0;
+  for(size_t i=0;i<a->len;i++) {
+    uint64_t product = (uint64_t)a->coef[i] * (uint64_t)b + carry;
+
+    uint32_t lower = product & 0xffffffff;
+    carry = product >> 32;
+
+    target->coef[i] = lower;
+  }
+}
+
 // Multiplies C = A*B using FFT where C = CL integers in CT, etc.
 // CT, CL = target ptr and length
 // AT, AL = source 1 ptr and length

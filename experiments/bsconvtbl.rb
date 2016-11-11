@@ -3,21 +3,20 @@ def conv(k)
 
   kh = (k+1)/2;
   kl = k - kh + 1;
+  exp = k - kl
 
-  $a << k-kl
-  conv(kl)
-  conv(kh) if kl != kh
-end
+  conv(kh)
+  conv(kl) if kh != kl
 
-def bconv(k)
-  [23]
+  unless $a.include?(exp)
+    $a << exp
+  end
+
 end
 
 (3..100).each do |k|
   $a = []
   conv(k)
-  aa = $a.uniq.sort
-  puts "#{k.to_s(2)} -> #{aa.inspect} [#{((k-1)).to_s(2)}]"
-  bb = bconv(k).sort
-  puts "#{k.to_s(2)} -> #{bb.inspect}"
+  aa = $a
+  puts "#{k} -> #{aa.inspect.sort}"
 end
