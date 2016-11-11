@@ -115,6 +115,7 @@ void ensure_radix_conversion(size_t k) {
     bigfloat_new(radix_conv_table[i]);
     bigfloat_exp(current, current, 2);
     if(gen_k & 1 == 1) {
+      bigfloat_realloc(current, current->len+1); // Prevent overflow
       bigfloat_mului(current, NEWBASE);
     }
     bigfloat_copy(radix_conv_table[i], current);
