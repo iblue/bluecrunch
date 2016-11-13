@@ -162,3 +162,17 @@ static inline void dft_3p(complex double* V) {
   V[1] = a + omega_1_3 * b + omega_2_3 * c;
   V[2] = a + omega_2_3 * b + omega_1_3 * c;
 }
+
+// FIXME: We surely can optimize this shit with some magic.
+static inline void dft_3p_inv(complex double* V) {
+  complex double omega_1_3 = -0.5 + 0.8660254037844386467637231707529361834714026269051903140*I;
+  complex double omega_2_3 = -0.5 - 0.8660254037844386467637231707529361834714026269051903140*I;
+
+  complex double a = V[0];
+  complex double b = V[1];
+  complex double c = V[2];
+
+  V[0] = a + b + c;
+  V[1] = a + omega_2_3 * b + omega_1_3 * c;
+  V[2] = a + omega_1_3 * b + omega_2_3 * c;
+}

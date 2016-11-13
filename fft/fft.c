@@ -142,7 +142,7 @@ void _fft_inverse(complex double *T, size_t length) {
   }
 
   if(length == 3) {
-    dft_3p(T);
+    dft_3p_inv(T);
     return;
   }
 
