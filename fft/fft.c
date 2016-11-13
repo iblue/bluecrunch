@@ -33,6 +33,7 @@ size_t fft_length(size_t source_length) {
       return 3*length;
     }
     */
+    length *= 2;
   }
 }
 
