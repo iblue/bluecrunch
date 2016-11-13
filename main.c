@@ -197,5 +197,9 @@ int main(int argc, char *argv[]) {
 
   // Calculate e
   e(digits);
+
+  task_start(1, "Deallocating twiddle factors");
+  fft_free_table();
+  task_end(1);
   task_end(0);
 }

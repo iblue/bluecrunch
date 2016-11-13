@@ -54,20 +54,12 @@ void bigfloat_mulu(bigfloat_t target, const bigfloat_t a, uint32_t b) {
 // BT, BL = source 2 ptr and length
 // tds = numbers of threads to be used
 void static inline _fft_mul(uint32_t *CT, size_t CL, uint32_t *AT, size_t AL, uint32_t *BT, size_t BL) {
+  // FIXME: More and less!
   int bits_per_point = 12;
   int points_per_word = 3;
 
   //  Determine minimum FFT size.
-  int k = 0;
-  size_t length = 1;
-  while (length < points_per_word*CL) {
-    length <<= 1;
-    k++;
-  }
-
-  if(length/2 > points_per_word*CL+10) {
-    length /= 2;
-  }
+  size_t length = fft_length(points_per_word*CL);
 
   // If the arguments are the same, we skip one conversion.
   char needB = (AT != BT || AL != BL);
@@ -81,43 +73,31 @@ void static inline _fft_mul(uint32_t *CT, size_t CL, uint32_t *AT, size_t AL, ui
   }
 
   //  Convert Numbers to FFT
-  int_to_fft(Ta, k, AT, AL, bits_per_point);
+  int_to_fft(Ta, length, AT, AL, bits_per_point);
 
   if(needB) {
-    int_to_fft(Tb, k, BT, BL, bits_per_point);
+    int_to_fft(Tb, length, BT, BL, bits_per_point);
   }
 
-  // If numbers are too big, use multiplication without table.
-  if (twiddle_table_size - 1 < k) {
-    cilk_spawn fft_forward_uncached(Ta, k);
-    if(needB) {
-      fft_forward_uncached(Tb, k);
-    }
+  if(needB) {
+    cilk_spawn fft_forward(Ta, length);
+    fft_forward(Tb, length);
     cilk_sync;
   } else {
-    cilk_spawn fft_forward(Ta, k);
-    if(needB) {
-      fft_forward(Tb, k);
-    }
-    cilk_sync;
+    fft_forward(Ta, length);
   }
 
   // Pointwise multiply
   if(needB) {
-    fft_pointwise(Ta, Tb, k);
+    fft_pointwise(Ta, Tb, length);
   } else {
-    fft_pointwise(Ta, Ta, k);
+    fft_pointwise(Ta, Ta, length);
   }
 
-  // Inverse transform
-  if (twiddle_table_size - 1 < k) {
-    fft_inverse_uncached(Ta, k);
-  } else {
-    fft_inverse(Ta, k);
-  }
+  fft_inverse(Ta, length);
 
   // Convert including carryout
-  fft_to_int(Ta, k, CT, CL, bits_per_point);
+  fft_to_int(Ta, length, CT, CL, bits_per_point);
 
   // Free FFT arrays
   if(needB) {

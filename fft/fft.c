@@ -14,45 +14,79 @@
 #define M_PI       3.14159265358979323846
 #endif
 
-void fft_forward(complex double *T, int k){
+// When do we start to decompose FFTs for parallization
+#define FFT_THRESHOLD_LENGTH 60000
+
+inline static size_t table_select(size_t length) {
+  return bitlog2(length);
+}
+
+// Find optimal transform length
+size_t fft_length(size_t source_length) {
+  size_t length = 1;
+  while(1) {
+    if(2*length >= source_length) {
+      return 2*length;
+    }
+    /* 3*2^k transform not yet implemented.
+    if(3*length >= source_length) {
+      return 3*length;
+    }
+    */
+  }
+}
+
+void _fft_forward(complex double *T, size_t length) {
   // (Bit reversed) 2-point DFT
-  if(k == 1) {
+  if(length == 2) {
     dft_2p(T);
     return;
   }
 
-  size_t length      = 1 << k;
   size_t half_length = length / 2;
 
   //  Get local twiddle table.
-  complex double* local_table = twiddle_table[k];
+  complex double* local_table = twiddle_table[table_select(length)];
 
-  for (size_t n = 0; n < half_length; n+=2){
-    //  Grab Twiddle Factors
-    __m256d twiddles = _mm256_load_pd((double*)&local_table[n]); // tmp = [r0,i0,r1,i1]
-    fft_forward_butterfly(twiddles, (__m256d*)(T+n), (__m256d*)(T+n+half_length));
+  if(half_length > 32) {
+    for(size_t n = 0; n < half_length; n+=8){
+      //  Grab Twiddle Factors
+      __m256d twiddles0 = _mm256_load_pd((double*)&local_table[n]); // tmp = [r0,i0,r1,i1]
+      __m256d twiddles1 = _mm256_load_pd((double*)&local_table[n+2]); // tmp = [r0,i0,r1,i1]
+      __m256d twiddles2 = _mm256_load_pd((double*)&local_table[n+4]); // tmp = [r0,i0,r1,i1]
+      __m256d twiddles3 = _mm256_load_pd((double*)&local_table[n+6]); // tmp = [r0,i0,r1,i1]
+      fft_forward_butterfly(twiddles0, (__m256d*)(T+n), (__m256d*)(T+n+half_length));
+      fft_forward_butterfly(twiddles1, (__m256d*)(T+n+2), (__m256d*)(T+n+half_length+2));
+      fft_forward_butterfly(twiddles2, (__m256d*)(T+n+4), (__m256d*)(T+n+half_length+4));
+      fft_forward_butterfly(twiddles3, (__m256d*)(T+n+6), (__m256d*)(T+n+half_length+6));
+    }
+  } else {
+    for(size_t n = 0; n < half_length; n+=2){
+      //  Grab Twiddle Factors
+      __m256d twiddles = _mm256_load_pd((double*)&local_table[n]); // tmp = [r0,i0,r1,i1]
+      fft_forward_butterfly(twiddles, (__m256d*)(T+n), (__m256d*)(T+n+half_length));
+    }
   }
 
-  if(k >= FFT_THRESHOLD_K) {
-    cilk_spawn fft_forward(T, k - 1);
-    fft_forward(T + half_length, k - 1);
+  if(length >= FFT_THRESHOLD_LENGTH) {
+    cilk_spawn _fft_forward(T, half_length);
+    _fft_forward(T + half_length, half_length);
     cilk_sync;
   } else {
-    fft_forward(T, k - 1);
-    fft_forward(T + half_length, k - 1);
+    _fft_forward(T, half_length);
+    _fft_forward(T + half_length, half_length);
   }
 }
 
 // Runs FFT without cached twiddles
 // FIXME: Merge?
-void fft_forward_uncached(complex double *T, int k){
+void _fft_forward_uncached(complex double *T, size_t length) {
   //  End recursion at 2 points.
-  if (k == 1){
+  if (length == 2) {
     dft_2p(T);
     return;
   }
 
-  size_t length = 1 << k;
   double omega = 2 * M_PI / length;
   size_t half_length = length / 2;
 
@@ -84,28 +118,28 @@ void fft_forward_uncached(complex double *T, int k){
     ((__m128d*)T)[c + half_length] = c0;
   }
 
-  if(k-1 < twiddle_table_size) {
-    if(k >= FFT_THRESHOLD_K) {
-      cilk_spawn fft_forward(T, k - 1);
-      fft_forward(T + half_length, k - 1);
+  if(table_select(half_length) < twiddle_table_size) {
+    if(length >= FFT_THRESHOLD_LENGTH) {
+      cilk_spawn _fft_forward(T, half_length);
+      _fft_forward(T + half_length, half_length);
       cilk_sync;
     } else {
-      fft_forward(T, k - 1);
-      fft_forward(T + half_length, k - 1);
+      _fft_forward(T, half_length);
+      _fft_forward(T + half_length, half_length);
     }
   } else {
-    if(k >= FFT_THRESHOLD_K) {
-      cilk_spawn fft_forward_uncached(T, k - 1);
-      fft_forward_uncached(T + half_length, k - 1);
+    if(length >= FFT_THRESHOLD_LENGTH) {
+      cilk_spawn _fft_forward_uncached(T, half_length);
+      _fft_forward_uncached(T + half_length, half_length);
       cilk_sync;
     } else {
-      fft_forward_uncached(T, k - 1);
-      fft_forward_uncached(T + half_length, k - 1);
+      _fft_forward_uncached(T, half_length);
+      _fft_forward_uncached(T + half_length, half_length);
     }
   }
 }
 
-void fft_inverse(complex double *T, int k){
+void _fft_inverse(complex double *T, size_t length) {
   //  Fast Fourier Transform
   //  This function performs an inverse FFT of length 2^k.
 
@@ -117,25 +151,24 @@ void fft_inverse(complex double *T, int k){
   //  -   k           -   2^k is the size of the transform
 
   //  End recursion at 2 points.
-  if (k == 1){
+  if (length == 2) {
     dft_2p(T);
     return;
   }
 
-  size_t length = 1 << k;
   size_t half_length = length / 2;
 
-  if(k >= FFT_THRESHOLD_K) {
-    cilk_spawn fft_inverse(T, k - 1);
-    fft_inverse(T + half_length, k - 1);
+  if(length >= FFT_THRESHOLD_LENGTH) {
+    cilk_spawn _fft_inverse(T, half_length);
+    _fft_inverse(T + half_length, half_length);
     cilk_sync;
   } else {
-    fft_inverse(T, k - 1);
-    fft_inverse(T + half_length, k - 1);
+    _fft_inverse(T, half_length);
+    _fft_inverse(T + half_length, half_length);
   }
 
   //  Get local twiddle table.
-  complex double* local_table = twiddle_table[k];
+  complex double* local_table = twiddle_table[table_select(length)];
 
   //  Perform FFT reduction into two halves.
   for (size_t n = 0; n < half_length; n+=2){
@@ -145,7 +178,7 @@ void fft_inverse(complex double *T, int k){
   }
 }
 
-void fft_inverse_uncached(complex double *T, int k){
+void _fft_inverse_uncached(complex double *T, size_t length) {
   //  Fast Fourier Transform
   //  This function performs an inverse FFT of length 2^k.
 
@@ -157,37 +190,36 @@ void fft_inverse_uncached(complex double *T, int k){
   //  -   k           -   2^k is the size of the transform
 
   //  End recursion at 2 points.
-  if (k == 1){
+  if (length == 2) {
     dft_2p(T);
     return;
   }
 
-  size_t length = 1 << k;
   double omega = 2 * M_PI / length;
   size_t half_length = length / 2;
 
-  if(k - 1 < twiddle_table_size) {
-    if(k >= FFT_THRESHOLD_K) {
-      cilk_spawn fft_inverse(T, k - 1);
-      fft_inverse(T + half_length, k - 1);
+  if(table_select(half_length) < twiddle_table_size) {
+    if(length >= FFT_THRESHOLD_LENGTH) {
+      cilk_spawn _fft_inverse(T, half_length);
+      _fft_inverse(T + half_length, half_length);
       cilk_sync;
     } else {
-      fft_inverse(T, k - 1);
-      fft_inverse(T + half_length, k - 1);
+      _fft_inverse(T, half_length);
+      _fft_inverse(T + half_length, half_length);
     }
   } else {
-    if(k >= FFT_THRESHOLD_K) {
-      cilk_spawn fft_inverse_uncached(T, k - 1);
-      fft_inverse_uncached(T + half_length, k - 1);
+    if(length >= FFT_THRESHOLD_LENGTH) {
+      cilk_spawn _fft_inverse_uncached(T, half_length);
+      _fft_inverse_uncached(T + half_length, half_length);
       cilk_sync;
     } else {
-      fft_inverse_uncached(T, k - 1);
-      fft_inverse_uncached(T + half_length, k - 1);
+      _fft_inverse_uncached(T, half_length);
+      _fft_inverse_uncached(T + half_length, half_length);
     }
   }
 
   //  Perform FFT reduction into two halves.
-  for (size_t c = 0; c < half_length; c++){
+  for(size_t c = 0; c < half_length; c++) {
     //  Generate Twiddle Factor
     double angle = omega * c;
     double r = cos(angle);
@@ -213,6 +245,24 @@ void fft_inverse_uncached(complex double *T, int k){
 
     ((__m128d*)T)[c] = b0;
     ((__m128d*)T)[c + half_length] = d0;
+  }
+}
+
+// External interface
+void fft_forward(complex double *T, size_t length) {
+  if(table_select(length) < twiddle_table_size) {
+    _fft_forward(T, length);
+  } else {
+    _fft_forward_uncached(T, length);
+  }
+}
+
+// External interface
+void fft_inverse(complex double *T, size_t length) {
+  if(table_select(length) < twiddle_table_size) {
+    _fft_inverse(T, length);
+  } else {
+    _fft_inverse_uncached(T, length);
   }
 }
 

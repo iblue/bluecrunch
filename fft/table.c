@@ -44,3 +44,8 @@ void fft_ensure_table(int k) {
   twiddle_table_size = k+1;
 }
 
+void fft_free_table() {
+  for(size_t i=0;i<twiddle_table_size;i++) {
+    _mm_free(twiddle_table[i]);
+  }
+}

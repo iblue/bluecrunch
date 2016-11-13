@@ -6,12 +6,8 @@
 // Inline pointwise multiply of complex numbers
 // Input: 2 vectors of complex numbers
 // Output: Sets first vector to product
-void fft_pointwise(complex double *a, complex double *b, int k) {
-
-  // FFT length
-  size_t len = 1 << k;
-
-  cilk_for (size_t i = 0; i < len; i++) {
+void fft_pointwise(complex double *a, complex double *b, size_t len) {
+  cilk_for(size_t i = 0; i < len; i++) {
     // TODO: AVX
     // Complex multiplication in SSE3
     __m128d a0 = ((__m128d*)a)[i];

@@ -204,7 +204,7 @@ static inline void fft_to_int12(const complex double *T, uint32_t *A, size_t AL,
 
 // Converts an array of words to an array of complex numbers. Put a given
 // number of digits per point.
-size_t int_to_fft(complex double *V, int k, const uint32_t *A, size_t AL, int bits_per_point) {
+size_t int_to_fft(complex double *V, size_t length, const uint32_t *A, size_t AL, int bits_per_point) {
   size_t points_written = 0;
 
   switch(bits_per_point) {
@@ -218,9 +218,8 @@ size_t int_to_fft(complex double *V, int k, const uint32_t *A, size_t AL, int bi
 
   //  Pad the rest with zeros.
   __m128d* T = (__m128d*)V;
-  size_t fft_length = 1 << k;
 
-  for(size_t i = points_written; i < fft_length; i++) {
+  for(size_t i = points_written; i < length; i++) {
     T[i] = _mm_setzero_pd();
   }
 
@@ -228,10 +227,9 @@ size_t int_to_fft(complex double *V, int k, const uint32_t *A, size_t AL, int bi
 }
 
 //  Convert FFT array back to word array. Perform rounding and carryout.
-void fft_to_int(const complex double *T, int k, uint32_t *A, size_t AL, int bits_per_point) {
+void fft_to_int(const complex double *T, size_t length, uint32_t *A, size_t AL, int bits_per_point) {
   //  Compute Scaling Factor
-  size_t fft_length = 1 << k;
-  double scale = 1. / fft_length;
+  double scale = 1. / length;
 
   //  Round and carry out.
   switch(bits_per_point) {

@@ -3,7 +3,7 @@ CC=/opt/intel/bin/icc
 #CC=/opt/magic/bin/clang # Needs to be compiled with cilk support (see https://cilkplus.github.io/)
 VALGRIND=valgrind --tool=memcheck --leak-check=yes
 STRIP=strip
-CFLAGS=-std=c11 -Wall -Werror -ggdb -O3 -mavx
+CFLAGS=-std=c11 -Wall -Werror -ggdb -O3 -mavx -ipo
 BINARY=bluecrunch
 LIBS=-lm #-ltcmalloc # Needs libgoogle-perftools-dev
 ifeq ($(CC),icc)
@@ -72,9 +72,8 @@ endif
 debug-test: test
 
 # Build static, pack and remove traces of UPX
-release: CFLAGS=-static -std=c11 -Wall -Werror -O2 -fopenmp -msse3 -mavx
+release: CFLAGS=-static-intel -std=c11 -Wall -Werror -O3 -mavx
 # static doesn't work with icc?
-release: CC=gcc
 release: clean build
 	$(STRIP) --strip-all $(BINARY)
 	strip --remove-section=.note.gnu.build-id $(BINARY)

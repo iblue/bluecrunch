@@ -1,0 +1,71 @@
+i/j denotes w^i_j, meaning the jth root of unity to the power of i.
+
+fft([a, b, c]) = [
+  a +     b +      c
+  a + 1/3 b + 2/3  c
+  a + 2/3 b + 1/3  c
+];
+
+fft([d, e, f]) = [
+  d +     e +      f
+  d + 1/3 e + 2/3  f
+  d + 2/3 e + 1/3  f
+];
+
+fft([a, b]) = [
+  a +     b
+  a + 1/2 b
+];
+
+fft([a, b, c, d, e, f]) = [
+  a +     b +     c +              d +     e +     f
+  a + 1/6 b + 2/6 c +          3/6 d + 4/6 e + 5/6 f
+  a + 2/6 b + 4/6 c +              d + 2/6 e + 4/6 f
+
+
+  a + 3/6 b +     c +          3/6 d +     e + 3/6 f
+  a + 4/6 b + 2/6 c +              d + 4/6 e + 2/6 f
+  a + 5/6 b + 4/6 c +          3/6 d + 2/6 e + 1/6 f
+]
+
+---- Bit reversal
+
+fft([a, c, e]) = [
+  a +     c +      e
+  a + 1/3 c + 2/3  e
+  a + 2/3 c + 1/3  e
+];
+
+fft([b, d, f]) = [
+  b +     d +      f
+  b + 1/3 d + 2/3  f
+  b + 2/3 d + 1/3  f
+];
+
+fft([a, b]) = [
+  a +     b
+  a + 1/2 b
+];
+
+fft([a, b, c, d, e, f]) = [
+  a +     c +     e +       b +     d +     f
+  a + 2/6 c + 4/6 e +   1/6 b + 3/6 d + 5/6 f
+  a + 4/6 c + 2/6 e +   2/6 b +     d + 4/6 f
+
+
+  a +     c +     e +   3/6 b + 3/6 d + 3/6 f
+  a + 2/6 c + 4/6 e +   4/6 b +     d + 2/6 f
+  a + 4/6 c + 2/6 e +   5/6 b + 3/6 d + 1/6 f
+]
+
+Decomposition of 6 to 2*3 (Cooley-Tukey):
+
+line 0: addition of [0] and [0]
+line 1: addition of [1] and 1/6*[1]
+line 2: addition of [2] and 2/6*[2]
+line 3: subtraction of [0] and [0]
+line 4: subtraction of [1] and 1/6*[1]
+line 5: subtraction of [2] and 2/6*[2]
+
+step 1: Do fft3 of left and right half
+step 2: Do fft2 butterfly
