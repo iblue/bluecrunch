@@ -146,7 +146,8 @@ void static inline _basecase_mul(uint32_t *CT, size_t CL, uint32_t *AT, size_t A
   }
 }
 
-#define BASECASE_THRESH 1500
+//#define BASECASE_THRESH 1500
+#define BASECASE_THRESH 1
 
 void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, size_t p) {
     //  Multiplication

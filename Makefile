@@ -58,14 +58,14 @@ run_tests: $(TESTS)
 	$(CC) $(CFLAGS) -o $@ $< $(OBJECTS) $(INCLUDES) $(LIBS)
 
 .PHONY: debug
-debug: CFLAGS := $(filter-out -O2,$(CFLAGS)) -DDEBUG -O0
+debug: CFLAGS := $(filter-out -O3,$(CFLAGS)) -DDEBUG -O0
 ifeq ($(CC),gcc)
 debug: CFLAGS += -fsanitize=address
 endif
 debug: clean $(BINARY)
 
 .PHONY: debug-test
-debug-test: CFLAGS := $(filter-out -O2,$(CFLAGS)) -DDEBUG -O0
+debug-test: CFLAGS := $(filter-out -O3,$(CFLAGS)) -DDEBUG -O0
 ifeq ($(CC),gcc)
 debug-test: CFLAGS += -fsanitize=address
 endif

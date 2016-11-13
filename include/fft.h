@@ -2,11 +2,12 @@
 #include <stdint.h>
 #include <complex.h>
 
-extern complex double* twiddle_table[32];
+extern complex double* twiddle_table[127];
 extern int twiddle_table_size;
 
 // Generate twiddle table
-void fft_ensure_table(int);
+void fft_ensure_table(size_t);
+size_t table_select(size_t length);
 void fft_free_table();
 
 // Forward and inverse FFT transforms

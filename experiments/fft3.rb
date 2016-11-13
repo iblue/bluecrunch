@@ -14,5 +14,10 @@ def len(n)
   end
 end
 
-puts len(11)
-puts len(33)
+i = 0
+(0..63).each do |k|
+  puts "#{2*2**k}, // #{i} => 2*2^#{k}"
+  i += 1
+  puts "#{3*2**k}, // #{i} => 3*2^#{k}"
+  i += 1
+end
