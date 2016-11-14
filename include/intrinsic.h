@@ -48,7 +48,7 @@ static inline void dual_fft_forward_butterfly(__m256d twiddles, __m256d* T0, __m
 
   //  Grab elements
   __m256d a = _mm256_load_pd((double*)T0);  // a = [a0r, a0i, a1r, a1i]
-  __m256d b = _mm256_load_pd((double*)T1);  // b = [b0r, b0i, b1r, b1i]
+  __m256d b = _mm256_loadu_pd((double*)T1);  // b = [b0r, b0i, b1r, b1i] (may be misaligned)
 
   //  Perform butterfly
   __m256d c = _mm256_add_pd(a,b); // c = a + b
@@ -62,7 +62,8 @@ static inline void dual_fft_forward_butterfly(__m256d twiddles, __m256d* T0, __m
   d = _mm256_mul_pd(_mm256_shuffle_pd(d,d,0x5), i);   // shuffle -> switch real and imag
   c = _mm256_addsub_pd(c,d);
 
-  _mm256_store_pd((double*)T1, c); // T[c+N/2] <- c
+  // (may be misaligned)
+  _mm256_storeu_pd((double*)T1, c); // T[c+N/2] <- c
 }
 
 static inline void single_fft_forward_butterfly(__m128d twiddle, __m128d* T0, __m128d* T1) {
@@ -100,7 +101,7 @@ static inline void dual_fft_inverse_butterfly(__m256d twiddles, __m256d* T0, __m
 
   //  Grab elements
   __m256d a = _mm256_load_pd((double*)T0);  // a = [a0r, a0i, a1r, a1i]
-  __m256d b = _mm256_load_pd((double*)T1);  // b = [b0r, b0i, b1r, b1i]
+  __m256d b = _mm256_loadu_pd((double*)T1);  // b = [b0r, b0i, b1r, b1i] (maybe misaligned)
 
   //  Perform butterfly
   __m256d c, d;
@@ -114,7 +115,7 @@ static inline void dual_fft_inverse_butterfly(__m256d twiddles, __m256d* T0, __m
   d = _mm256_sub_pd(a,c);
 
   _mm256_store_pd((double*)T0, b);
-  _mm256_store_pd((double*)T1, d);
+  _mm256_storeu_pd((double*)T1, d); // (maybe misaligned)
 }
 
 static inline void single_fft_inverse_butterfly(__m128d twiddle, __m128d* T0, __m128d* T1) {

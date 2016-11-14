@@ -189,7 +189,7 @@ void generate_factors() {
 
       // New, if exp is odd, we are missing a multiplication. We have
       // 2*(exp/2), we need 2*(exp/2)+2.
-      if(current_exp & 1 == 1) {
+      if((current_exp & 1) == 1) {
         bigfloat_realloc(radix_conv_table[i], radix_conv_table[i]->len+1);
         bigfloat_mului(radix_conv_table[i], NEWBASE);
         //printf("ensured %ld -> %ld by squaring and multiplication\n", current_exp, i);

@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <complex.h>
 
-extern complex double* twiddle_table[127];
+extern complex double* twiddle_table[125];
 extern int twiddle_table_size;
 
 // Generate twiddle table

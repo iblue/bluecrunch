@@ -6,3 +6,4 @@ e-hex.txt
 bluecrunch
 *.test
 callgrind.out.*
+prof
