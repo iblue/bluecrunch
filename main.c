@@ -192,7 +192,7 @@ int main(int argc, char *argv[]) {
 
   task_start(0, "Starting calculation");
   task_start(1, "Precomputing twiddle factors");
-  fft_ensure_table(length);
+  fft_ensure_table(3*length);
   task_end(1);
 
   // Calculate e
