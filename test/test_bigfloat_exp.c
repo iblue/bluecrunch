@@ -11,7 +11,7 @@ int main(void) {
 
     bigfloat_new(b);
 
-    bigfloat_exp(b, a, 0xd7, 1);
+    bigfloat_exp(b, a, 0xd7);
 
     // Expected result: 0x10298d253fecb89d491933590a085405544b42f1d9c94
     // 0ca666a0b296a5c661fbcac60e9bbb478e26b3e640d61c2832cd6b61f7d67ea0

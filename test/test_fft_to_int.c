@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <complex.h>
+#include <stdlib.h>
 #include "fft.h"
 
 #define assert_fp(a, b) _assert_fp(a, b, __FILE__, __LINE__)

@@ -43,7 +43,7 @@ void tft_forward1(complex double *T, size_t length, int k) {
   for (size_t n = 0; n < iteration_half_length; n+=2){
     //  Grab Twiddle Factors
     __m256d twiddles = _mm256_load_pd((double*)&local_table[n]); // tmp = [r0,i0,r1,i1]
-    fft_forward_butterfly(twiddles, (__m256d*)(T+n), (__m256d*)(T+n+shift_half_length));
+    dual_fft_forward_butterfly(twiddles, (__m256d*)(T+n), (__m256d*)(T+n+shift_half_length));
   }
 
   size_t shift = 1 << (k-1);
@@ -106,7 +106,7 @@ void tft_inverse1(complex double *T, size_t head, size_t tail, size_t last, size
       dft_2p(T+head);
     } else for(size_t n=0; n < half_length; n+=2) {
       __m256d twiddle = _mm256_load_pd((double*)&local_table[n]);
-      fft_inverse_butterfly(twiddle, (__m256d*)(T+head+n), (__m256d*)(T+head+n+half_length));
+      dual_fft_inverse_butterfly(twiddle, (__m256d*)(T+head+n), (__m256d*)(T+head+n+half_length));
     }
   } else if(tail < left_middle) {
     // Push down T[tail+1] to T[left_middle]

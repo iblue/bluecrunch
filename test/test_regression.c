@@ -1,9 +1,12 @@
 #include <assert.h>
 #include <malloc.h>
 #include "bigfloat.h"
+#include "fft.h"
 
 
 int main() {
+  fft_ensure_table(32);
+
   /*
   {
     bigfloat_t a;
@@ -47,7 +50,7 @@ int main() {
     a->coef[3] = 0x00000002;
 
 
-    bigfloat_mul(a, a, a, 0, 8);
+    bigfloat_mul(a, a, a, 0);
 
     assert(a->exp == 0);
     assert(a->len == 7);

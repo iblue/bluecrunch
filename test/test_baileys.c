@@ -9,7 +9,7 @@ int main() {
   {
     __attribute__ ((aligned (32))) complex double values[] = {1, 2, 3, 4};
 
-    baileys_forward(values, 2, 1);
+    baileys_forward(values, 2);
 
     printf("Done.\n");
 

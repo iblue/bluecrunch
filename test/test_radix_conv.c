@@ -3,7 +3,6 @@
 #include "bigfloat.h"
 
 int main(void) {
-  /*
   {
     // = 111222333444555666777888999000
     bigfloat_t a;
@@ -66,7 +65,6 @@ int main(void) {
     assert(b->coef[3] == 23334445);
     assert(b->coef[4] == 11122);
   }
-  */
 
   {
     // This is e.
@@ -103,7 +101,7 @@ int main(void) {
     bigfloat_t b;
     bigfloat_new(b);
 
-    bigfloat_radix(b, a, 8);
+    bigfloat_radix(b, a);
 
     assert(b->len  == 27);
     assert(b->sign == 1);
@@ -139,7 +137,6 @@ int main(void) {
     assert(b->coef[26] == 2);
   }
 
-  /*
   {
     // = 99999999999999999999999999999999999999999999999999999999
     bigfloat_t a;
@@ -167,7 +164,6 @@ int main(void) {
 
     bigfloat_free(a);
   }
-  */
 
 
   return 0;
