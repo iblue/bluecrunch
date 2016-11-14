@@ -55,8 +55,8 @@ void bigfloat_mulu(bigfloat_t target, const bigfloat_t a, uint32_t b) {
 // tds = numbers of threads to be used
 void static inline _fft_mul(uint32_t *CT, size_t CL, uint32_t *AT, size_t AL, uint32_t *BT, size_t BL) {
   // FIXME: More and less!
-  int bits_per_point = 12;
-  int points_per_word = 3;
+  int bits_per_point = 16;
+  int points_per_word = 2;
 
   //  Determine minimum FFT size.
   size_t length = fft_length(points_per_word*CL);

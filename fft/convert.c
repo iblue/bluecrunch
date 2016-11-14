@@ -89,6 +89,24 @@ static inline size_t int_to_fft8(complex double *V, const uint32_t *A, size_t AL
   return V-origV;
 }
 
+// Puts 16 bits per complex point
+static inline size_t int_to_fft16(complex double *V, const uint32_t *A, size_t AL) {
+  __m128d* T = (__m128d*)V;
+  complex double *origV = V;
+
+  for (size_t c = 0; c < AL; c++){
+    uint32_t word = A[c];
+
+    *T++ = _mm_set_sd(word % 65536);
+    word /= 65536;
+    *T++ = _mm_set_sd(word % 65536);
+    word /= 65536;
+  }
+
+  V = (complex double*)T;
+  return V-origV;
+}
+
 static inline void fft_to_int8(const complex double *T, uint32_t *A, size_t AL, double scale) {
   uint64_t carry = 0;
 
@@ -120,6 +138,30 @@ static inline void fft_to_int8(const complex double *T, uint32_t *A, size_t AL, 
     carry += i_point;                       //  Add to carry
     word1 += (carry % 256) * 256 * 256 * 256;  //  Get 8 bits.
     carry /= 256;
+
+    A[c] = word1;
+  }
+}
+
+static inline void fft_to_int16(const complex double *T, uint32_t *A, size_t AL, double scale) {
+  uint64_t carry = 0;
+
+  for (size_t c = 0; c < AL; c++){
+    double   f_point;
+    uint64_t i_point;
+    uint32_t word1;
+
+    f_point = ((double*)T++)[0] * scale;
+    i_point = (uint64_t)(f_point + 0.5);
+    carry += i_point;
+    word1 = carry % 65536;
+    carry /= 65536;
+
+    f_point = ((double*)T++)[0] * scale;
+    i_point = (uint64_t)(f_point + 0.5);
+    carry += i_point;
+    word1 += (carry % 65536) * 65536;
+    carry /= 65536;
 
     A[c] = word1;
   }
@@ -210,6 +252,7 @@ size_t int_to_fft(complex double *V, size_t length, const uint32_t *A, size_t AL
   switch(bits_per_point) {
     case 8:  points_written = int_to_fft8(V, A, AL);  break;
     case 12: points_written = int_to_fft12(V, A, AL); break;
+    case 16: points_written = int_to_fft16(V, A, AL); break;
     default:
       fprintf(stderr, "Not implemented\n");
       abort();
@@ -235,6 +278,7 @@ void fft_to_int(const complex double *T, size_t length, uint32_t *A, size_t AL, 
   switch(bits_per_point) {
     case 8:  fft_to_int8(T, A, AL, scale);  break;
     case 12: fft_to_int12(T, A, AL, scale); break;
+    case 16: fft_to_int16(T, A, AL, scale); break;
     default:
       fprintf(stderr, "Not implemented\n");
       abort();

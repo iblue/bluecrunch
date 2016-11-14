@@ -38,10 +38,11 @@ void _fft_forward(complex double *T, size_t length) {
     return;
   }
 
+  /*
   if(length == 2) {
     dft_2p(T);
     return;
-  }
+  }*/
 
   if(length == 3) {
     dft_3p(T);
