@@ -33,7 +33,11 @@ size_t fft_length(size_t source_length) {
 }
 
 void _fft_forward(complex double *T, size_t length) {
-  // (Bit reversed) 2-point DFT
+  if(length == 4) {
+    dft_4p(T);
+    return;
+  }
+
   if(length == 2) {
     dft_2p(T);
     return;
@@ -136,10 +140,15 @@ void _fft_forward_uncached(complex double *T, size_t length) {
 }
 
 void _fft_inverse(complex double *T, size_t length) {
-  if (length == 2) {
-    dft_2p(T);
+  if(length == 4) {
+    dft_4p_inv(T);
     return;
   }
+
+  /*if (length == 2) {
+    dft_2p(T);
+    return;
+  }*/
 
   if(length == 3) {
     dft_3p_inv(T);

@@ -176,3 +176,27 @@ static inline void dft_3p_inv(complex double* V) {
   V[1] = a + omega_2_3 * b + omega_1_3 * c;
   V[2] = a + omega_1_3 * b + omega_2_3 * c;
 }
+
+static inline void dft_4p(complex double* V) {
+  complex double a = V[0];
+  complex double b = V[1];
+  complex double c = V[2];
+  complex double d = V[3];
+
+  V[0] = a +   b + c +   d;
+  V[1] = a -   b + c -   d;
+  V[2] = a + I*b - c - I*d;
+  V[3] = a - I*b - c + I*d;
+}
+
+static inline void dft_4p_inv(complex double* V) {
+  complex double a = V[0];
+  complex double b = V[1];
+  complex double c = V[2];
+  complex double d = V[3];
+
+  V[0] = a + b +   c +   d;
+  V[1] = a - b - I*c + I*d;
+  V[2] = a + b -   c -   d;
+  V[3] = a - b + I*c - I*d;
+}

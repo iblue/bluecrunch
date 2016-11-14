@@ -11,7 +11,7 @@ static inline void _assert_fp(complex double a, complex double b, char* file, in
 
   if(cabs(a-b) > radius) {
     fprintf(stderr, "Expected: (%f + %fi) but got (%f + %fi) in %s:%d\n",
-      creal(b), cimag(b), creal(a), cimag(b), file, line);
+      creal(b), cimag(b), creal(a), cimag(a), file, line);
     abort();
   }
 }
@@ -20,13 +20,21 @@ int main() {
   __cilkrts_set_param("nworkers", "1");
 
   fft_ensure_table(8); // up to 256 values
+  {
+    __attribute__ ((aligned (32))) complex double values[] = {1, 2, 3, 4};
 
-  __attribute__ ((aligned (32))) complex double values[] = {1, 2, 3, 4};
+    fft_forward(values, 4);
 
-  fft_forward(values, 4);
+    assert_fp(values[0], 10);
+    assert_fp(values[1], -2);
+    assert_fp(values[2], -2-2*I);
+    assert_fp(values[3], -2+2*I);
 
-  assert_fp(values[0], 10);
-  assert_fp(values[1], -2);
-  assert_fp(values[2], -2-2*I);
-  assert_fp(values[3], -2+2*I);
+    fft_inverse(values, 4);
+
+    assert_fp(values[0], 4);
+    assert_fp(values[1], 8);
+    assert_fp(values[2], 12);
+    assert_fp(values[3], 16);
+  }
 }
