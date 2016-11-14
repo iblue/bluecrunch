@@ -53,25 +53,14 @@ void _fft_forward(complex double *T, size_t length) {
   //  Get local twiddle table.
   complex double* local_table = twiddle_table[table_select(half_length)];
 
-  if(half_length > 32) {
-    for(size_t n = 0; n < half_length; n+=8){
-      //  Grab Twiddle Factors
-      __m256d twiddles0 = _mm256_load_pd((double*)&local_table[n]); // tmp = [r0,i0,r1,i1]
-      __m256d twiddles1 = _mm256_load_pd((double*)&local_table[n+2]); // tmp = [r0,i0,r1,i1]
-      __m256d twiddles2 = _mm256_load_pd((double*)&local_table[n+4]); // tmp = [r0,i0,r1,i1]
-      __m256d twiddles3 = _mm256_load_pd((double*)&local_table[n+6]); // tmp = [r0,i0,r1,i1]
-      dual_fft_forward_butterfly(twiddles0, (__m256d*)(T+n), (__m256d*)(T+n+half_length));
-      dual_fft_forward_butterfly(twiddles1, (__m256d*)(T+n+2), (__m256d*)(T+n+half_length+2));
-      dual_fft_forward_butterfly(twiddles2, (__m256d*)(T+n+4), (__m256d*)(T+n+half_length+4));
-      dual_fft_forward_butterfly(twiddles3, (__m256d*)(T+n+6), (__m256d*)(T+n+half_length+6));
-    }
-  } else {
-    // half length may be odd here, so we need to read unaligned single.
-    for(size_t n = 0; n < half_length; n++){
-      //  Grab Twiddle Factors
-      __m128d twiddle = _mm_load_pd((double*)&local_table[n]); // tmp = [r0,i0,r1,i1]
-      single_fft_forward_butterfly(twiddle, (__m128d*)(T+n), (__m128d*)(T+n+half_length));
-    }
+  for(size_t n = 0; n < half_length-half_length%2; n+=2){
+    //  Grab Twiddle Factors
+    __m256d twiddles0 = _mm256_load_pd((double*)&local_table[n]); // tmp = [r0,i0,r1,i1]
+    dual_fft_forward_butterfly(twiddles0, (__m256d*)(T+n), (__m256d*)(T+n+half_length));
+  }
+  if(half_length%2) {
+    __m128d twiddle = _mm_load_pd((double*)&local_table[half_length-1]);
+    single_fft_forward_butterfly(twiddle, (__m128d*)(T+half_length-1), (__m128d*)(T+half_length-1+half_length));
   }
 
   if(length >= FFT_THRESHOLD_LENGTH) {
@@ -175,7 +164,7 @@ void _fft_inverse(complex double *T, size_t length) {
     __m256d twiddle = _mm256_load_pd((double*)&local_table[n]); // tmp = [r0,i0,r1,i1]
     dual_fft_inverse_butterfly(twiddle, (__m256d*)(T+n), (__m256d*)(T+n+half_length));
   }
-  if(half_length%2 == 1) {
+  if(half_length%2) {
     __m128d twiddle = _mm_load_pd((double*)&local_table[half_length-1]);
     single_fft_inverse_butterfly(twiddle, (__m128d*)(T+half_length-1), (__m128d*)(T+half_length-1+half_length));
   }
