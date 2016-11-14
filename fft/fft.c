@@ -47,7 +47,7 @@ void _fft_forward(complex double *T, size_t length) {
   size_t half_length = length / 2;
 
   //  Get local twiddle table.
-  complex double* local_table = twiddle_table[table_select(length)];
+  complex double* local_table = twiddle_table[table_select(half_length)];
 
   if(half_length > 32) {
     for(size_t n = 0; n < half_length; n+=8){
@@ -158,7 +158,7 @@ void _fft_inverse(complex double *T, size_t length) {
   }
 
   //  Get local twiddle table.
-  complex double* local_table = twiddle_table[table_select(length)];
+  complex double* local_table = twiddle_table[table_select(half_length)];
 
   //  Perform FFT reduction into two halves.
   for (size_t n = 0; n < half_length-half_length%2; n+=2){

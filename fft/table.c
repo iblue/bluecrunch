@@ -179,7 +179,9 @@ void _build_table(size_t length) {
     sub_table[c] = twiddle_factor;
   }
 
+#ifdef DEBUG
   printf("Pushing table length %ld to index %ld\n", length, _table_select(length));
+#endif
 
   //  Push into main table.
   twiddle_table[_table_select(length)] = sub_table;

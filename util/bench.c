@@ -8,7 +8,7 @@
 #include <time.h>
 #include "bench.h"
 
-inline double wall_clock() {
+double wall_clock() {
   struct timespec t;
   clock_gettime(CLOCK_MONOTONIC, &t);
   return (double)t.tv_sec + 1.0e-9*t.tv_nsec;
