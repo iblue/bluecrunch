@@ -10,7 +10,7 @@ static inline void _assert_fp(complex double a, complex double b, char* file, in
 
   if(cabs(a-b) > radius) {
     fprintf(stderr, "Expected: (%f + %fi) but got (%f + %fi) in %s:%d\n",
-      creal(b), cimag(b), creal(a), cimag(b), file, line);
+      creal(b), cimag(b), creal(a), cimag(a), file, line);
     abort();
   }
 }

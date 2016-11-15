@@ -13,31 +13,42 @@
 #define M_PI       3.14159265358979323846
 #endif
 
-void baileys_forward(complex double *T, int k) {
-  size_t k1 = k / 2;
-  size_t k2 = k - k1;
-  size_t n1 = 1 << k1;
-  size_t n2 = 1 << k2;
-  size_t n  = 1 << k;
+static inline void transpose(complex double *T, size_t n1, size_t n2) {
+  // FIXME: Not cache local. Can be done much faster
+  // FIXME: Not memory efficient
+  complex double *N = malloc(sizeof(complex double)*(n1*n2));
+
+  for(size_t i=0;i<n1;i++) {
+    for(size_t j=0;j<n2;j++) {
+      N[i+j*n1] = T[j+i*n2];
+    }
+  }
+
+  memcpy(T, N, sizeof(complex double)*(n1*n2));
+  free(N);
+
+}
+
+void baileys_forward(complex double *T, size_t length) {
+  // FFT conform sqrt for dummies :)
+  size_t n1 = 1;
+  size_t n2 = length;
+  while(n1 < n2) {
+    n2 /= 2;
+    n1 *= 2;
+  }
+
+  transpose(T, n1, n2);
 
   // Do n1 transforms of size n2
   for(size_t i=0;i<n1;i++) {
     // FIXME: Parallelize
-    fft_forward(T+i*n2, k1);
+    fft_forward(T+i*n2, n2);
   }
 
-  // Do transpose and multiply by twiddle
-  // FIXME: Not cache local. Can be done much faster
-  for(size_t i=0;i<n1;i++) {
-    for(size_t j=0;j<n2;j++) {
-      // Swap
-      complex double tmp = T[i+j*n1];
-      T[i+j*n1] = T[j+i*n1];
-      T[j+i*n1] = tmp;
-    }
-  }
+  double omega = 2 * M_PI / length;
 
-  double omega = 2 * M_PI / n;
+  transpose(T, n2, n1);
 
   // FIXME: Do transpose and multiply in one step
   // FIXME: Use precomputed twiddles if available
@@ -53,6 +64,8 @@ void baileys_forward(complex double *T, int k) {
   // Do n2 transforms of size n1
   for(size_t i=0;i<n2;i++) {
     // FIXME: Parallelize
-    fft_forward(T+i*n1, k2);
+    fft_forward(T+i*n1, n1);
   }
+
+  transpose(T, n1, n2);
 }
