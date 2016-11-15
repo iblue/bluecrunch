@@ -2,6 +2,7 @@
 #include <malloc.h>
 #include <pmmintrin.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include <cilk/cilk.h>
 #include "bigfloat.h"
@@ -54,9 +55,16 @@ void bigfloat_mulu(bigfloat_t target, const bigfloat_t a, uint32_t b) {
 // BT, BL = source 2 ptr and length
 // tds = numbers of threads to be used
 void static inline _fft_mul(uint32_t *CT, size_t CL, uint32_t *AT, size_t AL, uint32_t *BT, size_t BL) {
-  // FIXME: More and less!
-  int bits_per_point = 16;
-  int points_per_word = 2;
+  int bits_per_point;
+  int points_per_word;
+
+  if(CL > 295000) { // experimental values
+    bits_per_point = 12;
+    points_per_word = 3;
+  } else {
+    bits_per_point = 16;
+    points_per_word = 2;
+  }
 
   //  Determine minimum FFT size.
   size_t length = fft_length(points_per_word*CL);
@@ -144,6 +152,31 @@ void static inline _basecase_mul(uint32_t *CT, size_t CL, uint32_t *AT, size_t A
       CT[j] = value;
     }
   }
+}
+
+#define CHECKPRIME (0x9f063b05)
+
+uint32_t checksum(uint32_t *AT, size_t AL) {
+  uint64_t base = 1;
+  uint64_t result = 0;
+  uint64_t prime = CHECKPRIME;
+  uint64_t sum = 0;
+  for(size_t i=0;i<AL;i++) {
+    uint64_t v = AT[i];
+    uint64_t product = (v*base) % prime;
+    base = (base << 32)%prime;
+    sum = sum + product;
+    sum %= prime;
+  }
+
+  return (uint32_t)sum;
+}
+
+uint32_t checksum_mul(uint32_t a, uint32_t b) {
+  uint64_t av = a;
+  uint64_t bv = b;
+  uint64_t p  = (av*bv)%CHECKPRIME;
+  return (uint32_t)p;
 }
 
 #define BASECASE_THRESH 1500
@@ -240,7 +273,14 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
     } else if(CL < BASECASE_THRESH) {
       _basecase_mul(CT, CL, AT, AL, BT, BL);
     } else {
+      uint32_t AC = checksum(AT, AL);
+      uint32_t BC = checksum(BT, BL);
+      uint32_t CC_should = checksum_mul(AC, BC);
       _fft_mul(CT, CL, AT, AL, BT, BL);
+      if(CC_should != checksum(CT, CL)) {
+        fprintf(stderr, "Multiplication error");
+        abort();
+      }
     }
     #ifdef DEBUG
     bigfloat_print("t", target);
