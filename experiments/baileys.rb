@@ -1,16 +1,31 @@
 # Baileys Algorithmn Prototype
 
 require "symbolic"
+require "byebug"
 
-omega = var :name => 'ω'
-a = var :name => 'a'
-b = var :name => 'b'
-c = var :name => 'c'
-d = var :name => 'd'
+values = ('a'..'d').map{|name| var :name => name}
 
-at = a +            b +            c +            d
-bt = a + omega    * b + omega**2 * c + omega**3 * d
-ct = a + omega**2 * b +            c + omega**2 * d
-dt = a + omega**3 * b + omega**2 * c + omega**1 * d
+def fft(values)
+  n = values.length
 
-puts at, bt, ct, dt
+  if n == 1
+    return values
+  end
+
+  omega = var :name => "ω_#{n}"
+
+  (0..n/2-1).each do |k|
+    a = values[k]
+    b = values[k+n/2]
+
+    values[k] = a+b
+    values[k+n/2] = (a-b)*(omega**k)
+  end
+
+  values[0..n/2-1] = fft(values[0..n/2-1])
+  values[n/2..-1]  = fft(values[n/2..-1])
+
+  values
+end
+
+puts fft(values)
