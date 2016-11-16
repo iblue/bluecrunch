@@ -40,17 +40,9 @@ def baileys(values)
   n2 = values.size
 
   # Do FFT on the cols
-  (0..n1-1).each do |col_idx|
-    # Do multiple in parallel to better use cache
-    col = values.map{|x| x[col_idx]}
-    col = fft(col)
-
-    puts col.inspect
-
-    (0..n2-1).each do |row_idx|
-      values[row_idx][col_idx] = col[row_idx]
-    end
-  end
+  values = values.transpose
+  values = values.map { |row| fft(row) }
+  values = values.transpose
 
   # Multiply by twiddles
   omega = var :name => "ω"
@@ -60,12 +52,10 @@ def baileys(values)
     end
   end
 
-  # Transpose
-  #values = values.transpose
-  # => Fuck this. We are doing fft on the rows which is faster anyway
-
+  # Do FFT on the rows
   values = values.map { |row| fft(row) }
 
+  # Skip re-transpose, because we do not care about ordering anyway.
   values
 end
 

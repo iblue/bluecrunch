@@ -18,14 +18,15 @@ int main() {
   fft_ensure_table(8); // up to 256 values
 
   {
-    __attribute__ ((aligned (32))) complex double values[] = {1, 2, 3, 4};
+    __attribute__ ((aligned (32))) complex double values1[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+    __attribute__ ((aligned (32))) complex double values2[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
 
-    baileys_forward(values, 4);
+    baileys_forward(values1, 16);
+    fft_forward(values2, 16);
 
     // FIXME: FP accuracy!
-    assert_fp(values[0], 10);
-    assert_fp(values[1], -2-2*I);
-    assert_fp(values[2], -2);
-    assert_fp(values[3], -2+2*I);
+    for(size_t i=0;i<16;i++) {
+      assert_fp(values1[i], values2[i]);
+    }
   }
 }
