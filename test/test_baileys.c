@@ -18,8 +18,34 @@ int main() {
   fft_ensure_table(8); // up to 256 values
 
   {
-    __attribute__ ((aligned (32))) complex double values1[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
-    __attribute__ ((aligned (32))) complex double values2[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+    __attribute__ ((aligned (32))) complex double values1[] = {27, 73, 35, 12};
+    __attribute__ ((aligned (32))) complex double values2[] = {27, 73, 35, 12};
+
+    baileys_forward(values1, 4);
+    fft_forward(values2, 4);
+
+    // FIXME: FP accuracy!
+    for(size_t i=0;i<4;i++) {
+      assert_fp(values1[i], values2[i]);
+    }
+  }
+
+  {
+    __attribute__ ((aligned (32))) complex double values1[] = {1, 2, 3, 4};
+    __attribute__ ((aligned (32))) complex double values2[] = {1, 2, 3, 4};
+
+    baileys_forward(values1, 4);
+    fft_forward(values2, 4);
+
+    // FIXME: FP accuracy!
+    for(size_t i=0;i<4;i++) {
+      assert_fp(values1[i], values2[i]);
+    }
+  }
+
+  {
+    __attribute__ ((aligned (32))) complex double values1[] = {0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    __attribute__ ((aligned (32))) complex double values2[] = {0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
     baileys_forward(values1, 16);
     fft_forward(values2, 16);

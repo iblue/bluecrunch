@@ -3,8 +3,6 @@
 require "symbolic"
 require "byebug"
 
-values = (0..15).map{|n| "i#{n}"}.map{|name| var :name => name}
-
 def fft(values)
   n = values.length
 
@@ -44,6 +42,8 @@ def baileys(values)
   values = values.map { |row| fft(row) }
   values = values.transpose
 
+  byebug
+
   # Multiply by twiddles
   omega = var :name => "ω"
   (0..n1-1).each do |col_idx|
@@ -59,12 +59,25 @@ def baileys(values)
   values
 end
 
-matrix = [
-  [var(:name => 'i0'), var(:name => 'i1'), var(:name => 'i2'), var(:name => 'i3')],
-  [var(:name => 'i4'), var(:name => 'i5'), var(:name => 'i6'), var(:name => 'i7')],
-  [var(:name => 'i8'), var(:name => 'i9'), var(:name => 'i10'), var(:name => 'i11')],
-  [var(:name => 'i12'), var(:name => 'i13'), var(:name => 'i14'), var(:name => 'i15')],
-]
+if true
+  matrix = [
+    [var(:name => 'i0'), var(:name => 'i1'), var(:name => 'i2'), var(:name => 'i3')],
+    [var(:name => 'i4'), var(:name => 'i5'), var(:name => 'i6'), var(:name => 'i7')],
+    [var(:name => 'i8'), var(:name => 'i9'), var(:name => 'i10'), var(:name => 'i11')],
+    [var(:name => 'i12'), var(:name => 'i13'), var(:name => 'i14'), var(:name => 'i15')],
+  ]
+
+  values = (0..15).map{|n| "i#{n}"}.map{|name| var :name => name}
+else
+  matrix = [
+    [var(:name => 'i0'), var(:name => 'i1')],
+    [var(:name => 'i2'), var(:name => 'i3')],
+    [var(:name => 'i4'), var(:name => 'i5')],
+    [var(:name => 'i6'), var(:name => 'i7')],
+  ]
+
+  values = (0..7).map{|n| "i#{n}"}.map{|name| var :name => name}
+end
 
 puts "== Fenske-Baileys =="
 puts baileys(matrix)
