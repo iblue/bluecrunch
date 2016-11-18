@@ -1,68 +1,50 @@
 require "byebug"
 
-def bitmask(bits)
-  "0x#{((2**bits)-1).to_s(16)}"
+# Load {bits} bits from {word} word
+def get(bits, word)
+  puts "get #{bits} from #{word}"
 end
 
-def wordpos(bits)
-  bits/32
+# Load word if exists
+def ld(word)
+  puts "load #{word}"
 end
 
-def missing_bits(bitpos)
-  32 - bitpos%32
+def conv(pwcnt, pwpos, cwcnt, cwpos)
+  if pwcnt == cwcnt
+    get(cwpos-pwpos, cwcnt)
+  else
+    bits = 32*cwcnt + cwpos - 32*pwcnt - pwpos
+
+    get(32-pwpos, pwcnt)
+    ld(cwcnt) if cwpos%bits != 0
+    get(cwpos%bits, cwcnt) if cwpos%bits != 0
+  end
 end
 
 def gencode(bits_per_point)
-  # First find out how many words we need to get back to aligning.
-  total_bits = bits_per_point.lcm(32)
-  align = total_bits/32
-
-  puts "// need alignment #{align}"
-
-  puts "static inline void int_to_fft#{bits_per_point}(compley double *V, const uint32_t *A, size_t AL) {"
-  puts "  __m128d* T = (__m128*)V;"
-  puts "  complex double *origV = V;"
-  puts ""
-  puts "  for(size_t c = 0; c < AL/#{align}+#{align-1}; c++) {"
+  # get 12 bit from word 0 => 0 (20 left)
+  # get 12 bit from word 0 => 1 ( 8 left)
+  # get  8 bit from word 0 => 2 ( 0 left)
+  # get  4 bit from word 1 => 2 (
+  # get 12 bit from word 1 => 3
+  # get 12 bit from word 1
 
   bitpos  = 0
   while true do
-    # We crossed a word boundary
-    wordpos = wordpos(bitpos)
-    if(wordpos(bitpos-bits_per_point) != wordpos)
-      puts "    if(#{align}*c+#{wordpos} >= AL) {"
-      if missing_bits(bitpos-bits_per_point) && wordpos != 0
-        puts "      *T++ = _mm_set_sd(word#{wordpos-1} & #{bitmask(missing_bits(bitpos-bits_per_point))});"
-      end
-      puts "      break;"
-      puts "    }"
-      puts ""
-      puts "    uint32_t word#{wordpos} = A[#{align}*c+#{wordpos}];"
-      puts ""
-    end
-
-    # Get mb bits from the current word get the rest from next
-    mb = [missing_bits(bitpos), bits_per_point].min
-    if mb == bits_per_point
-      puts "    *T++ = _mm_set_sd(word#{wordpos} & #{bitmask(mb)});"
-      puts "    word#{wordpos} >>= #{mb};"
-    else
-      rb = bits_per_point - mb
-      puts "    *T++ = _mm_set_sd((word#{wordpos-1} & #{bitmask(mb)}) | (word#{wordpos} & #{bitmask(rb)});"
-      puts "    word#{wordpos} >>= #{mb};"
-    end
-
+    pwcnt    = bitpos/32
+    pwpos    = bitpos%32
     bitpos += bits_per_point
+    cwcnt    = bitpos/32
+    cwpos    = bitpos%32
 
-    return if total_bits == bitpos
+    #puts "#{bitpos}: (#{pwcnt},#{pwpos}) (#{cwcnt},#{cwpos})"
+    conv(pwcnt, pwpos, cwcnt, cwpos)
+
+    if cwpos == 0
+      break
+    end
   end
-  puts "  }"
-  puts "}"
 end
 
-#(8..22).each do |i|
-#  puts "// Code for #{i} bits per point"
-#  gencode(i)
-#end
-
-gencode(12)
+gencode(9)
