@@ -92,6 +92,8 @@ def gencode(bits_per_point)
 end
 
 def int_to_fft_code(i)
+  @ldf = false
+  @lg  = 0
   def code(sym, *args)
     case sym
     when :init
@@ -104,9 +106,6 @@ def int_to_fft_code(i)
       outcode "  const uint32_t *end = W + WL;"
       outcode "  while(1) {"
     when :ld
-      outcode "    if(++W >= end) {"
-      outcode "      break;"
-      outcode "    }"
       outcode "    w = *W;"
     when :ldf
       outcode "    if(++W >= end) {"
@@ -114,14 +113,26 @@ def int_to_fft_code(i)
       outcode "      break;"
       outcode "    }"
       outcode "    w = *W;"
+      @ldf = true
     when :get
       bits, word, bitpos = args
-      outcode "    c <<= #{bits};"
-      outcode "    c  |= w & #{bitmask(bits)};"
+      if @ldf
+        outcode "    c |= (w & #{bitmask(bits)}) << #{@lg};"
+        outcode "    w >>= #{bits};"
+        @ldf = false
+      else
+        #outcode "    c <<= #{bits};"
+        outcode "    c  |= w & #{bitmask(bits)};"
+        outcode "    w >>= #{bits};"
+      end
+      @lg = bits
     when :put
       outcode "    *T++ = _mm_set_sd(c);"
       outcode "    c = 0;"
     when :ret
+      outcode "    if(++W >= end) {"
+      outcode "      break;"
+      outcode "    }"
       outcode "  }"
       outcode "  return (complex double*)T - F;"
       outcode "}"
