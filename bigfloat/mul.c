@@ -8,6 +8,8 @@
 #include "bigfloat.h"
 #include "fft.h"
 
+#include <math.h>
+
 // Multiplies by a uint32_t inline.
 void bigfloat_mului(bigfloat_t a, uint32_t b) {
   // Make sure there is enough mem for the result (because we modify the coef
@@ -53,21 +55,25 @@ void bigfloat_mulu(bigfloat_t target, const bigfloat_t a, uint32_t b) {
 // CT, CL = target ptr and length
 // AT, AL = source 1 ptr and length
 // BT, BL = source 2 ptr and length
-// tds = numbers of threads to be used
-void static inline _fft_mul(uint32_t *CT, size_t CL, uint32_t *AT, size_t AL, uint32_t *BT, size_t BL) {
-  int bits_per_point;
+int static inline _fft_mul(uint32_t *CT, size_t CL, uint32_t *AT, size_t AL, uint32_t *BT, size_t BL) {
+  int bits_per_point = 20;
   int points_per_word;
 
-  if(CL > 295000) { // experimental values
-    bits_per_point = 12;
-    points_per_word = 3;
-  } else {
-    bits_per_point = 16;
-    points_per_word = 2;
-  }
+  // Experimentally and guessed
+  if(CL > 2000)       bits_per_point = 19;
+  if(CL > 9000)       bits_per_point = 18;
+  if(CL > 35000)      bits_per_point = 17;
+  if(CL > 80000)      bits_per_point = 16;
+  if(CL > 280000)     bits_per_point = 15;
+  if(CL > 1000000)    bits_per_point = 14;
+  if(CL > 4000000)    bits_per_point = 13;
+  if(CL > 16000000)   bits_per_point = 12;
+  if(CL > 64000000)   bits_per_point = 11;
+  if(CL > 256000000)  bits_per_point = 10;
+  if(CL > 1024000000) bits_per_point = 9;
 
   //  Determine minimum FFT size.
-  size_t length = fft_length(points_per_word*CL);
+  size_t length = fft_length(32.0/bits_per_point*(double)CL);
 
   // If the arguments are the same, we skip one conversion.
   char needB = (AT != BT || AL != BL);
@@ -112,6 +118,8 @@ void static inline _fft_mul(uint32_t *CT, size_t CL, uint32_t *AT, size_t AL, ui
     _mm_free(Tb);
   }
   _mm_free(Ta);
+
+  return bits_per_point;
 }
 
 void static inline _basecase_mul(uint32_t *CT, size_t CL, uint32_t *AT, size_t AL, uint32_t *BT, size_t BL) {
@@ -276,9 +284,9 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
       uint32_t AC = checksum(AT, AL);
       uint32_t BC = checksum(BT, BL);
       uint32_t CC_should = checksum_mul(AC, BC);
-      _fft_mul(CT, CL, AT, AL, BT, BL);
+      int bits = _fft_mul(CT, CL, AT, AL, BT, BL);
       if(CC_should != checksum(CT, CL)) {
-        fprintf(stderr, "Multiplication error");
+        fprintf(stderr, "Multiplication error (CL=%d in %d bits)\n", CL, bits);
         abort();
       }
     }
