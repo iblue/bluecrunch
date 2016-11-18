@@ -130,7 +130,7 @@ def int_to_fft_code(i)
       outcode "    *T++ = _mm_set_sd(c);"
       outcode "    c = 0;"
     when :ret
-      outcode "    if(W++ > end) {"
+      outcode "    if(++W >= end) {"
       outcode "      break;"
       outcode "    }"
       outcode "  }"
@@ -178,7 +178,7 @@ def fft_to_int_code(i)
       end
     when :ret
       outcode "    *W = w;"
-      outcode "    if(W++ > end) {"
+      outcode "    if(++W >= end) {"
       outcode "      break;"
       outcode "    }"
       outcode "    w = 0;"

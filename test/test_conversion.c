@@ -27,10 +27,10 @@ int main(void) {
       values[i] = rand();
     }
 
-    size_t len = rand()%64;
+    int len = rand()%64;
     size_t bpp = 7+rand()%(22-7);
 
-    printf("Run %ld: Testing %ld values in %ld bit...", run, len, bpp);
+    printf("Run %ld: Testing %d values in %ld bit...", run, len, bpp);
 
     int_to_fft(T, 300, values, len, bpp);
     fft_to_int(T, 1, target, len, bpp); // 1 => do not scale

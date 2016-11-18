@@ -1,5 +1,5 @@
 CC=/opt/intel/bin/icc
-CFLAGS=-std=c11 -Wall -Werror -ggdb -O0 -mavx -no-prec-div -ansi-alias -prof-use -prof-dir=./prof -xHost
+CFLAGS=-std=c11 -Wall -Werror -ggdb -O3 -mavx -no-prec-div -ansi-alias -prof-use -prof-dir=./prof -xHost -fno-fat-lto-objects -ipo
 #CC=gcc-5 # Will run into inling errors with cilk plus and intrinsics
 #CC=/opt/magic/bin/clang # Needs to be compiled with cilk support (see https://cilkplus.github.io/)
 #CC=/opt/gcc-trunk/bin/gcc
