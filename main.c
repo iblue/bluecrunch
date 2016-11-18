@@ -163,7 +163,9 @@ int main(int argc, char *argv[]) {
     exit(0);
   }
 
+#ifdef DEBUG
   __cilkrts_set_param("nworkers", "1");
+#endif
 
   size_t digits;
   sscanf(argv[1], "%ld", &digits);
