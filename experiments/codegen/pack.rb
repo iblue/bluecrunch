@@ -132,6 +132,7 @@ def int_to_fft_code(i)
 end
 
 def fft_to_int_code(i)
+  @ldf = false
   def code(sym, *args)
     case sym
     when :init
@@ -150,19 +151,22 @@ def fft_to_int_code(i)
       outcode "      break;"
       outcode "    }"
       outcode "    w = 0;"
-    when :carry
-      bits = args[0]
-      outcode "    w |= c & #{bitmask(bits)};"
-      outcode "    c >>= #{bits};"
-      # Put missing 4 bits from carry here (?!)
+      @ldf = true
     when :get
       bits, word, bitpos = args
-      outcode "    f  = ((double*)F++)[0] * scale;"
-      outcode "    i  = (uint64_t)(f+0.5);"
-      outcode "    c += i;"
-      outcode "    w |= (c&#{bitmask(bits)}) << #{bitpos};" # Shift into right pos
-      outcode "    c >>= #{bits};"
+      if @ldf
+        outcode "    w |= c & #{bitmask(bits)};"
+        outcode "    c >>= #{bits};"
+        @ldf = false
+      else
+        outcode "    f  = ((double*)F++)[0] * scale;"
+        outcode "    i  = (uint64_t)(f+0.5);"
+        outcode "    c += i;"
+        outcode "    w |= (c&#{bitmask(bits)}) << #{bitpos};" # Shift into right pos
+        outcode "    c >>= #{bits};"
+      end
     when :ret
+      outcode "    *W = w;"
       outcode "    if(++W >= end) {"
       outcode "      break;"
       outcode "    }"
