@@ -20,9 +20,9 @@ def deinit
 end
 
 # Load {bits} bits from {word} word
-def get(bits, word)
-  puts "get #{bits} from #{word}"
-  code(:get, bits, word)
+def get(bits, word, bitpos)
+  puts "get #{bits} from #{word} (#{bitpos})"
+  code(:get, bits, word, bitpos)
 end
 
 # Load word if exists
@@ -36,6 +36,11 @@ def ld(word)
   code(:ld, word)
 end
 
+def carry(bits)
+  puts "carry #{bits}"
+  code(:carry, bits)
+end
+
 def put
   puts "put"
   code(:put)
@@ -43,14 +48,17 @@ end
 
 def conv(pwcnt, pwpos, cwcnt, cwpos)
   if pwcnt == cwcnt
-    get(cwpos-pwpos, cwcnt)
+    get(cwpos-pwpos, cwcnt, pwpos)
     put
   else
     bits = 32*cwcnt + cwpos - 32*pwcnt - pwpos
 
-    get(32-pwpos, pwcnt)
-    ldf(cwcnt) if cwpos%bits != 0
-    get(cwpos%bits, cwcnt) if cwpos%bits != 0
+    get(32-pwpos, pwcnt, pwpos)
+    if cwpos%bits != 0
+      ldf(cwcnt)
+      carry(cwpos)
+      get(cwpos%bits, cwcnt, cwpos)
+    end
     put
   end
 end
@@ -107,7 +115,7 @@ def int_to_fft_code(i)
       outcode "    }"
       outcode "    w = *W;"
     when :get
-      bits, word = args
+      bits, word, bitpos = args
       outcode "    c <<= #{bits};"
       outcode "    c  |= w & #{bitmask(bits)};"
     when :put
@@ -136,21 +144,24 @@ def fft_to_int_code(i)
       outcode "  double i;"
       outcode "  uint32_t w=0;"
       outcode "  while(1) {"
-    when :ld
     when :ldf
       outcode "    *W = w;"
       outcode "    if(++W >= end) {"
       outcode "      break;"
       outcode "    }"
+      outcode "    w = 0;"
+    when :carry
+      bits = args[0]
+      outcode "    w |= c & #{bitmask(bits)};"
+      outcode "    c >>= #{bits};"
+      # Put missing 4 bits from carry here (?!)
     when :get
-      bits, word = args
+      bits, word, bitpos = args
       outcode "    f  = ((double*)F++)[0] * scale;"
       outcode "    i  = (uint64_t)(f+0.5);"
       outcode "    c += i;"
-      outcode "    w |= c&#{bitmask(bits)};"
+      outcode "    w |= (c&#{bitmask(bits)}) << #{bitpos};" # Shift into right pos
       outcode "    c >>= #{bits};"
-    when :put
-      0 # Do nothing
     when :ret
       outcode "    if(++W >= end) {"
       outcode "      break;"

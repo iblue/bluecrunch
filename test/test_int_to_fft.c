@@ -15,7 +15,7 @@ int main(void) {
 
     uint32_t words[1];
 
-    fft_to_int(T, 4, words, 1, 12);
+    fft_to_int(T, 16, words, 1, 12);
 
     assert(words[0] == 0x1234abcd);
   }
@@ -31,7 +31,7 @@ int main(void) {
 
     uint32_t words[2];
 
-    fft_to_int(T, 4, words, 2, 12);
+    fft_to_int(T, 16, words, 2, 12);
 
     assert(words[0] == 0x1234abcd);
     assert(words[1] == 0xddccbbaa);
@@ -48,7 +48,7 @@ int main(void) {
 
     uint32_t words[3];
 
-    fft_to_int(T, 4, words, 3, 12);
+    fft_to_int(T, 16, words, 3, 12);
 
     assert(words[0] == 0x1234abcd);
     assert(words[1] == 0xddccbbaa);
