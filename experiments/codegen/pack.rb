@@ -89,11 +89,11 @@ def int_to_fft_code(i)
     when :init
       bpp = args[0]
       outcode "// Outgenerated"
-      outcode "static inline size_t int_to_fft#{bpp}(complex double *F, const uint32_t *W, size_t *WL) {"
+      outcode "static inline size_t int_to_fft#{bpp}(complex double *F, const uint32_t *W, size_t WL) {"
       outcode "  uint32_t w=0;"
       outcode "  uint32_t c=0;"
       outcode "  __m128d* T = (__m128d*)F;"
-      outcode "  uint32_t *end = W + WL;"
+      outcode "  const uint32_t *end = W + WL;"
       outcode "  while(1) {"
     when :ld
       outcode "    if(++W >= end) {"
@@ -102,7 +102,7 @@ def int_to_fft_code(i)
       outcode "    w = *W;"
     when :ldf
       outcode "    if(++W >= end) {"
-      outcode "      *T++ = _mm_set_sc(c);"
+      outcode "      *T++ = _mm_set_sd(c);"
       outcode "      break;"
       outcode "    }"
       outcode "    w = *W;"
@@ -129,7 +129,7 @@ def fft_to_int_code(i)
     when :init
       bpp = args[0]
       outcode "// Outgenerated"
-      outcode "static inline size_t fft_to_int#{bpp}(complex double *F, const uint32_t *W, size_t *WL, double scale) {"
+      outcode "static inline void fft_to_int#{bpp}(const complex double *F, uint32_t *W, size_t WL, double scale) {"
       outcode "  uint64_t c=0;"
       outcode "  uint32_t *end = W + WL;"
       outcode "  double f;"
