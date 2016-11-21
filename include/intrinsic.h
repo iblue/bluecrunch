@@ -190,6 +190,70 @@ static inline void dft_4p(complex double* V) {
   V[3] = a - I*b - c + I*d;
 }
 
+// F_8 = B_8 (I_2 (x) F_4)
+/*
+static inline void dft_8p(complex double* V) {
+  double invsqrt_2 = 0.707106781186547524400844362104849039284835937688474036588;
+
+  complex double B[] = {
+    1.0,
+    invsqrt_2 + invsqrt_2*I,
+    I,
+    -invsqrt_2 + invsqrt_2*I
+  };
+
+  dft_4p(V);
+  dft_4p(V+4);
+
+  complex double a = V[0] + B[0]*V[4];
+  complex double b = V[1] + B[1]*V[5];
+  complex double c = V[2] + B[2]*V[6];
+  complex double d = V[3] + B[3]*V[7];
+  complex double e = V[0] - B[0]*V[4];
+  complex double f = V[1] - B[1]*V[5];
+  complex double g = V[2] - B[2]*V[6];
+  complex double h = V[3] - B[3]*V[7];
+
+  V[0] = a;
+  V[4] = b;
+  V[2] = c;
+  V[6] = d;
+  V[1] = e;
+  V[5] = f;
+  V[3] = g;
+  V[7] = h;
+}
+*/
+
+// 
+// [ 1   1   ] [ 1  1     ] [1      ] [V0]
+// [   1   i ] [ 1 -1     ] [    1  ] [V1]
+// [ 1   -1  ] [      1  1] [  1    ] [V2]
+// [   1   -i] [      1 -1] [      1] [V3]
+//
+// x' = P_4^T (I_1 (x) B_4) (I_2 (x) B_2) P_4^T x
+/*
+static inline void dft_4p(complex double* V) {
+  // u = PI^T_4 v
+  complex double u0 = V[0];
+  complex double u1 = V[2];
+  complex double u2 = V[1];
+  complex double u3 = V[3];
+
+  // w = (I_2 (x) B_2) u
+  complex double w0 = u0+u1;
+  complex double w1 = u0-u1;
+  complex double w2 = u2+u3;
+  complex double w3 = u2-u3;
+
+  // v' = PI^T_4 (I_1 (x) B_4) u
+  V[0] = w0 + w2;     // = a + b + c + d
+  V[2] = w1 + I*w3;   // = u0-u1 + I*(u2-u3) = a+I*b-c-I*d
+  V[1] = w0 - w2;     // = a-b+d-c
+  V[3] = w1 - I*w3;   // = a-I*b-c+I*d
+}
+*/
+
 static inline void dft_4p_inv(complex double* V) {
   complex double a = V[0];
   complex double b = V[1];

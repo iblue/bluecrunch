@@ -181,22 +181,23 @@ int main(int argc, char *argv[]) {
   }
   k++;
 
+  size_t fft_len = length;
+  // Cap table sizes.
+  if(fft_len > 100663296) {
+    fft_len = 100663296;
+  }
+
   printf("Configuration:\n");
   printf("Digits:           %ld\n", digits);
   printf("Threads:          %d\n", __cilkrts_get_nworkers());
   printf("CPU Features:     Using AVX\n");
   printf("Output File:      ./e.txt\n");
-  printf("Max FFT required: 2^%ld\n", k);
+  printf("Max FFT required: %ld\n", fft_len);
   printf("\n");
-
-  // Cap table sizes.
-  if(k > 26) {
-    k = 26;
-  }
 
   task_start(0, "Starting calculation");
   task_start(1, "Precomputing twiddle factors");
-  fft_ensure_table(3*length);
+  fft_ensure_table(fft_len);
   task_end(1);
 
   // Calculate e

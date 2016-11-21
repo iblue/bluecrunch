@@ -62,15 +62,15 @@ int static inline _fft_mul(uint32_t *CT, size_t CL, uint32_t *AT, size_t AL, uin
   // Experimentally and guessed
   if(CL > 2000)       bits_per_point = 19;
   if(CL > 9000)       bits_per_point = 18;
-  if(CL > 35000)      bits_per_point = 17;
+  if(CL > 25000)      bits_per_point = 17;
   if(CL > 80000)      bits_per_point = 16;
   if(CL > 280000)     bits_per_point = 15;
   if(CL > 1000000)    bits_per_point = 14;
   if(CL > 4000000)    bits_per_point = 13;
-  if(CL > 16000000)   bits_per_point = 12;
-  if(CL > 64000000)   bits_per_point = 11;
-  if(CL > 256000000)  bits_per_point = 10;
-  if(CL > 1024000000) bits_per_point = 9;
+  if(CL > 13000000)   bits_per_point = 12;
+  if(CL > 50000000)   bits_per_point = 11;
+  if(CL > 200000000)  bits_per_point = 10;
+  if(CL > 800000000)  bits_per_point = 9;
 
   //  Determine minimum FFT size.
   size_t length = fft_length(32.0/bits_per_point*(double)CL);

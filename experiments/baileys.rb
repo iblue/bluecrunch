@@ -28,6 +28,12 @@ end
 
 #puts fft(values)
 
+# Bit reverse ordering
+def reorder(arr)
+  raise if arr.size != 4
+  out = [arr[0],arr[2],arr[1],arr[3]]
+end
+
 def baileys(values)
   #[
   #  [a,b,c,d],
@@ -39,10 +45,8 @@ def baileys(values)
 
   # Do FFT on the cols
   values = values.transpose
-  values = values.map { |row| fft(row) }
+  values = values.map { |row| reorder(fft(row)) }
   values = values.transpose
-
-  byebug
 
   # Multiply by twiddles
   omega = var :name => "ω"
