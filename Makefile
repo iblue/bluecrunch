@@ -19,6 +19,9 @@ endif
 MAIN_C = main.c
 MAIN_O = $(MAIN_C:.c=.o)
 
+FFTBENCH_C = fftbench.c
+FFTBENCH_O = $(FFTBENCH_C:.c=.o)
+
 INCLUDES = -I./include -I.
 SOURCES  = $(shell find -path "./bigfloat/*" -name "*.c")
 SOURCES += $(shell find -path "./fft/*"      -name "*.c")
@@ -34,6 +37,9 @@ TESTS        = $(TEST_SOURCES:.c=.test)
 
 $(BINARY): $(OBJECTS) $(MAIN_O)
 	$(CC) $(CFLAGS) -o $(BINARY) $(OBJECTS) $(MAIN_O) $(LIBS)
+
+fftbench: $(OBJECTS) $(FFTBENCH_O)
+	$(CC) $(CFLAGS) -o fftbench $(OBJECTS) $(FFTBENCH_O) $(LIBS)
 
 .c.o: $(HEADERS)
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@

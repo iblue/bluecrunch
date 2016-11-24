@@ -29,3 +29,7 @@ void tft_inverse(complex double*, size_t, int);
 
 // Baileys FFT
 void baileys_forward(complex double*, size_t);
+
+// Forward and inverse FFT transforms
+void fftnew_forward(complex double*, size_t);
+void fftnew_inverse(complex double*, size_t);
