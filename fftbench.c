@@ -36,8 +36,7 @@ int main(int argc, char *argv[]) {
 
     double start = wall_clock();
     for(size_t i=0;i<(1<<K);i++) {
-      //T[i] = ((double)rand()/(double)RAND_MAX) + I*((double)rand()/(double)RAND_MAX);
-      T[i] = 0.0;
+      T[i] = i;
     }
 
     memcpy(vals, T, (1<<K)*sizeof(complex double));
@@ -77,16 +76,20 @@ int main(int argc, char *argv[]) {
   }
 
   printf("== New algorithmn ==\n");
+  memcpy(T, vals, (1<<K)*sizeof(complex double));
   for(size_t i=1;i<=K;i++) {
     printf("Benchmarking FFT of 2^%ld", i);
     fflush(stdout);
+
     double start = wall_clock();
     fftnew_forward(T, 1 << i);
     fftnew_inverse(T, 1 << i);
     double end = wall_clock();
-    for(size_t i=1;i<=(1<<i);i++) {
-      assert_fp(T[i], vals[i], i);
-    }
+
+    /*
+    for(size_t j=0;j<(1<<i);j++) {
+      assert_fp(T[j], vals[j], j);
+    }*/
     printf(" -> %f seconds\n", end - start);
   }
 }
