@@ -214,13 +214,15 @@ void fft_ensure_table(size_t length) {
     if(2*k > length) {
       break;
     }
-    _build_table(2*k);
+    cilk_spawn _build_table(2*k);
     if(3*k > length) {
       break;
     }
-    _build_table(3*k);
+    cilk_spawn _build_table(3*k);
     k*=2;
   }
+
+  cilk_sync;
 
   twiddle_table_size = _table_select(k)+1;
 }

@@ -1,5 +1,5 @@
 CC=/opt/intel/bin/icc
-CFLAGS=-std=c11 -Wall -Werror -ggdb -O0 -mavx
+CFLAGS=-std=c11 -Wall -Werror -ggdb -O3 -mavx
 #CC=gcc-5 # Will run into inling errors with cilk plus and intrinsics
 #CC=/opt/magic/bin/clang # Needs to be compiled with cilk support (see https://cilkplus.github.io/)
 #CC=/opt/gcc-trunk/bin/gcc
