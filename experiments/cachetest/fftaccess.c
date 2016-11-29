@@ -23,7 +23,7 @@ double wall_clock() {
 // 256 rows is the maximum!
 // There is no limit for the cols, but if we sub-divide, we may need additional padding.
 #define ROWS (256)
-#define COLS (512)
+#define COLS (512*1024)
 #define SIZE (ROWS*COLS) // 256 rows x 512 cols
 #define REP (1)
 
@@ -55,6 +55,28 @@ complex double fft(complex double *T, size_t len) {
   return sum;
 }
 
+complex double strided_fft(complex double *T, size_t col, size_t rows) {
+  if(rows == 1) {
+    return T[0] + T[1] + T[2] + T[3];
+  }
+
+  complex double sum = 0.0;
+  // FIXME: More realistic access pattern
+  //
+  // 0 1 2 3
+  // 512 513 514 515
+  // ...
+  // 130560
+  for(size_t row=0;row<rows;row++) {
+    sum += T[col+row*COLS] + T[col+row*COLS+1] + T[col+row*COLS+2] + T[col+row*COLS+3];
+  }
+
+  sum += strided_fft(T, col, rows/2);
+  sum += strided_fft(T+(rows/2)*COLS, col, rows/2);
+
+  return sum;
+}
+
 // Simulates access patterns for 1M FFT
 int main(void) {
   double start, end;
@@ -75,10 +97,7 @@ int main(void) {
 
   start = wall_clock();
   for(size_t col=0;col<COLS;col+=4) {
-    for(size_t row=0;row<ROWS;row++) {
-      // FIXME: More realistic access pattern
-      sum += T[col+row*COLS] + T[col+row*COLS+1] + T[col+row*COLS+2] + T[col+row*COLS+3];
-    }
+    sum += strided_fft(T, col, ROWS);
   }
 
   // Now do a sequential read
