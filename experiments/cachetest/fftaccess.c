@@ -1,3 +1,13 @@
+/* Compile and run with gcc -std=c11 -ggdb -O3 -o fftaccess fftaccess.c && ./fftaccess */
+
+#define WTF
+
+#ifdef WTF
+#define MAGIC (0)
+#else
+#define MAGIC (1)
+#endif
+
 #if __STDC_VERSION__ >= 199901L
 #define _XOPEN_SOURCE 700
 #else
@@ -23,8 +33,8 @@ double wall_clock() {
 // 256 rows is the maximum!
 // There is no limit for the cols, but if we sub-divide, we may need additional padding.
 #define ROWS (256)
-#define COLS (512*1024)
-#define SIZE (ROWS*COLS) // 256 rows x 512 cols
+#define COLS (512*1024+MAGIC)
+#define SIZE (ROWS*COLS)
 #define REP (1)
 
 // 1 complex double = 16 bytes
@@ -55,6 +65,8 @@ complex double fft(complex double *T, size_t len) {
   return sum;
 }
 
+
+// Simulates strided FFT pattern
 complex double strided_fft(complex double *T, size_t col, size_t rows) {
   if(rows == 1) {
     return T[0] + T[1] + T[2] + T[3];
