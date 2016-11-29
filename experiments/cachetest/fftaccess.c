@@ -24,8 +24,8 @@ double wall_clock() {
 // 64 Bytes per row to break associativity).
 // 256 rows is the maximum!
 // There is no limit for the cols, but if we sub-divide, we may need additional padding.
-#define ROWS ((size_t)256)
-#define COLS ((size_t)512*1024)
+#define ROWS ((size_t)32*1024)
+#define COLS ((size_t)32*1024)
 #define SIZE (ROWS*COLS)
 #define REP (1)
 #define PADDING (4) // 4 complex doubles padding after each row
@@ -52,8 +52,8 @@ complex double fft(complex double *T, size_t len) {
     sum += T[i];
   }
 
-  sum += fft(T, len/2);
   sum += fft(T+len/2, len/2);
+  sum += fft(T, len/2);
 
   return sum;
 }
@@ -74,10 +74,11 @@ complex double strided_fft(complex double *T, size_t col, size_t rows) {
   // 130560
   for(size_t row=0;row<rows;row++) {
     sum += T[col+row*COLS+row*PADDING] + T[col+row*COLS+1+row*PADDING] + T[col+row*COLS+2+row*PADDING] + T[col+row*COLS+3+row*PADDING];
+    __builtin_prefetch(T+(col+(row+1)+(row+1)*PADDING));
   }
 
-  sum += strided_fft(T, col, rows/2);
   sum += strided_fft(T+(rows/2)*COLS+(rows/2)*PADDING, col, rows/2);
+  sum += strided_fft(T, col, rows/2);
 
   return sum;
 }
