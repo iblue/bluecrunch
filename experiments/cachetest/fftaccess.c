@@ -1,13 +1,5 @@
 /* Compile and run with gcc -std=c11 -ggdb -O3 -o fftaccess fftaccess.c && ./fftaccess */
 
-#define WTF
-
-#ifdef WTF
-#define MAGIC (0)
-#else
-#define MAGIC (1)
-#endif
-
 #if __STDC_VERSION__ >= 199901L
 #define _XOPEN_SOURCE 700
 #else
@@ -32,10 +24,11 @@ double wall_clock() {
 // 64 Bytes per row to break associativity).
 // 256 rows is the maximum!
 // There is no limit for the cols, but if we sub-divide, we may need additional padding.
-#define ROWS (256)
-#define COLS (512*1024+MAGIC)
+#define ROWS ((size_t)256)
+#define COLS ((size_t)512*1024)
 #define SIZE (ROWS*COLS)
 #define REP (1)
+#define PADDING (4) // 4 complex doubles padding after each row
 
 // 1 complex double = 16 bytes
 // Bulldozer:
@@ -80,11 +73,11 @@ complex double strided_fft(complex double *T, size_t col, size_t rows) {
   // ...
   // 130560
   for(size_t row=0;row<rows;row++) {
-    sum += T[col+row*COLS] + T[col+row*COLS+1] + T[col+row*COLS+2] + T[col+row*COLS+3];
+    sum += T[col+row*COLS+row*PADDING] + T[col+row*COLS+1+row*PADDING] + T[col+row*COLS+2+row*PADDING] + T[col+row*COLS+3+row*PADDING];
   }
 
   sum += strided_fft(T, col, rows/2);
-  sum += strided_fft(T+(rows/2)*COLS, col, rows/2);
+  sum += strided_fft(T+(rows/2)*COLS+(rows/2)*PADDING, col, rows/2);
 
   return sum;
 }
@@ -94,8 +87,8 @@ int main(void) {
   double start, end;
 
   // Align to cache lines
-  complex double *T = aligned_alloc(64, SIZE*sizeof(complex double));
-  memset(T, 0, SIZE*sizeof(complex double));
+  complex double *T = aligned_alloc(64, (SIZE+ROWS*PADDING)*sizeof(complex double));
+  memset(T, 0, (SIZE+ROWS*PADDING)*sizeof(complex double));
 
   // 1. Do FFT on the cols (vectorized)
   // 256 rows => 512 cols
@@ -114,7 +107,7 @@ int main(void) {
 
   // Now do a sequential read
   for(size_t row=0;row<ROWS;row++) {
-    sum += fft(T+COLS*row, COLS);
+    sum += fft(T+COLS*row+row*PADDING, COLS);
   }
   end = wall_clock();
 
@@ -122,8 +115,8 @@ int main(void) {
 
   printf("Improved access pattern: %f s\n", end - start);
 
-
   start = wall_clock();
+  // No padding
   sum = fft(T, SIZE);
   end = wall_clock();
   printf("%f + %f*I\n", creal(sum), cimag(sum));
