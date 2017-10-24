@@ -1,0 +1,94 @@
+Taken from Haible, B., Papanikolaou, T.: Fast multiprecision evaluation of
+series of rational numbers [https://www.ginac.de/CLN/binsplit.pdf]:
+
+e is calculated by
+
+$e = \sum_{n=0}^{\infty} \frac{1}{n!}$
+
+Sums of the form
+
+$ S = \sum_{n=0}^{\infty} \frac{a(n)}{b(n)} \frac{p(0) \dots p(n)}{q(0) \dots \q(n)} $
+
+can be efficiently evalualted by binary splitting with $P = p(n_1) \dots
+p(n_2-1)$, $Q = q(n_1) \dots q(n_2-1)$, $B = b(n_1) \dots b(n_2 - 1)$, $T =
+BQS$. For $n_2 - n_1$ small (e.g. $< 5$), this is computed directly. Otherwise
+by binary splitting: Chose $n_m$ ind the middle of $n_1$ and $n_2$ to compute
+$P_l, Q_l, B_l, T_l$ in the range of $n_1$ to $n_m$ and compute $P_r, Q_r, B_r,
+T_r$ of in $n_m$ and $n_2$. Combine using $P=P_lP_r$, $Q=Q_lQ_r$, $B=B_lB_r$
+and $T=B_rQ_rT_l + B_lP_lT_r$. Apply recursively to $n_1 = 0$, $n_2 = N$, then
+do a finaly division $S = \frac{T}{BQ}$.
+
+From section 2.2.1, to get e:
+$a(n) = 1$, $b(n) = 1$, $p(0) = q(0) = 1$, $p(n) = 1$, $q(n) = n$.
+
+Therefore the recursion is
+
+def e(a, b):
+  return [P = 1, Q = b] if b - a == 1
+  
+  m = (a+b)/2;
+
+  P0, Q0 = e(a, m);
+  P1, Q1 = e(m, b);
+  
+  P = P0*Q1+P1
+  Q = Q0*Q1
+
+  return [P, Q]
+
+def main(terms):
+  e(P, Q, 0, terms);
+
+  e = P/Q + 1;
+
+Example: 5 terms:
+  e(0, 5):
+    m = 2
+    e(0, 2):
+      m = 1
+      e(0, 1):
+        P=1
+        Q=1
+      P0=1
+      Q0=1
+      e(1,2):
+        P=1
+        Q=2
+      P1=1
+      Q1=2
+      P=1*2+1=3
+      Q=1*2=2
+    P0=3
+    Q0=2
+    e(2,5):
+      m=3
+      e(2,3):
+        P=1
+        Q=3
+      P0=1
+      Q0=3
+      e(3,5):
+        m=4
+        e(3,4):
+          P=1
+          Q=4
+        P0=1
+        Q0=4
+        e(4,5):
+          P=1
+          Q=5
+        P1=1
+        Q1=5
+        P=1*5+1=6
+        Q=4*5=20
+      P1=6
+      Q1=20
+      P=1*20+6=26
+      Q=3*20=60
+    P1=26
+    Q1=60
+    P=3*60+26=206
+    Q=2*60=120
+  Final result: 1 + 206/120 = 2.71666...
+           
+
