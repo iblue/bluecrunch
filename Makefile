@@ -1,9 +1,11 @@
-CC=/opt/intel/bin/icc
-CFLAGS=-std=c11 -Wall -Werror -ggdb -O3 -mavx
+#CC=/opt/intel/bin/icc
+#CFLAGS=-std=c11 -Wall -Werror -ggdb -O3 -mavx
 #CC=gcc-5 # Will run into inling errors with cilk plus and intrinsics
 #CC=/opt/magic/bin/clang # Needs to be compiled with cilk support (see https://cilkplus.github.io/)
 #CC=/opt/gcc-trunk/bin/gcc
 #CFLAGS=-std=c11 -Wall -Werror -ggdb -O3 -mavx -fcilkplus -fprofile-use
+CC=gcc
+CFLAGS=-std=c11 -Wall -Werror -ggdb -O3 -mavx -fcilkplus -fprofile-use
 VALGRIND=valgrind --tool=memcheck --leak-check=yes
 STRIP=strip
 BINARY=bluecrunch
