@@ -57,7 +57,6 @@ void bigfloat_mulu(bigfloat_t target, const bigfloat_t a, uint32_t b) {
 // BT, BL = source 2 ptr and length
 int static inline _fft_mul(uint32_t *CT, size_t CL, uint32_t *AT, size_t AL, uint32_t *BT, size_t BL) {
   int bits_per_point = 20;
-  int points_per_word;
 
   // Experimentally and guessed
   if(CL > 2000)       bits_per_point = 19;
@@ -166,7 +165,6 @@ void static inline _basecase_mul(uint32_t *CT, size_t CL, uint32_t *AT, size_t A
 
 uint32_t checksum(uint32_t *AT, size_t AL) {
   uint64_t base = 1;
-  uint64_t result = 0;
   uint64_t prime = CHECKPRIME;
   uint64_t sum = 0;
   for(size_t i=0;i<AL;i++) {
