@@ -190,7 +190,25 @@ def fft_to_int_code(i)
   gencode(i)
 end
 
+# With argument
+if ARGV[0]
+  if ARGV[0] =~ /int_to_fft(\d+)\.c/
+    i = $1.to_i
+    $outfile = File.open("./int_to_fft#{i}.c", "w")
+    int_to_fft_code(i)
+    exit 0
+  elsif ARGV[0] =~ /fft_to_int(\d+)\.c/
+    i = $1.to_i
+    $outfile = File.open("./fft_to_int#{i}.c", "w")
+    fft_to_int_code(i)
+    exit 0
+  else
+    puts "Unknown argument: #{ARGV[0]}"
+    exit 1
+  end
+end
 
+# Default: Generate all
 (7..22).each do |i|
   $outfile = File.open("./int_to_fft#{i}.c", "w")
   puts "== Generating Code for #{i}"
