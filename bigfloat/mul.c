@@ -564,8 +564,13 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
     bigfloat_print("t", target);
     #endif
 
-    //  Check top word and correct length.
-    if (target->coef[target->len - 1] == 0) {
+    //  Check top words and correct length.
+    if(target->coef[target->len - 1] == 0) {
       target->len--;
+    }
+    if(target->len > 1000) { // bigger cleanup for larger factors
+      while (target->coef[target->len - 1] == 0) {
+        target->len--;
+      }
     }
 }
