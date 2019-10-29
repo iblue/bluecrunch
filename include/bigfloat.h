@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#define YCL_BIGFLOAT_EXTRA_PRECISION    2
+#define BIGFLOAT_EXTRA_PRECISION (2)
 
 typedef struct {
     uint32_t* coef;    // Coefficients

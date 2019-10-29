@@ -10,7 +10,7 @@
 
 #include <math.h>
 
-#define BASECASE_THRESH 100
+#define BASECASE_THRESH 400
 #define KARATZUBA_THRESH 3300
 
 #define max(a,b) ({ __typeof__(a) _a = (a); __typeof__(b) _b = (b); _a > _b ? _a : _b; })
@@ -291,7 +291,7 @@ void static inline _ll_sub_inplace(uint32_t *CT, size_t CL, uint32_t *AT, size_t
 }
 
 void _karatzuba_mul(uint32_t *CT, size_t CL, uint32_t *AT, size_t AL, uint32_t *BT, size_t BL) {
-  if(CL < BASECASE_THRESH || AL == 0 || BL == 0 || CL == 0) {
+  if(AL*BL < BASECASE_THRESH) {
     _basecase_mul(CT, CL, AT, AL, BT, BL);
     return;
   }
@@ -472,11 +472,11 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
     }
 
     if (p == 0) {
-        //  Default value. No trunction.
-        p = a->len + b->len;
+      //  Default value. No trunction.
+      p = a->len + b->len;
     } else {
-        //  Increase precision
-        p += YCL_BIGFLOAT_EXTRA_PRECISION;
+      //  Increase precision
+      p += BIGFLOAT_EXTRA_PRECISION;
     }
 
     //  Collect operands.
@@ -489,16 +489,17 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
 
     //  Perform precision truncation.
     if (AL > p) {
-        size_t chop = AL - p;
-        AL = p;
-        Aexp += chop;
-        AT += chop;
+      size_t chop = AL - p;
+      AL = p;
+      Aexp += chop;
+      AT += chop;
     }
+
     if (BL > p) {
-        size_t chop = BL - p;
-        BL = p;
-        Bexp += chop;
-        BT += chop;
+      size_t chop = BL - p;
+      BL = p;
+      Bexp += chop;
+      BT += chop;
     }
 
     //  Compute basic fields.
@@ -542,11 +543,11 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
       uint64_t r = (uint64_t)AT[0]*BT[0];
       CT[0] = r & 0xffffffff;
       CT[1] = r >> 32;
-    } else if(CL < BASECASE_THRESH) {
-      _basecase_mul(CT, CL, AT, AL, BT, BL);
     } else if(CL < KARATZUBA_THRESH) {
+      // Regresses to basecase automatically, so skip one check.
       _karatzuba_mul(CT, CL, AT, AL, BT, BL);
     } else {
+#ifdef DEBUG
       uint32_t AC = checksum(AT, AL);
       uint32_t BC = checksum(BT, BL);
       uint32_t CC_should = checksum_mul(AC, BC);
@@ -555,6 +556,9 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
         fprintf(stderr, "FFT Multiplication error (CL=%d in %d bits)\n", CL, bits);
         abort();
       }
+#else
+      _fft_mul(CT, CL, AT, AL, BT, BL);
+#endif
     }
     #ifdef DEBUG
     bigfloat_print("t", target);

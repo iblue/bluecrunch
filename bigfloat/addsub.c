@@ -76,7 +76,7 @@ void _bigfloat_uadd(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, s
     p = (size_t)TL;
   } else {
     //  Increase precision
-    p += YCL_BIGFLOAT_EXTRA_PRECISION;
+    p += BIGFLOAT_EXTRA_PRECISION;
   }
 
   //  Perform precision truncation.
@@ -134,7 +134,7 @@ void _bigfloat_usub(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, s
         p = (size_t)TL;
     } else {
         //  Increase precision
-        p += YCL_BIGFLOAT_EXTRA_PRECISION;
+        p += BIGFLOAT_EXTRA_PRECISION;
     }
 
     if (TL > (int64_t)p){
