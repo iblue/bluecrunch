@@ -21,8 +21,8 @@ endif
 MAIN_C = main.c
 MAIN_O = $(MAIN_C:.c=.o)
 
-FFTBENCH_C = fftbench.c
-FFTBENCH_O = $(FFTBENCH_C:.c=.o)
+BENCH_C = bench.c
+BENCH_O = $(BENCH_C:.c=.o)
 
 INCLUDES = -I./include -I.
 SOURCES  = $(shell find -path "./bigfloat/*" -name "*.c")
@@ -40,8 +40,8 @@ TESTS        = $(TEST_SOURCES:.c=.test)
 $(BINARY): codegen $(OBJECTS) $(MAIN_O)
 	$(CC) $(CFLAGS) -o $(BINARY) $(OBJECTS) $(MAIN_O) $(LIBS)
 
-fftbench: $(OBJECTS) $(FFTBENCH_O)
-	$(CC) $(CFLAGS) -o fftbench $(OBJECTS) $(FFTBENCH_O) $(LIBS)
+bench: $(OBJECTS) $(BENCH_O)
+	$(CC) $(CFLAGS) -o bench $(OBJECTS) $(BENCH_O) $(LIBS)
 
 codegen:
 	make -C experiments/codegen
@@ -51,7 +51,7 @@ codegen:
 
 .PHONY: clean
 clean:
-	rm -f $(BINARY) $(OBJECTS) $(TEST_OBJECTS) $(TESTS) $(MAIN_O)
+	rm -f $(BINARY) bench $(OBJECTS) $(TEST_OBJECTS) $(TESTS) $(MAIN_O)
 	make -C experiments/codegen clean
 
 .PHONY: stats
@@ -76,7 +76,7 @@ debug: CFLAGS := $(filter-out -O3,$(CFLAGS)) -DDEBUG -O0
 ifeq ($(CC),gcc)
 debug: CFLAGS += -fsanitize=address
 endif
-debug: clean $(BINARY)
+debug: $(BINARY) bench
 
 .PHONY: debug-test
 debug-test: CFLAGS := $(filter-out -O3,$(CFLAGS)) -DDEBUG -O0

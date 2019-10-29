@@ -10,6 +10,7 @@
 #include <cilk/cilk_api.h>
 
 #include "fft.h"
+#include "mul.h"
 #include "bench.h"
 
 #define assert_fp(a, b, idx) _assert_fp(a, b, idx, __FILE__, __LINE__)
@@ -23,9 +24,47 @@ static inline void _assert_fp(complex double a, complex double b, size_t idx, ch
   }
 }
 
-#define K (20)
+#define K (10)
+#define MUL_SIZE (0x10000)
+
+void mul_bench() {
+  double start, end;
+
+  uint32_t* AT = malloc(MUL_SIZE*sizeof(uint32_t));
+  uint32_t* BT = malloc(MUL_SIZE*sizeof(uint32_t));
+  for(size_t i=0;i<MUL_SIZE;i++) {
+    AT[i] = i;
+    BT[i] = 0xffffffff-i;
+  }
+  uint32_t* CT = malloc((MUL_SIZE*2+1)*sizeof(uint32_t));
+
+  for(size_t i=20;i<=MUL_SIZE;i*=2) {
+    printf("Basecase Multiplication of size %08ld ", i);
+    start = wall_clock();
+    _basecase_mul(CT, i*2+1, AT, i, BT, i);
+    end = wall_clock();
+    printf(" -> %f seconds\n", end - start);
+  }
+
+  for(size_t i=20;i<=MUL_SIZE;i*=2) {
+    printf("Karatzuba Multiplication of size %08ld", i);
+    start = wall_clock();
+    _karatzuba_mul(CT, i*2+1, AT, i, BT, i);
+    end = wall_clock();
+    printf(" -> %f seconds\n", end - start);
+  }
+
+  for(size_t i=20;i<=MUL_SIZE;i*=2) {
+    printf("FFT Multiplication of size %08ld      ", i);
+    start = wall_clock();
+    _fft_mul(CT, i*2+1, AT, i, BT, i);
+    end = wall_clock();
+    printf(" -> %f seconds\n", end - start);
+  }
+}
 
 int main(int argc, char *argv[]) {
+
   // Test FFT performance up to 2^26
   complex double *T    = (complex double*)_mm_malloc((1 << K)*sizeof(complex double), 32);
   complex double *vals = (complex double*)_mm_malloc((1 << K)*sizeof(complex double), 32);
@@ -92,4 +131,6 @@ int main(int argc, char *argv[]) {
     }*/
     printf(" -> %f seconds\n", end - start);
   }
+
+  mul_bench();
 }
