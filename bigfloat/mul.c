@@ -9,7 +9,6 @@
 #include "fft.h"
 
 #include <math.h>
-#include <alloca.h>
 
 #define BASECASE_THRESH 100
 #define KARATZUBA_THRESH 3300
@@ -382,7 +381,7 @@ void _karatzuba_mul(uint32_t *CT, size_t CL, uint32_t *AT, size_t AL, uint32_t *
   size_t    T0L = max(AHiL, ALoL)+1;  // AHi+ALo (AHi: len AL-SL, ALo: len SL, SL<AL-SL)
   size_t    T1L = max(BHiL, BLoL)+1; // equiv to A
   size_t    T2L = T0L+T1L;  // will contain T0*T1
-  uint32_t* T = alloca((T0L+T1L+T2L)*sizeof(uint32_t));
+  uint32_t* T = __builtin_alloca((T0L+T1L+T2L)*sizeof(uint32_t));
   uint32_t* T0 = T;
   uint32_t* T1 = T0+T0L;
   uint32_t* T2 = T1+T1L;
