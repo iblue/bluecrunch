@@ -10,8 +10,8 @@
 
 #include <math.h>
 
-#define BASECASE_THRESH 50
-#define KARATZUBA_THRESH 6000
+#define BASECASE_THRESH 100
+#define KARATZUBA_THRESH 3000
 
 #define max(a,b) ({ __typeof__(a) _a = (a); __typeof__(b) _b = (b); _a > _b ? _a : _b; })
 #define min(a,b) ({ __typeof__(a) _a = (a); __typeof__(b) _b = (b); _a < _b ? _a : _b; })
