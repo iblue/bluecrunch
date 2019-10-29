@@ -37,11 +37,14 @@ TESTS        = $(TEST_SOURCES:.c=.test)
 
 .PRECIOUS: %.c %.o %.h
 
-$(BINARY): $(OBJECTS) $(MAIN_O)
+$(BINARY): codegen $(OBJECTS) $(MAIN_O)
 	$(CC) $(CFLAGS) -o $(BINARY) $(OBJECTS) $(MAIN_O) $(LIBS)
 
 fftbench: $(OBJECTS) $(FFTBENCH_O)
 	$(CC) $(CFLAGS) -o fftbench $(OBJECTS) $(FFTBENCH_O) $(LIBS)
+
+codegen:
+	make -C experiments/codegen
 
 .c.o: $(HEADERS)
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
@@ -49,6 +52,7 @@ fftbench: $(OBJECTS) $(FFTBENCH_O)
 .PHONY: clean
 clean:
 	rm -f $(BINARY) $(OBJECTS) $(TEST_OBJECTS) $(TESTS) $(MAIN_O)
+	make -C experiments/codegen clean
 
 .PHONY: stats
 stats:
