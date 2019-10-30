@@ -3,7 +3,9 @@ e.dec
 e.hex
 e-hex.txt
 *.o
+*.gcda
 bluecrunch
 *.test
 callgrind.out.*
 prof
+.gdb_history
