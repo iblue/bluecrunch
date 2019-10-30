@@ -1,0 +1,3 @@
+rm callgrind.out.*
+valgrind --tool=callgrind --dump-instr=yes ./bluecrunch 10000
+kcachegrind callgrind.out.*

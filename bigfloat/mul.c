@@ -267,19 +267,77 @@ void static inline _ll_sub_inplace(uint32_t *CT, size_t CL, uint32_t *AT, size_t
   uint32_t CA  = checksum(AT, AL);
 #endif
 
-  int32_t carry = 0;
-  for (size_t i = 0; i<CL; i++) {
-    int64_t word = (int64_t)CT[i]-(int64_t)carry;
-    if(i<AL) {
-      word -= (int64_t)AT[i];
-    }
-    carry = 0;
-    if (word < 0){
-      word += 0x100000000;
-      carry = 1;
-    }
-    CT[i] = word;
+  uint64_t* CT64 = (uint64_t*) CT;
+  size_t    CL64 = CL/2;
+  uint64_t* AT64 = (uint64_t*) AT;
+  size_t    AL64 = AL/2;
+
+  int carry = 0;
+  size_t i64;
+  size_t i32;
+
+  // Operate on 64 bits first
+  for(i64 = 0;i64<AL64;i64++) {
+    uint64_t a = CT64[i64];
+    uint64_t b = AT64[i64];
+    uint64_t c = a - b - carry;
+    carry = (c>a);
+    CT64[i64] = c;
   }
+
+  // Now, if there is an odd number of coefs in AL, we need to handle one 32
+  // bit sub
+  if(AL%2 == 1) {
+    i32 = i64*2;
+
+    uint32_t a = CT[i32];
+    uint32_t b = AT[i32];
+    uint32_t c = a - b - carry;
+    carry = (c>a);
+    CT[i32] = c;
+    i32++;
+
+    // Now, if there is more in CT we need to handle another 32 bit addition to
+    // carry out and realign
+    if(i32<CL) {
+      uint32_t a = CT[i32];
+      uint32_t c = a - carry;
+      carry = (c>a);
+      CT[i32] = c;
+    }
+    i64++; // We have calculated another 64 bits.
+  }
+
+  // Now carry out
+  for(;i64<CL64;i64++) {
+    uint64_t a = CT64[i64];
+    uint64_t c = a - carry;
+    carry = (c>a);
+    CT64[i64] = c;
+
+    // If there is nothing more to carry, we can return early;
+    if(carry == 0) {
+      return;
+    }
+  }
+
+  // Now another 32 bits if there is still some carry left
+  if(CL%2 == 1) {
+    i32 = i64*2;
+
+    uint32_t a = CT[i32];
+    uint32_t c = a - carry;
+    carry = (c>a);
+    CT[i32] = c;
+    i32++;
+  }
+
+  // if we are at the end and there is still carry, we fucked up.
+  if(carry) {
+    printf("Carry Error\n");
+    abort();
+  }
+
 
 #ifdef DEBUG
   if(checksum(CT, CL) != checksum_sub(CCb, CA)) {

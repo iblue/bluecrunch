@@ -5,7 +5,7 @@
 #CC=/opt/gcc-trunk/bin/gcc
 #CFLAGS=-std=c11 -Wall -Werror -ggdb -O3 -mavx -fcilkplus -fprofile-use
 CC=gcc
-CFLAGS=-std=c11 -Wall -Werror -ggdb -O3 -mavx -fcilkplus -fprofile-use=. -flto
+CFLAGS=-std=c11 -Wall -Werror -ggdb -O3 -mavx -fcilkplus -funroll-loops -fprofile-use=. -flto
 VALGRIND=valgrind --tool=memcheck --leak-check=yes
 STRIP=strip
 BINARY=bluecrunch

@@ -61,7 +61,9 @@ size_t e_terms(size_t p) {
 }
 
 void e_BSR(bigfloat_t P, bigfloat_t Q, uint32_t a, uint32_t b) {
-  //  Binary Splitting recursion for exp(1).
+#ifdef DEBUG
+  double tstart = wall_clock();
+#endif
 
   if (b - a == 1){
     bigfloat_set(P, 1);
@@ -97,6 +99,13 @@ void e_BSR(bigfloat_t P, bigfloat_t Q, uint32_t a, uint32_t b) {
   bigfloat_mul(Q, Q0, Q1, 0);
   bigfloat_free(Q1);
   bigfloat_free(Q0);
+
+#ifdef DEBUG
+  double tend = wall_clock();
+  if(b-a > 100000) {
+    printf("BSR: %d %d %d -> %f secs\n", a, m, b, tend - tstart);
+  }
+#endif
 }
 
 void e(size_t digits){
