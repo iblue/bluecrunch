@@ -317,16 +317,121 @@ static inline __attribute__((always_inline)) void dft_3p_inv(complex double* V) 
   _mm_store_pd((double*)(V+2), V2);
 }
 
+/*
+  * V[0] = a +   b + c +   d; // [ar+br+cr+dr, ai+bi+ci+di]
+  * V[1] = a -   b + c -   d; // [ar-br+cr-dr, ai-bi+ci-di]
+  * V[2] = a + I*b - c - I*d; // [ar-bi-cr+di, ai+br-ci-dr]
+  * V[3] = a - I*b - c + I*d; // [ar+bi-cr-di, ai-br-ci+dr]
+  */
 static inline __attribute__((always_inline)) void dft_4p(complex double* V) {
+#ifdef HEAVY_DEBUG
   complex double a = V[0];
   complex double b = V[1];
   complex double c = V[2];
   complex double d = V[3];
 
-  V[0] = a +   b + c +   d;
-  V[1] = a -   b + c -   d;
-  V[2] = a + I*b - c - I*d;
-  V[3] = a - I*b - c + I*d;
+  complex double x = a + b + c + d;
+  printf("expected: V[0] = [%f, %f]\n", creal(x), cimag(x));
+  complex double y = a - b + c - d;
+  printf("expected: V[1] = [%f, %f]\n", creal(y), cimag(y));
+  complex double z = a + I*b - c - I*d;
+  printf("expected: V[2] = [%f, %f]\n", creal(z), cimag(z));
+  complex double q = a - I*b - c + I*d;
+  printf("expected: V[3] = [%f, %f]\n", creal(q), cimag(q));
+#endif
+
+  // load
+  __m128d am = _mm_load_pd((double*)V);
+  __m128d bm = _mm_load_pd((double*)(V+1));
+  __m128d cm = _mm_load_pd((double*)(V+2));
+  __m128d dm = _mm_load_pd((double*)(V+3));
+
+  // for negating
+  __m128d gg = _mm_set1_pd(-0.0);
+
+  // v1, v2
+  __m128d n0 = _mm_add_pd(am, cm); // n0 = [ar+cr, ai+ci]
+  __m128d n1 = _mm_add_pd(bm, dm); // n1 = [br+dr, bi+di]
+  __m128d v0 = _mm_add_pd(n0, n1); // v0 = [ar+br+cr+dr, ai+bi+ci+di]
+  __m128d v1 = _mm_sub_pd(n0, n1); // v1 = [ar-br+cr-dr, ai-bi+ci-di]
+
+  // v3, v4
+  __m128d n2 = _mm_sub_pd(am, cm); // n2 = [ar-cr, ai-ci];
+  __m128d n3 = _mm_shuffle_pd(bm, bm, 0x1); // n3 = [bi, br]
+  __m128d z0 = _mm_addsub_pd(n2, n3); // z0 = [ar+bi-cr, ai-br-ci] (-> V3)
+  __m128d n4 = _mm_shuffle_pd(dm, dm, 0x1); // n4 = [di, dr]
+  __m128d z1 = _mm_addsub_pd(n2, n4); // z1 = [ar-cr+di, ai-ci-dr] (-> V2)
+  __m128d q0 = _mm_xor_pd(n3, gg);    // q0 = [-bi, -br]
+  __m128d v3 = _mm_addsub_pd(z1, q0); // v3 = [ar-bi-cr+di, ai+br-ci-dr]
+  __m128d q1 = _mm_xor_pd(n4, gg);    // q1 = [-di, -dr]
+  __m128d v2 = _mm_addsub_pd(z0, q1); // v2 = [ar+bi-cr-di, ai-br-ci+dr]
+
+  // store
+  _mm_store_pd((double*)V,     v0);
+  _mm_store_pd((double*)(V+1), v1);
+  _mm_store_pd((double*)(V+2), v2);
+  _mm_store_pd((double*)(V+3), v3);
+}
+
+/*
+ * V[0] = a + b +   c +   d; // [ar+br+cr+dr, ai+bi+ci+di]
+ * V[1] = a - b - I*c + I*d; // [ar-br+ci-di, ai-bi-cr+dr]
+ * V[2] = a + b -   c -   d; // [ar+br-cr-dr, ai+bi-ci-di]
+ * V[3] = a - b + I*c - I*d; // [ar-br-ci+di, ai-bi+cr-dr]
+ *
+ */
+static inline __attribute__((always_inline)) void dft_4p_inv(complex double* V) {
+#ifdef HEAVY_DEBUG
+  complex double a = V[0];
+  complex double b = V[1];
+  complex double c = V[2];
+  complex double d = V[3];
+
+  complex double x = a + b +   c +   d; // [ar+br+cr+dr, ai+bi+ci+di]
+  complex double y = a - b - I*c + I*d; // [ar-br+ci-di, ai-bi-cr+dr]
+  complex double z = a + b -   c -   d; // [ar+br-cr-dr, ai+bi-ci-di]
+  complex double q = a - b + I*c - I*d; // [ar-br-ci+di, ai-bi+cr-dr]
+  printf("expected: V[0] = [%f, %f]\n", creal(x), cimag(x));
+  printf("expected: V[1] = [%f, %f]\n", creal(y), cimag(y));
+  printf("expected: V[2] = [%f, %f]\n", creal(z), cimag(z));
+  printf("expected: V[3] = [%f, %f]\n", creal(q), cimag(q));
+#endif
+
+  // load
+  __m128d am = _mm_load_pd((double*)V);
+  __m128d bm = _mm_load_pd((double*)(V+1));
+  __m128d cm = _mm_load_pd((double*)(V+2));
+  __m128d dm = _mm_load_pd((double*)(V+3));
+
+  // for negating
+  __m128d gg = _mm_set1_pd(-0.0);
+
+  // v0, v2
+  __m128d n0 = _mm_add_pd(am, bm);  // n0 = [ar+br, ai+bi]
+  __m128d n1 = _mm_add_pd(cm, dm);  // n1 = [cr+dr, ci+di]
+  __m128d v0 = _mm_add_pd(n0, n1);  // v0 = [ar+br+cr+dr, ai+bi+ci+di]
+  __m128d v2 = _mm_sub_pd(n0, n1);  // v1 = [ar+br-cr-dr, ai+bi-cr-dr]
+
+  // v1, v3
+  __m128d ff = _mm_sub_pd(am, bm);          // ff = [ar-br, ai-bi]
+  __m128d z0 = _mm_sub_pd(cm, dm);          // z0 = [cr-dr, ci-di]*/
+  __m128d q0 = _mm_shuffle_pd(z0, z0, 0x1); // q0 = [ci-di, cr-dr]
+  __m128d v3 = _mm_addsub_pd(ff, q0);       // v3 = [ar-br-ci+di, ai-bi+cr-dr]
+  __m128d q1 = _mm_xor_pd(q0, gg);          // q1 = [-ci+di, -cr+dr]
+  __m128d v1 = _mm_addsub_pd(ff, q1);       // v1 = [ar-br+ci-di, ai-bi-cr+dr]
+
+  // sequential access
+  _mm_store_pd((double*)V, v0);
+  _mm_store_pd((double*)(V+1), v1);
+  _mm_store_pd((double*)(V+2), v2);
+  _mm_store_pd((double*)(V+3), v3);
+
+#ifdef HEAVY_DEBUG
+  if(V[0] != x || V[1] != y || V[2] != z || V[3] != q) {
+    printf("DFT4 inv error\n");
+    abort();
+  }
+#endif
 }
 
 // F_8 = B_8 (I_2 (x) F_4)
@@ -393,14 +498,3 @@ static inline void dft_4p(complex double* V) {
 }
 */
 
-static inline __attribute__((always_inline)) void dft_4p_inv(complex double* V) {
-  complex double a = V[0];
-  complex double b = V[1];
-  complex double c = V[2];
-  complex double d = V[3];
-
-  V[0] = a + b +   c +   d;
-  V[1] = a - b - I*c + I*d;
-  V[2] = a + b -   c -   d;
-  V[3] = a - b + I*c - I*d;
-}

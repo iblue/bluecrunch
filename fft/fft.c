@@ -28,6 +28,13 @@ size_t fft_length(size_t source_length) {
     if(3*length >= source_length) {
       return 3*length;
     }
+    /* FIXME: Implement 5 pt dft */
+    // 5*2^k transform
+    /*
+    if(5*length >= source_length) {
+      return 5*length;
+    }
+    */
     length *= 2;
   }
 }
@@ -44,6 +51,13 @@ void _fft_forward(complex double *T, size_t length) {
     dft_4p(T);
     return;
   }
+
+  /*
+  if(length == 5) {
+    dft_5p(T);
+    return;
+  }
+  */
 
   if(length == 2) {
     dft_2p(T);
