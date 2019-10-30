@@ -262,6 +262,9 @@ void static inline _ll_add(uint32_t *CT, size_t CL, uint32_t *AT, size_t AL, uin
 }
 
 void static inline _ll_sub_inplace(uint32_t *CT, size_t CL, uint32_t *AT, size_t AL) {
+  if(AL==0) {
+    return;
+  }
 #ifdef DEBUG
   uint32_t CCb = checksum(CT, CL);
   uint32_t CA  = checksum(AT, AL);
@@ -275,6 +278,15 @@ void static inline _ll_sub_inplace(uint32_t *CT, size_t CL, uint32_t *AT, size_t
   int carry = 0;
   size_t i64;
   size_t i32;
+
+  // FIXME: later
+#ifdef DEBUG
+  if(CL<AL) {
+    printf("_ll_sub_inplace CL = %ld, AL = %ld\n", CL, AL);
+    printf("inplace sub error\n");
+    abort();
+  }
+#endif
 
   // Operate on 64 bits first
   for(i64 = 0;i64<AL64;i64++) {
@@ -406,6 +418,14 @@ void _karatzuba_mul(uint32_t *CT, size_t CL, uint32_t *AT, size_t AL, uint32_t *
   uint32_t* Z0  = CT;
   size_t    Z0L = SL*2;
 
+#ifdef DEBUG
+  printf("Z0L = %ld, Z2L = %ld (SL = %ld)\n", Z0L, Z2L, SL);
+  if(CL<SL*2) {
+    printf("Error\n");
+    abort();
+  }
+#endif
+
 
   // Compute:
   // Z2 = AHi*BHi
@@ -464,13 +484,30 @@ void _karatzuba_mul(uint32_t *CT, size_t CL, uint32_t *AT, size_t AL, uint32_t *
 
   // T2 -= Z0
 #ifdef DEBUG
-  printf("T2L = %ld, Z0L = %ld\n", T2L, SL*2);
+  printf("T2L = %ld, Z0L = %ld\n", T2L, Z0L);
 #endif
+  // usually there are trailing (== msb) zeroes. if not, this breaks and will be catched
+  // by checksumming.
+  if(T2L<Z0L) {
+    Z0L = T2L-1;
+#ifdef DEBUG
+  printf("[adjusted] T2L = %ld, Z0L = %ld\n", T2L, Z0L);
+#endif
+  }
   _ll_sub_inplace(T2, T2L, Z0, Z0L);
 
   // T2 -= Z2
   // FIXME: Optimize. If AL<SL || BL<SL, AHi = 0 || BHi = 0, therefore Z2 = 0
   // and this can be skipped. Leave in for debugging for now.
+#ifdef DEBUG
+  printf("T2L = %ld, Z2L = %ld\n", T2L, Z2L);
+#endif
+  if(T2L<Z2L) {
+    Z2L = T2L-1;
+#ifdef DEBUG
+  printf("[adjusted] T2L = %ld, Z2L = %ld\n", T2L, Z2L);
+#endif
+  }
   _ll_sub_inplace(T2, T2L, Z2, Z2L);
 
   // CT += T2*Base^SL (Base^SL is implemented via shift of CT index)
@@ -603,6 +640,7 @@ void bigfloat_mul(bigfloat_t target, const bigfloat_t a, const bigfloat_t b, siz
       CT[1] = r >> 32;
     } else if(CL < KARATZUBA_THRESH) {
       // Regresses to basecase automatically, so skip one check.
+      // FIXME: Karatzuba broken (ASAN) - Fix later
       _karatzuba_mul(CT, CL, AT, AL, BT, BL);
     } else {
 #ifdef DEBUG
