@@ -150,32 +150,171 @@ static inline __attribute__((always_inline)) void dft_2p(complex double* V) {
   T[1] = _mm_sub_pd(a,b);
 }
 
-// FIXME: We surely can optimize this shit with some magic.
+#define OMEGA_3_R (0.5)
+#define OMEGA_3_I (0.8660254037844386467637231707529361834714026269051903140)
+/*
+ * So we want to calculate:
+ *
+ * complex double omega_1_3 = OMEGA_3_R + I*OMEGA_3_I;
+ * complex double omega_2_3 = OMEGA_3_R - I*OMEGA_3_I;
+ *
+ * complex double a = V[0];
+ * complex double b = V[1];
+ * complex double c = V[2];
+ *
+ * V[0] = a + b + c;
+ * V[1] = a + omega_1_3 * b + omega_2_3 * c;
+ * V[2] = a + omega_2_3 * b + omega_1_3 * c;
+ *
+ * Complex multiplication:
+ * let x = a + bi = [a, b]
+ * let y = c + di = [c, d]
+ *
+ * x*y   = [ac-bd, (a+b)(c+d) - ac - bd] OR
+ *         [ac-bd, ad+bc]
+ *
+ * With:
+ * v[0] = [ar, ai] +            [br, bi] +            [cr, ci]
+ * v[1] = [ar, ai] + [-or,  oi]*[br, bi] + [-or, -oi]*[cr, ci]
+ * v[2] = [ar, ai] + [-or, -oi]*[br, bi] + [-or,  oi]*[cr, ci]
+ *
+ * We get:
+ * v[0] = [ar, ai] +            [br, bi] +            [cr, ci]
+ * v[1] = [ar, ai] + [-or*br-oi*bi, (br+bi)(-or+oi)+or*br-oi*bi]
+ *                 + [-or*cr+oi*ci, (cr+ci)(or+oi) +or*cr+oi*ci]
+ * v[2] = [ar, ai] + [-or*br+oi*bi, (br+bi)(-or-oi)+or*br+oi*bi]
+ *                 + [-or*cr-oi*ci, (cr+ci)(or-oi) +or*cr-oi*ci]
+ *
+ * OR
+ *
+ * v[0] = [ar, ai] +                     [br, bi] +            [cr, ci]
+ * v[1] = [ar, ai] + [-or*br-oi*bi, -or*bi+oi*br] + [-or*cr+oi*ci, -or*ci-oi*cr]
+ * v[2] = [ar, ai] + [-or*br+oi*bi, -or*bi-oi*br] + [-or*cr-oi*ci, -or*ci+oi*cr]
+ *
+ * Operations:
+ * - addsub
+ * - shuffle
+ * - mul
+ *
+ * or  = [-or, -or]
+ * oi  = [oi, oi]
+ * b   = [br, bi]
+ * c   = [cr, ci]
+ *
+ * // calculate B part
+ * n0 = or*b     // mulpd:   n0 = [-or*br, -or*bi]
+ * n1 = shuff b  // shuffle  n1 = [bi, br]
+ * n2 = oi*n1    // mulpd    n2 = [oi*bi, oi*br]
+ * v2 = n0+-n2   // addsub   v2 = [-or*br+oi*bi, -or*bi-oi*br]
+ * n3 = -n2      // xor      n3 = [-oi*bi, -oi*br]
+ * v1 = n0+-n3   // addsub   v1 = [-or*br-oi*bi, -or*bi+oi*br]
+ *
+ * // calculate C part
+ * m0 = or*c     // mulpd:   m0 = [-or*cr, -or*ci]
+ * m1 = shuff c  // shuffle  m1 = [ci, cr]
+ * m2 = oi*m1    // mulpd    m2 = [oi*ci, oi*cr]
+ * w1 = m0+-m2   // addsub   w2 = [-or*cr+oi*ci, -or*ci-oi*cr]
+ * m3 = -m2      // xor      m3 = [-oi*ci, -oi*cr]
+ * w2 = m0+-m3   // addsub   w1 = [-or*cr-oi*ci, -or*ci+oi*cr]
+ *
+ * // add parts
+ * V0 = a + b + c
+ * V1 = a + v1 + w1
+ * V2 = a + v2 + w2
+ */
 static inline __attribute__((always_inline)) void dft_3p(complex double* V) {
-  complex double omega_1_3 = -0.5 + 0.8660254037844386467637231707529361834714026269051903140*I;
-  complex double omega_2_3 = -0.5 - 0.8660254037844386467637231707529361834714026269051903140*I;
+#ifdef HEAVY_DEBUG
+  complex double omega_1_3 = -OMEGA_3_R + I*OMEGA_3_I;
+  complex double omega_2_3 = -OMEGA_3_R - I*OMEGA_3_I;
 
   complex double a = V[0];
   complex double b = V[1];
   complex double c = V[2];
 
-  V[0] = a + b + c;
-  V[1] = a + omega_1_3 * b + omega_2_3 * c;
-  V[2] = a + omega_2_3 * b + omega_1_3 * c;
+  complex double x = a + b + c;
+  printf("expected: V[0] = [%f, %f]\n", creal(x), cimag(x));
+  complex double y = a + omega_1_3 * b + omega_2_3 * c;
+  printf("expected: V[1] = [%f, %f]\n", creal(y), cimag(y));
+  complex double z = a + omega_2_3 * b + omega_1_3 * c;
+  printf("expected: V[2] = [%f, %f]\n", creal(z), cimag(z));
+
+  complex double M11 = omega_1_3 * b;
+  complex double M12 = omega_2_3 * c;
+  complex double M21 = omega_2_3 * b;
+  complex double M22 = omega_1_3 * c;
+  printf("expected: M11 = [%f, %f]\n", creal(M11), cimag(M11));
+  printf("expected: M12 = [%f, %f]\n", creal(M12), cimag(M12));
+  printf("expected: M21 = [%f, %f]\n", creal(M21), cimag(M21));
+  printf("expected: M22 = [%f, %f]\n", creal(M22), cimag(M22));
+#endif
+
+  __m128d orm = _mm_set1_pd(-OMEGA_3_R);
+  __m128d oim = _mm_set1_pd(OMEGA_3_I);
+
+  __m128d am = _mm_load_pd((double*)V);
+  __m128d bm = _mm_load_pd((double*)(V+1));
+  __m128d cm = _mm_load_pd((double*)(V+2));
+
+  __m128d n0 = _mm_mul_pd(orm, bm);
+  __m128d n1 = _mm_shuffle_pd(bm, bm, 0x1);
+  __m128d n2 = _mm_mul_pd(oim, n1);
+  __m128d m11 = _mm_addsub_pd(n0, n2);
+  __m128d n3 = _mm_xor_pd(n2, _mm_set1_pd(-0.0));
+  __m128d m21 = _mm_addsub_pd(n0, n3);
+
+  __m128d m0 = _mm_mul_pd(orm, cm);
+  __m128d m1 = _mm_shuffle_pd(cm, cm, 0x1);
+  __m128d m2 = _mm_mul_pd(oim, m1);
+  __m128d m22 = _mm_addsub_pd(m0, m2);
+  __m128d m3 = _mm_xor_pd(m2, _mm_set1_pd(-0.0));
+  __m128d m12 = _mm_addsub_pd(m0, m3);
+
+  __m128d V0 = _mm_add_pd(am, bm);
+          V0 = _mm_add_pd(V0, cm);
+  __m128d V1 = _mm_add_pd(am, m11);
+          V1 = _mm_add_pd(V1, m12);
+  __m128d V2 = _mm_add_pd(am, m21);
+          V2 = _mm_add_pd(V2, m22);
+
+  // FIXME: only real inputs? then V2 is complex conjugate of V1 (first round)
+
+  _mm_store_pd((double*)V,     V0);
+  _mm_store_pd((double*)(V+1), V1);
+  _mm_store_pd((double*)(V+2), V2);
 }
 
-// FIXME: We surely can optimize this shit with some magic.
 static inline __attribute__((always_inline)) void dft_3p_inv(complex double* V) {
-  complex double omega_1_3 = -0.5 + 0.8660254037844386467637231707529361834714026269051903140*I;
-  complex double omega_2_3 = -0.5 - 0.8660254037844386467637231707529361834714026269051903140*I;
+  __m128d orm = _mm_set1_pd(-OMEGA_3_R);
+  __m128d oim = _mm_set1_pd(-OMEGA_3_I);
 
-  complex double a = V[0];
-  complex double b = V[1];
-  complex double c = V[2];
+  __m128d am = _mm_load_pd((double*)V);
+  __m128d bm = _mm_load_pd((double*)(V+1));
+  __m128d cm = _mm_load_pd((double*)(V+2));
 
-  V[0] = a + b + c;
-  V[1] = a + omega_2_3 * b + omega_1_3 * c;
-  V[2] = a + omega_1_3 * b + omega_2_3 * c;
+  __m128d n0 = _mm_mul_pd(orm, bm);
+  __m128d n1 = _mm_shuffle_pd(bm, bm, 0x1);
+  __m128d n2 = _mm_mul_pd(oim, n1);
+  __m128d m11 = _mm_addsub_pd(n0, n2);
+  __m128d n3 = _mm_xor_pd(n2, _mm_set1_pd(-0.0));
+  __m128d m21 = _mm_addsub_pd(n0, n3);
+
+  __m128d m0 = _mm_mul_pd(orm, cm);
+  __m128d m1 = _mm_shuffle_pd(cm, cm, 0x1);
+  __m128d m2 = _mm_mul_pd(oim, m1);
+  __m128d m22 = _mm_addsub_pd(m0, m2);
+  __m128d m3 = _mm_xor_pd(m2, _mm_set1_pd(-0.0));
+  __m128d m12 = _mm_addsub_pd(m0, m3);
+
+  __m128d V0 = _mm_add_pd(am, bm);
+          V0 = _mm_add_pd(V0, cm);
+  __m128d V1 = _mm_add_pd(am, m11);
+          V1 = _mm_add_pd(V1, m12);
+  __m128d V2 = _mm_add_pd(am, m21);
+          V2 = _mm_add_pd(V2, m22);
+
+  _mm_store_pd((double*)V,     V0);
+  _mm_store_pd((double*)(V+1), V1);
+  _mm_store_pd((double*)(V+2), V2);
 }
 
 static inline __attribute__((always_inline)) void dft_4p(complex double* V) {
