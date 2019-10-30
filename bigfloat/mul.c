@@ -11,7 +11,7 @@
 #include <math.h>
 
 #define BASECASE_THRESH 400
-#define KARATZUBA_THRESH 3300
+#define KARATZUBA_THRESH 2500
 
 #define max(a,b) ({ __typeof__(a) _a = (a); __typeof__(b) _b = (b); _a > _b ? _a : _b; })
 #define min(a,b) ({ __typeof__(a) _a = (a); __typeof__(b) _b = (b); _a < _b ? _a : _b; })
@@ -183,7 +183,9 @@ void _basecase_mul(uint32_t *CT, size_t CL, uint32_t *AT, size_t AL, uint32_t *B
   }
 
   // Zero target
-  memset(CT, 0, sizeof(uint32_t)*CL);
+  for(size_t i=0;i<CL;i++) {
+    CT[i] = 0;
+  }
 
   if(AL == 0 || BL == 0 || CL == 0) {
     return;
