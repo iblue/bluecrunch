@@ -1,7 +1,7 @@
 #include <x86intrin.h>
 
 // Returns ceil(log2(N))
-static inline int bitlog2(int N) {
+static inline __attribute__((always_inline)) int bitlog2(int N) {
   // FIXME: Branchless code?
 
   // Looks like there is no intrinsic for the x86 bsr instruction, but this
@@ -42,7 +42,7 @@ static inline int bitlog2(int N) {
 //  a[1] <- a[1] + b[1]
 //  b[0] <- W[0]*(a[0] - b[0]) - W[1]*(a[1] - b[1])
 //  b[1] <- W[0]*(a[1] - b[1]) - W[1]*(a[0] - b[0])
-static inline void dual_fft_forward_butterfly(__m256d twiddles, __m256d* T0, __m256d* T1) {
+static inline __attribute__((always_inline)) void dual_fft_forward_butterfly(__m256d twiddles, __m256d* T0, __m256d* T1) {
   __m256d r   = _mm256_unpacklo_pd(twiddles, twiddles);  //   r = [r0,r0,r1,r1]
   __m256d i   = _mm256_unpackhi_pd(twiddles, twiddles);  //   i = [i0,i0,i1,i1]
 
@@ -66,7 +66,7 @@ static inline void dual_fft_forward_butterfly(__m256d twiddles, __m256d* T0, __m
   _mm256_storeu_pd((double*)T1, c); // T[c+N/2] <- c
 }
 
-static inline void single_fft_forward_butterfly(__m128d twiddle, __m128d* T0, __m128d* T1) {
+static inline __attribute__((always_inline)) void single_fft_forward_butterfly(__m128d twiddle, __m128d* T0, __m128d* T1) {
   __m128d r   = _mm_unpacklo_pd(twiddle, twiddle);  //   r = [r0,r0]
   __m128d i   = _mm_unpackhi_pd(twiddle, twiddle);  //   i = [i0,i0]
 
@@ -94,7 +94,7 @@ static inline void single_fft_forward_butterfly(__m128d twiddle, __m128d* T0, __
 // - twiddles: Vector of twiddles [r0, i0, r1, i1]
 // - T0:       Pointer to 2 complex doubles (first half)
 // - T1:       Pointer to 2 complex doubles (second half)
-static inline void dual_fft_inverse_butterfly(__m256d twiddles, __m256d* T0, __m256d* T1) {
+static inline __attribute__((always_inline)) void dual_fft_inverse_butterfly(__m256d twiddles, __m256d* T0, __m256d* T1) {
   __m256d r   = _mm256_unpacklo_pd(twiddles, twiddles);     //   r = [r0,r0,r1,r1]
   __m256d i   = _mm256_unpackhi_pd(twiddles, twiddles);     //   i = [i0,i0,i1,i1]
   i = _mm256_xor_pd(i,_mm256_set1_pd(-0.0));              //   i = -i
@@ -118,7 +118,7 @@ static inline void dual_fft_inverse_butterfly(__m256d twiddles, __m256d* T0, __m
   _mm256_storeu_pd((double*)T1, d); // (maybe misaligned)
 }
 
-static inline void single_fft_inverse_butterfly(__m128d twiddle, __m128d* T0, __m128d* T1) {
+static inline __attribute__((always_inline)) void single_fft_inverse_butterfly(__m128d twiddle, __m128d* T0, __m128d* T1) {
   __m128d r   = _mm_unpacklo_pd(twiddle, twiddle);     //   r = [r0,r0]
   __m128d i   = _mm_unpackhi_pd(twiddle, twiddle);     //   i = [i0,i0]
   i = _mm_xor_pd(i,_mm_set1_pd(-0.0));              //   i = -i
@@ -142,7 +142,7 @@ static inline void single_fft_inverse_butterfly(__m128d twiddle, __m128d* T0, __
   _mm_store_pd((double*)T1, d);
 }
 
-static inline void dft_2p(complex double* V) {
+static inline __attribute__((always_inline)) void dft_2p(complex double* V) {
   __m128d *T = (__m128d*)V;
   __m128d a = T[0];
   __m128d b = T[1];
@@ -151,7 +151,7 @@ static inline void dft_2p(complex double* V) {
 }
 
 // FIXME: We surely can optimize this shit with some magic.
-static inline void dft_3p(complex double* V) {
+static inline __attribute__((always_inline)) void dft_3p(complex double* V) {
   complex double omega_1_3 = -0.5 + 0.8660254037844386467637231707529361834714026269051903140*I;
   complex double omega_2_3 = -0.5 - 0.8660254037844386467637231707529361834714026269051903140*I;
 
@@ -165,7 +165,7 @@ static inline void dft_3p(complex double* V) {
 }
 
 // FIXME: We surely can optimize this shit with some magic.
-static inline void dft_3p_inv(complex double* V) {
+static inline __attribute__((always_inline)) void dft_3p_inv(complex double* V) {
   complex double omega_1_3 = -0.5 + 0.8660254037844386467637231707529361834714026269051903140*I;
   complex double omega_2_3 = -0.5 - 0.8660254037844386467637231707529361834714026269051903140*I;
 
@@ -178,7 +178,7 @@ static inline void dft_3p_inv(complex double* V) {
   V[2] = a + omega_1_3 * b + omega_2_3 * c;
 }
 
-static inline void dft_4p(complex double* V) {
+static inline __attribute__((always_inline)) void dft_4p(complex double* V) {
   complex double a = V[0];
   complex double b = V[1];
   complex double c = V[2];
@@ -254,7 +254,7 @@ static inline void dft_4p(complex double* V) {
 }
 */
 
-static inline void dft_4p_inv(complex double* V) {
+static inline __attribute__((always_inline)) void dft_4p_inv(complex double* V) {
   complex double a = V[0];
   complex double b = V[1];
   complex double c = V[2];
