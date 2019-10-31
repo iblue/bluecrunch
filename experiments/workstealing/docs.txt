@@ -1,0 +1,110 @@
+                                 Workstealing
+                        ===============================
+                        aka. Project Fast as Fuck (FAF)
+
+
+Imagine N CPUs and they are all bored. There is also this one guy who wants to
+compute stuff (say the tax debt of Germany). In order to do this efficiently,
+the problem can be split into smaller problems. Let the following be the work
+queue of each CPU:
+
+
+   CPU 0       CPU 1       CPU 2       CPU 3       CPU 4       CPU 5*
+
++---------+
+| Compute |
+|   tax   |
+| debt of |
+| Germany |
++---------+                           * hexacore due to insufficent page width
+
+Now, since the CPUs are bored (and because we live in late capitalismn) we want
+them to work. So we just start. This is the task for each CPU:
+
+workworkwork() {
+  while(1) {
+    task = get_task_from_bottom_of_my_queue();
+    if(!task) {
+      cpu = randomly_select_other_cpu();
+      task = get_task_from_top_of_their_queue(cpu);
+    }
+    if(task) {
+      work_on(task);
+    }
+  }
+}
+
+With each task there comes some associated function. Germany has 16 states,
+they all have a tax debt, so we need to compute those first and then sum it.
+
+compute_tax_debt_of_germany() {
+  int tax_debt_of_bavaria;
+  int tax_debt_of_berlin;
+  int tax_debt_of_hamburg;
+  // ...
+
+  spawn { compute_tax_debt_of_bavaria(&tax_debt_of_bavaria) };
+  spawn { compute_tax_debt_of_berlin(&tax_debt_of_berlin)   };
+  spawn { compute_tax_debt_of_hamburg(&tax_debt_of_hamburg) };
+  // ...
+
+  sync();
+
+  printf("Tax debt is: %d\n", tax_debt_of_bavaria +
+                              tax_debt_of_berlin +
+                              tax_debt_of_hamburg
+                              // ...
+                              );
+}
+
+No this is, where the other CPUs get something to do. But first, let me
+explain the spawn() and sync() functions:
+
+spawn(task) {
+  put_task_on_bottom_of_my_queue(task);
+}
+
+sync() {
+  while(!my_queue_empty) {
+    task = get_task_from_bottom_of_my_queue();
+    work_on(task);
+  }
+}
+
+So now, the work queues look like this:
+
+   CPU 0       CPU 1       CPU 2       CPU 3       CPU 4       CPU 5*
+
++---------+
+| Compute |
+|   tax   |
+| debt of |
+| Germany |
++---------+
+| Compute |
+|   tax   |
+| debt of |
+| Bavaria |
++---------+
+| Compute |
+|   tax   |
+| debt of |
+| Berlin  |
++---------+
+| Compute |
+|   tax   |
+| debt of |
+| Hamburg |
++---------+
+
+FIXME:
+- Spawn puts current executing task (including EIP) on bottom of queue.
+  - We also need the stack ptr
+  - The newly spawned thread needs a new stack ptr
+  - On returning, the current thread may have been stolen.
+  - So
+
+Spawn:
+  - Put EIP in queue
+  - Run task
+  - Check if EIP still there :)
