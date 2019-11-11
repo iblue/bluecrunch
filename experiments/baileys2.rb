@@ -63,28 +63,59 @@ def ifft(values)
   values
 end
 
+def int_to_fft(int)
+  arr = int.to_s.split(//).map(&:to_i).reverse
+  i = 1
+  i*=2 while i<arr.size
+  i*=2
+  ret = Array.new(i,0)
+  ret[0..arr.size-1] = arr
+  ret
+end
 
-a = [4, 3, 2, 1, 0, 0, 0, 0]
-b = [3, 2, 1, 0, 0, 0, 0, 0]
+def fft_to_int(arr)
+  # scale and convert
+  arr = arr.map{|x| (x*(1.0/arr.size)).real.round.to_i}
 
-puts a
-puts b
-puts "---"
-a = fft(a)
-puts a
-b = fft(b)
-puts b
-puts "---"
-c = a.zip(b).map{|x,y| x*y}
-c = ifft(c)
-c = c.map{|x| x*0.125}
+  # r 25441541210108625536
+  # e 2545553108625536
 
-# 1
-#  4
-#  10
-#   16
-#    17
-#     12
-#= 151782
+  # 27
+  #  45
+  #   54
+  #    27
+  #     9
 
-puts c
+  # carry (gopnik variant)
+  c = 1
+  ret = arr.map do |v|
+    r = v*c
+    c*=10
+    r
+  end
+  ret.sum
+end
+
+def fft_pointwise(a,b)
+  a.zip(b).map{|x,y| x*y}
+end
+
+def mul(a,b)
+  a = int_to_fft(a)
+  b = int_to_fft(b)
+  a = fft(a)
+  b = fft(b)
+  c = fft_pointwise(a,b)
+  c = ifft(c)
+  c = fft_to_int(c)
+end
+
+a = 1239912
+b = 9992332
+c = mul(a,b)
+
+if a*b == c
+  puts "GREAT SUCCESS"
+else
+  puts "FAIL #{a}*#{b} = #{c} (expected: #{a*b})"
+end
