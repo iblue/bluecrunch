@@ -16,6 +16,7 @@ def baileys(values)
     a*=2
     b/=2
   end
+  a, b = [b, a] # works equally well
 
   # Example:
   # a = 8
@@ -23,101 +24,91 @@ def baileys(values)
   #
   # Before:
   #
+  #
+  #     b=4 cols
+  #
   #  0  1  2  3
   #  4  5  6  7
   #  8  9 10 11
   # 12 13 14 15
-  # 16 17 18 19
+  # 16 17 18 19 a=8 rows
   # 20 21 22 23
   # 24 25 26 27
   # 28 29 30 31
 
-  # Do a b-point ffts on the rows (in-place)
+  # Do b a-point ffts on the cols (in-place, strided)
+  puts "Doing #{b}x #{a}-point FFT in the rows"
+  b.times do |i|
+    values = stridedfft(values, b, i)
+    puts values.to_s
+  end
+
+  # Afterwards (columns are now bit reverse)
+  # 0 1 2 3 4 5 6 7 -> 0 4 2 6 1 5 3 7
+  #
+  #    b=4 cols
+  #
+  #  0  1  2  3
+  # 16 17 18 19
+  #  8  9 10 11
+  # 24 25 26 27 a=8 rows
+  #  4  5  6  7
+  # 20 21 22 23
+  # 12 13 14 15
+  # 28 29 30 31
+
+  puts values
+
+  # Multiply with twiddles in-place (twiddles need to be bit-reversed in the cols)
+  # maybe merged with the strided fft.
+  #
+  omega = 2*Math::PI/values.size
+  a.times do |i|
+    # Get correct row index
+    istar = bitreverse(i ,a)
+
+    b.times do |j|
+      # a = 8 (index i)
+      # b = 4 (index j)
+
+      k = istar*j
+      angle = omega*k
+      real = Math.cos(angle)
+      imag = Math.sin(angle)
+      t = Complex(real, imag)
+
+      puts "Matrix #{i},#{j} (#{i*b+j}) (which is really #{istar},#{j} (#{istar*b+j}), twiddle: #{t}"
+
+      values[i*b+j] *= t
+    end
+  end
+
+  puts values
+
+  # Now do the FFT in the rows (will be very fast :)
   puts "Doing #{a}x #{b}-point FFT in the rows"
   a.times do |i|
     values[i*b...(i+1)*b] = fft(values[i*b...(i+1)*b])
   end
 
-  # Afterwards:
+  # Ordering afterwards:
+  # (which is basically the same as the normal fft, but transposed)
   #
-  #    b = 4
+  # 0 1 2 3 -> 0 2 1 3
   #
-  #  0  2  1 3
-  #  4  6  5 7
+  #    b=4 cols
+  #
+  #  0  2  1  3
+  # 16 18 17 19
   #  8 10  9 11
-  # 12 14 13 15
-  # 16 18 17 19  a = 8
+  # 24 26 25 27 a=8 rows
+  #  4  6  5  7
   # 20 22 21 23
-  # 24 26 25 27
+  # 12 14 13 15
   # 28 30 29 31
-
-  puts values
-
-  # Multiply and transpose
-  res = Array.new(a*b, 0)
-  omega = 2*Math::PI/values.size
-  a.times do |i|
-    values[i*b...(i+1)*b].each_with_index do |val, j|
-
-      # a = 8 (index i)
-      # b = 4 (index j) -> reverse
-
-      # Multiply with twiddles
-      jstar = bitreverse(j ,b)
-      k = jstar*i # ??? FIXME
-      angle = omega*k
-      real = Math.cos(angle)
-      imag = Math.sin(angle)
-      t = Complex(real, imag)
-      #t = Complex(1.0, 0.0) # FIXME: Remove
-
-      puts "Index: #{jstar},#{i}: #{val} *===* #{t} (TARGET: #{i+j*a})"
-
-      # TODO Later: movntq
-      # FIXME: Do not use jstar. Does not matter, just reorders and makes shit
-      # slow (probably). Use j.
-      res[i+j*a] = val*t
-
-      puts "Moving #{i*b+j} (which is in fact #{i*b+jstar}) to #{i+j*a}"
-    end
-  end
-
-  puts res
-
-  # Afterwards:
   #
-  #    a = 8
-  #
-  # 0 4  8 12 16 20 24 28
-  # 2 6 10 14 18 22 26 30
-  # 1 5  9 13 17 21 25 29  b = 4
-  # 3 7 11 15 19 23 27 31
 
-  # Do b a-point ffts on the rows (in-place)
-  puts "Doing #{b}x #{a}-point FFT in the rows"
-  b.times do |i|
-    res[i*a...(i+1)*a] = fft(res[i*a...(i+1)*a])
-  end
-
-  # The sorting is afterwards:
-  # because FFT maps indexes as follows:
-  # 0 1 2 3 4 5 6 7 -> 0 4 2 6 1 5 3 7
-  #
-  # 0 16  8 24 4 20 12 28
-  # 2 18 10 26 6 22 14 30
-  # 1 17  9 25 5 21 13 29
-  # 3 19 11 27 7 23 15 31
-  #
-  # Ordering of normal in-place FFT would be:
-  #  0 16  8 24 4 20 12 28
-  #  2 18 10 26 6 22 14 30
-  #  1 17  9 25 5 21 13 29
-  #  3 19 11 27 7 23 15 31
-  #
-  #  (which is exactly the same)
-
-  # Voila, drink while hot.
-  res
+  values
 end
 
 def ibaileys(values)
@@ -199,14 +190,17 @@ def fft(values)
     values[k+n/2] = (a-b)*t
   end
 
-  values[0...n/2-1] = fft(values[0...n/2-1])
-  values[n/2...-1]  = fft(values[n/2...-1])
+  values[0..n/2-1] = fft(values[0..n/2-1])
+  values[n/2..-1]  = fft(values[n/2..-1])
 
   values
 end
 
-def stridedfft(values, stride)
+def stridedfft(values, stride, shift)
   n = values.length/stride
+
+  puts "  strided fft: #{values.length}, #{stride}, #{shift}"
+
 
   if n == 1
     return values
@@ -222,15 +216,15 @@ def stridedfft(values, stride)
 
     t = Complex(r, i)
 
-    a = values[k*stride]
-    b = values[(k+n/2)*stride]
+    a = values[k*stride+shift]
+    b = values[(k+n/2)*stride+shift]
 
-    values[k*stride] = (a+b).to_c
-    values[(k+n/2)*stride] = (a-b)*t
+    values[k*stride+shift] = (a+b).to_c
+    values[(k+n/2)*stride+shift] = (a-b)*t
   end
 
-  values[0...(n/2-1)*stride] = stridedfft(values[0...(n/2-1)*stride], stride)
-  values[(n/2)*stride...-1]  = stridedfft(values[(n/2)*stride...-1], stride)
+  values[0..(n*stride/2-1)] = stridedfft(values[0..(n*stride/2-1)], stride, shift)
+  values[(n*stride/2)..-1]  = stridedfft(values[(n*stride/2)..-1], stride, shift)
 
   values
 end
@@ -319,9 +313,9 @@ b = 12345
 #c = mul(a,b)
 
 if false
-  a = [1, 5, 3, 6]
+  a = [1, 5, 3, 6, 17, 4, 18, 22]
   stride = 4
-  b = a.dup.inject([]) { |x,y| x + [y] + [0]*(stride-1)}
+  b = a.dup.inject([]) { |x,y| x + [0] + [y] + [0]*(stride-2)}
 
   puts a.to_s
   puts b.to_s
@@ -330,11 +324,12 @@ if false
   a = fft(a)
   puts a
   puts "Strided:"
-  b = stridedfft(b, stride)
+  b = stridedfft(b, stride, 1)
   puts b
+  exit
 end
 
-a = [1, 5, 3, 6]
+a = [1, 5, 3, 6, 17, 4, 18, 22, 9, 27, 2, 3, 5, 31, 41, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]
 b = a.dup
 
 puts "FFT:"
@@ -343,6 +338,10 @@ puts a
 puts "Baileys:"
 b = baileys(b)
 puts b
+puts "inverse FFT:"
+c = ifft(b)
+c = c.map{|x| (x*(1.0/c.size)).real.round.to_i}
+puts c.to_s
 
 exit
 
