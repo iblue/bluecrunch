@@ -120,6 +120,7 @@ def ibaileys(values)
   end
   a, b = [b, a] # works equally well
 
+
   puts "Doing #{a}x #{b}-point iFFT in the rows"
   a.times do |i|
     values[i*b...(i+1)*b] = ifft(values[i*b...(i+1)*b])
@@ -248,10 +249,10 @@ def stridedifft(values, stride, shift)
     t = Complex(r, i)
 
     a = values[k*stride+shift]
-    b = values[(k+n/2)*stride+shift]
+    b = values[(k+n/2)*stride+shift]*t
 
-    values[k*stride+shift] = (a+b).to_c
-    values[(k+n/2)*stride+shift] = (a-b)*t
+    values[k*stride+shift] = a+b
+    values[(k+n/2)*stride+shift] = a-b
   end
 
   values
@@ -318,27 +319,16 @@ end
 def mul(a,b)
   a = int_to_fft(a)
   b = int_to_fft(b)
-  puts "FFT input"
-  puts a
-  puts a.size
-  puts "---"
-  puts "FFT Output"
-  a = fft(a)
-  puts a
-  puts "---"
-  puts "Baileys Output"
+  a = baileys(a)
   b = baileys(b)
-  puts b
-  exit
-  #b = fft(b)
-  #c = fft_pointwise(a,b)
-  #c = ifft(c)
-  #c = fft_to_int(c)
+  c = fft_pointwise(a,b)
+  c = ibaileys(c)
+  c = fft_to_int(c)
 end
 
-a = 12345
-b = 12345
-#c = mul(a,b)
+a = 1234541623518273
+b = 1234557781293722
+c = mul(a,b)
 
 if false
   a = [1, 5, 3, 6, 17, 4, 18, 22]
@@ -357,21 +347,22 @@ if false
   exit
 end
 
-a = [1, 5, 3, 6, 17, 4, 18, 22, 9, 27, 2, 3, 5, 31, 41, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]
-b = a.dup
+if false
+  a = [1, 5, 3, 6, 17, 4, 18, 22, 9, 27, 2, 3, 5, 31, 41, 16, 17, 18, 19, 20, 21,
+       22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]
+  b = a.dup
 
-puts "FFT:"
-a = fft(a)
-puts a
-puts "Baileys:"
-b = baileys(b)
-puts b
-puts "inverse FFT:"
-c = ibaileys(b)
-c = c.map{|x| (x*(1.0/c.size)).real.round.to_i}
-puts c.to_s
-
-exit
+  puts "FFT:"
+  a = fft(a)
+  puts a
+  puts "Baileys:"
+  b = baileys(b)
+  puts b
+  puts "inverse FFT:"
+  c = ibaileys(b)
+  c = c.map{|x| (x*(1.0/c.size)).real.round.to_i}
+  puts c.to_s
+end
 
 if a*b == c
   puts "GREAT SUCCESS"
