@@ -118,51 +118,45 @@ def ibaileys(values)
     a*=2
     b/=2
   end
+  a, b = [b, a] # works equally well
 
-  # Do b a-point iffts on the rows (in-place)
-  b.times do |i|
-    values[i*a...(i+1)*a] = ifft(values[i*a...(i+1)*a])
+  puts "Doing #{a}x #{b}-point iFFT in the rows"
+  a.times do |i|
+    values[i*b...(i+1)*b] = ifft(values[i*b...(i+1)*b])
   end
 
-  res = Array.new(a*b, 0)
+  # Multiply with twiddles in-place (twiddles need to be bit-reversed in the cols)
+  # maybe merged with the strided ifft?
+  #
   omega = -2*Math::PI/values.size
+  a.times do |i|
+    # Get correct row index
+    istar = bitreverse(i ,a)
 
-  # ---
-  # Multiply and transpose
-  b.times do |i|
-    values[i*a...(i+1)*a].each_with_index do |val, j|
+    b.times do |j|
+      # a = 8 (index i)
+      # b = 4 (index j)
 
-      # b = 4 (index i)
-      # a = 8 (index j)
-
-      # Multiply with twiddles
-      istar = bitreverse(i, b)
-      k = istar*i # ??? FIXME
+      k = istar*j
       angle = omega*k
       real = Math.cos(angle)
       imag = Math.sin(angle)
       t = Complex(real, imag)
 
-      puts "Index: #{jtar},#{i}: #{val} *===* #{t} (TARGET: #{i+j*a})"
+      puts "Matrix #{i},#{j} (#{i*b+j}) (which is really #{istar},#{j} (#{istar*b+j}), twiddle: #{t}"
 
-      # TODO Later: movntq
-      # FIXME: Do not use jstar. Does not matter, just reorders and makes shit
-      # slow (probably). Use j.
-      res[i+jstar*a] = val*t
+      values[i*b+j] *= t
     end
   end
 
-  # Do a b-point ffts on the rows (in-place)
-  a.times do |i|
-    values[i*b...(i+1)*b] = fft(values[i*b...(i+1)*b])
+  # Do b a-point ffts on the cols (in-place, strided)
+  puts "Doing #{b}x #{a}-point FFT in the rows"
+  b.times do |i|
+    values = stridedifft(values, b, i)
+    puts values.to_s
   end
 
-
-  byebug
-
-
-  # Voila, drink while the cache is still hot
-  res
+  values
 end
 
 def fft(values)
@@ -225,6 +219,40 @@ def stridedfft(values, stride, shift)
 
   values[0..(n*stride/2-1)] = stridedfft(values[0..(n*stride/2-1)], stride, shift)
   values[(n*stride/2)..-1]  = stridedfft(values[(n*stride/2)..-1], stride, shift)
+
+  values
+end
+
+
+def stridedifft(values, stride, shift)
+  n = values.length/stride
+
+  puts "  strided ifft: #{values.length}, #{stride}, #{shift}"
+
+
+  if n == 1
+    return values
+  end
+
+  values[0..(n*stride/2-1)] = stridedifft(values[0..(n*stride/2-1)], stride, shift)
+  values[(n*stride/2)..-1]  = stridedifft(values[(n*stride/2)..-1], stride, shift)
+
+  omega = -2*Math::PI/n
+
+  (0..n/2-1).each do |k|
+    # Calc twidles
+    angle = omega*k
+    r = Math.cos(angle)
+    i = Math.sin(angle)
+
+    t = Complex(r, i)
+
+    a = values[k*stride+shift]
+    b = values[(k+n/2)*stride+shift]
+
+    values[k*stride+shift] = (a+b).to_c
+    values[(k+n/2)*stride+shift] = (a-b)*t
+  end
 
   values
 end
@@ -339,7 +367,7 @@ puts "Baileys:"
 b = baileys(b)
 puts b
 puts "inverse FFT:"
-c = ifft(b)
+c = ibaileys(b)
 c = c.map{|x| (x*(1.0/c.size)).real.round.to_i}
 puts c.to_s
 
