@@ -121,6 +121,8 @@ int _fft_mul(uint32_t *CT, size_t CL, uint32_t *AT, size_t AL, uint32_t *BT, siz
   if(CL > 200000000)  bits_per_point = 10;
   if(CL > 800000000)  bits_per_point = 9;
 
+  bits_per_point -= 7;
+
   //  Determine minimum FFT size.
   size_t length = fft_length(32.0/bits_per_point*(double)CL);
 

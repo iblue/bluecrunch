@@ -138,6 +138,14 @@ void _strided_fft_forward(complex double *T, size_t length, size_t stride, size_
   }
 }
 
+void _debug_print(complex double *T, size_t length) {
+  printf("fft = [\n");
+  for(size_t i=0;i<length;i++) {
+    printf("  %f+%fi, # %ld\n", creal(T[i]), cimag(T[i]), i);
+  }
+  printf("]\n");
+}
+
 void _baileys_forward(complex double *T, size_t length) {
   size_t a, b;
 
@@ -150,10 +158,14 @@ void _baileys_forward(complex double *T, size_t length) {
     b/=2;
   }
 
-  for(size_t i=1;i<b;i++) { // FIXME: cilk_for
+  _debug_print(T, length);
+
+
+  for(size_t i=0;i<b;i++) { // FIXME: cilk_for
     _strided_fft_forward(T, length, b, i);
   }
 
+  _debug_print(T, length);
 
   // Twiddle multiplication
   // FIXME: Could be done in one step together with the strided FFT.
@@ -208,9 +220,13 @@ void _baileys_forward(complex double *T, size_t length) {
     }
   }
 
+  _debug_print(T, length);
+
   for(size_t i=0;i<a;i++) { // FIXME: cilk_for
     _fft_forward(T+i*b, b);
   }
+
+  _debug_print(T, length);
 
   return;
 }
@@ -366,11 +382,30 @@ void _fft_inverse_uncached(complex double *T, size_t length) {
   }
 }
 
+static inline void _assert_fp(complex double a, complex double b, char* file, int line) {
+  double radius = max(cabs(a), cabs(b))*1e-15; // At least 48 bits matching.
+
+  if(cabs(a-b) > radius) {
+    fprintf(stderr, "Expected: (%.15e + %.15ei) but got (%.15e + %.15ei) (abs diff: %.15e, allowed: %.15e) in %s:%d\n",
+      creal(b), cimag(b), creal(a), cimag(a), cabs(a-b), radius, file, line);
+    abort();
+  }
+}
 // External interface
 void fft_forward(complex double *T, size_t length) {
   if(table_select(length) < twiddle_table_size) {
-    if(length > BAILEYS_THRESHOLD_LENGTH) {
+    if(length > BAILEYS_THRESHOLD_LENGTH && (length & (length - 1)) == 0) {
+#ifndef HEAVY_DEBUG
+      complex double *X = malloc(sizeof(complex double)*length);
+      memcpy(X, T, sizeof(complex double)*length);
+      _fft_forward(X, length);
+#endif
       _baileys_forward(T, length);
+#ifndef HEAVY_DEBUG
+      for(size_t i=0;i<length;i++) {
+        _assert_fp(X[i], T[i], __FILE__, __LINE__);
+      }
+#endif
     }
     _fft_forward(T, length);
   } else {
