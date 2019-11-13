@@ -1,0 +1,110 @@
+Input: 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16
+
+Indexes:
+
+ 0  1  2  3
+ 4  5  6  7
+ 8  9 10 11
+12 13 14 15
+
+1. Perform 4x 4-point FFT on input (in-place. bit-reverse output)
+2. Multiply with twiddles
+3. Transpose
+4. Perform 4x 4-point FFT
+
+Step 1:
+
+  5,  -1, -1-i, -1+i
+  13, -1, -1-i, -1+i
+  21, -1, -1-i, -1+i
+  29, -1, -1-i, -1+i
+
+Indexes (bit reversed output)
+
+ 0  2  1  3
+ 4  6  5  7
+ 8 10  9 11
+12 14 13 15
+
+Step 2: Twidles need to be accessed in bit-reverse order, but are pretty
+spatially coherent. Alternatively additional twiddle tables with bit reversed
+values can be built, up to length sqrt(n) (doesn't take much memory) for
+increased cache coherence. Fast bit-reverse algos can be found.
+
+Step 3: Transpose. Trivial. Fast algos exist. Maybe mix with step 2 and just
+write to new scratch space, then free old matrix. Maybe use movntq to not fuck
+up cache. Then sfence when done.
+
+After transpose:
+
+0 4  8 12
+2 6 10 14
+1 5  9 13
+3 7 11 15
+
+Step 4: Do 4x 4-point FFTs on the rows. Trivial. No reordering is needed for
+the multiplication, as it comes out the same.
+
+After FFT:
+
+0  8 4 12
+2 10 6 14
+1  9 5 13
+3 11 7 15
+
+Inverse (after pointwise multiply)
+
+1. Do 4x 4-point IFFT on the rows.
+2. Muliply by twiddles, interleaved, complex conjugate
+3. transpose (can be done in 1 step) (maybe faster to do the transpose first?)
+4. Do 4x 4-point IFFT
+
+Done.
+
+Further optimization:
+- When matrix size is a big power of two, it will fuck up the cache. Make
+  Matrix a little bigger (e.g. 540x540 instead of 512x512), ignore elems at the
+ends, because of cache stuff (todo: figure out all this set, assoicativity etc
+blah)
+
+--- Experiments
+FFT:
+15      -7
+-2-1i -2+1i
+
+15    = 1+5+3+6
+-7    = 1-5+3-6
+-2-1i = 1+5i-3-6i = -2-1i
+-2+1i = 1-5i-3+6i = -2+1i
+
+Got/Expected:
+ 15     -3
+-4-3i -4+3i
+
+Input:
+1 5
+3 6
+
+1st pass: (+, -) (strided access, cachebreaker padding! :)
+row    col
+6 -4   4  11
+9 -3  -2  -1
+
+Transpose (skip!):
+ 6 9    4 -2
+-4 -3  11 -1
+ row    col
+
+twiddle:
+ 6 9      4 -2
+-4 -3i   11 -1i
+ row      col
+
+2nd pass (+, -) (this time on rows, fast, but can be further split down as recursive baileys!)
+    15 -3        15  -2-1i
+ -4-3i -4+3i     -7  -2+1i
+  row              col
+
+Correct: col
+
+But shit for access patterns. Input data needs to be transposed or accessed in strides.

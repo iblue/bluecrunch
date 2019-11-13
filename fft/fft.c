@@ -16,6 +16,7 @@
 
 // When do we start to decompose FFTs for parallization
 #define FFT_THRESHOLD_LENGTH 60000
+#define BAILEYS_THRESHOLD_LENGTH (30) // FIXME: Moar. Just for debugging.
 
 // Find optimal transform length
 size_t fft_length(size_t source_length) {
@@ -47,10 +48,10 @@ void _fft_forward(complex double *T, size_t length) {
   }
   */
 
-  if(length == 4) {
+  /*if(length == 4) {
     dft_4p(T);
     return;
-  }
+  }*/
 
   /*
   if(length == 5) {
@@ -92,6 +93,126 @@ void _fft_forward(complex double *T, size_t length) {
     _fft_forward(T, half_length);
     _fft_forward(T + half_length, half_length);
   }
+}
+
+void _strided_fft_forward(complex double *T, size_t length, size_t stride, size_t shift) {
+  //if(length == 4) {
+  //  dft_4p(T); // FIXME: Stride + Shift
+  //  return;
+  //}
+
+  size_t content_length = length / stride;
+
+  if(content_length == 2) {
+    dft_2p_strided(T, stride, shift);
+    return;
+  }
+
+  if(content_length == 3) {
+    fprintf(stderr, "Strided FFT cannot handle factor 3");
+    abort(); // we make sure to not have factor 3 in the strided fft.
+    //dft_3p(T); // FIXME: Stride + Shift
+    //return;
+  }
+
+
+  size_t half_length = content_length / 2;
+
+  //  Get local twiddle table.
+  complex double* local_table = twiddle_table[table_select(half_length)];
+
+  // Dual FFT is tricky, because of the interleaving. Needs another algo (or
+  // handle shift and shift+1 at the same time? => Move code to baileys) FIXME
+  for(size_t n = 0; n < half_length; n++){
+    __m128d twiddle = _mm_load_pd((double*)&local_table[n]);
+    single_fft_forward_butterfly(twiddle, (__m128d*)(T+n*stride+shift), (__m128d*)(T+(n+half_length)*stride+shift));
+  }
+
+  if(length >= FFT_THRESHOLD_LENGTH) {
+    cilk_spawn _strided_fft_forward(T, length/2, stride, shift);
+    _strided_fft_forward(T + length/2, length/2, stride, shift);
+    cilk_sync;
+  } else {
+    _strided_fft_forward(T, length/2, stride, shift);
+    _strided_fft_forward(T + length/2, length/2, stride, shift);
+  }
+}
+
+void _baileys_forward(complex double *T, size_t length) {
+  size_t a, b;
+
+  b = length;
+  a = 1;
+
+  // FIXME: log2, divide by 2, then shift or even faster algo?
+  while(a < b) {
+    a*=2;
+    b/=2;
+  }
+
+  for(size_t i=1;i<b;i++) { // FIXME: cilk_for
+    _strided_fft_forward(T, length, b, i);
+  }
+
+
+  // Twiddle multiplication
+  // FIXME: Could be done in one step together with the strided FFT.
+  complex double* local_table = twiddle_table[table_select(length/2)];
+  // we can start from 1, because i=0 row has twiddle = 1 (even with bit
+  // reverse), so we can skip multiplication
+  for(size_t i=0;i<a;i++) {
+    size_t istar = bitreverse(i, bitlog2(a));
+
+    // we can start from 1, because j=0 column has twiddle = 1, so we can skip multiplication
+    for(size_t j=0;j<b;j++) {
+      // Table contains e^(i*2*pi/length*N) for N = [0..length/2]
+      // We need value for N = istar*j. We can use %length. If N still > length/2, use complex conj.
+      //
+      // FIXME: Optimize. Totally shitty sparse access. Either calc from scracth or generate additional tables?
+      size_t tblidx = (istar*j)%length;
+      int conjug = 0;
+      if(tblidx > length/2) {
+        tblidx = length - tblidx;
+        conjug = 1;
+      }
+      if(tblidx == length/2) {
+        tblidx = 0;
+      }
+      __m128d twiddle = _mm_load_pd((double*)&local_table[tblidx]);
+      if(conjug) {
+        twiddle = _mm_xor_pd(twiddle, _mm_set_pd(-0.0, 0.0)); // conjugate.
+      }
+
+#ifndef HEAVY_DEBUG
+      double real = ((double*)&local_table[tblidx])[0];
+      double imag = ((double*)&local_table[tblidx])[1];
+      printf("%ld Matrix %ld,%ld (%ld) (which is really %ld,%ld (%ld)), twiddle: %f,%f (CONJ=%d)\n", tblidx, i, j, i*b+j, istar, j, istar*b+j, real, imag, conjug);
+      if(tblidx >= length/2) {
+        // Sanity check.
+        abort();
+      }
+#endif
+
+      __m128d r0       = _mm_unpacklo_pd(twiddle, twiddle);     //   r = [r0,r0]
+      __m128d i0       = _mm_unpackhi_pd(twiddle, twiddle);     //   i = [i0,i0]
+
+      __m128d e0       = _mm_load_pd((double*)&T[i*b+j]);
+
+      // Complex multiplication (result: [er*r0 - ei*i0, er*i0 + ei*r0])
+      __m128d a0 = _mm_mul_pd(e0, r0);          //  = [er*r0, ei*r0]
+      __m128d b0 = _mm_shuffle_pd(e0, e0, 0x1); //  = [ei, er]
+      __m128d c0 = _mm_mul_pd(b0, i0);          //  = [ei*i0, er*i0]
+      __m128d d0 = _mm_addsub_pd(a0, c0);       //  = [er*r0 - ei*i0, ei*r0 + er*i0]
+
+      _mm_store_pd((double*)&T[i*b+j], d0);
+    }
+  }
+
+  for(size_t i=0;i<a;i++) { // FIXME: cilk_for
+    _fft_forward(T+i*b, b);
+  }
+
+  return;
 }
 
 // Runs FFT without cached twiddles
@@ -150,10 +271,10 @@ void _fft_forward_uncached(complex double *T, size_t length) {
 }
 
 void _fft_inverse(complex double *T, size_t length) {
-  if(length == 4) {
+  /*if(length == 4) {
     dft_4p_inv(T);
     return;
-  }
+  }*/
 
   if (length == 2) {
     dft_2p(T);
@@ -248,6 +369,9 @@ void _fft_inverse_uncached(complex double *T, size_t length) {
 // External interface
 void fft_forward(complex double *T, size_t length) {
   if(table_select(length) < twiddle_table_size) {
+    if(length > BAILEYS_THRESHOLD_LENGTH) {
+      _baileys_forward(T, length);
+    }
     _fft_forward(T, length);
   } else {
     _fft_forward_uncached(T, length);

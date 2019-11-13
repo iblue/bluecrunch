@@ -1,0 +1,5 @@
+Taylor expansion of sin, use for 0..PI/4 until x^19 term is sufficient. (9
+multiplications + adds)
+calculate cos as sin(pi/2 - x) (=> sincos vectorized in one step).
+
+AVX should lead 2 sincos simultaniously.

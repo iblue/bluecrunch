@@ -7,6 +7,17 @@
 
 #include "deque.h"
 
+/**
+ * Double ended queue
+ *
+ * * Single producer
+ * * Many consumers
+ * * Lock free (todo)
+ * * size fixed at compile time
+ * * element size > 128 bits
+ * * thread- and interrupt safe
+ */
+
 void deque_create(deque_t* deque) {
   pthread_mutex_init(&deque->mutex, NULL);
   pthread_mutex_lock(&deque->mutex);
@@ -39,7 +50,10 @@ DEQUE_ELEM_TYPE deque_pop(deque_t* deque) {
       deque->top = DEQUE_ELEM_COUNT-1;
     }
   } else {
-    x = 0;
+    // FIXME: Return neutral element
+    // x = NULL;
+    printf("Queue empty\n");
+    abort();
   }
   pthread_mutex_unlock(&deque->mutex);
   return x;
@@ -69,7 +83,10 @@ DEQUE_ELEM_TYPE deque_shift(deque_t* deque) {
     }
     x = deque->elems[deque->bot];
   } else {
-    x = 0;
+    // FIXME: Return neutral element
+    // x = NULL;
+    printf("Queue empty\n");
+    abort();
   }
   pthread_mutex_unlock(&deque->mutex);
   return x;

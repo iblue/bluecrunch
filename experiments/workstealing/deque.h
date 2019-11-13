@@ -1,5 +1,14 @@
 #ifndef DEQUE_ELEM_TYPE
-#define DEQUE_ELEM_TYPE void*
+typedef struct _deque_jmp_buf {
+  jmp_buf self;
+} deque_jmp_buf_t;
+
+// jmp_buf: 8 registers, 16 signal masks, 1 sigmask flag
+#define DEQUE_ELEM_TYPE deque_jmp_buf_t
+#endif
+
+#ifndef DEQUE_NEUTRAL_ELEM
+
 #endif
 
 #ifndef DEQUE_ELEM_COUNT

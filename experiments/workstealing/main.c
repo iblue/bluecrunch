@@ -12,23 +12,55 @@
 #include <stdint.h>
 #include <assert.h>
 
-#include "deque.h"
+/*
+typedef struct _exec_ctx {
+  uint64_t rip;
+  uint64_t rbx;
+  uint64_t rbp;
+  uint64_t rdi;
+  uint64_t rsi;
+  uint64_t rsp;
+  uint64_t r12;
+  uint64_t r13;
+  uint64_t r14;
+  uint64_t r15;
+} exec_ctx_t;
+*/
 
-int cpus = 0;
+#include "deque.h"
 
 typedef struct {
   int cpu_id; // 0..N number of CPU
-  void* others;
   deque_t work;
 } thread_t;
 
+
+int cpus = 0;
+_Thread_local size_t cpu_id = 0;
+thread_t* threads;
+
 int spawn() {
-  // FIXME: Push execution context into deque
-  return 1;
+  deque_jmp_buf_t q;
+  int d = setjmp(q.self);
+  printf("[%ld] setjmp returns %d\n", d);
+  if(d == 0) {
+    printf("[%ld] Spawning\n", cpu_id);
+    deque_push(&threads[cpu_id].work, q);
+    return 1;
+  } else if(d == 1) {
+    printf("[%ld] Returning\n", cpu_id);
+  } else {
+    abort();
+  }
+
+  return 0;
 }
 
-void stall() {
-  // FIXME: Get execution context from deque and run
+void join() {
+  deque_jmp_buf_t q;
+  printf("[%ld] Joining\n", cpu_id);
+  q = deque_pop(&threads[cpu_id].work);
+  longjmp(q.self, 1);
 }
 
 int sum(int low, int high) {
@@ -39,14 +71,21 @@ int sum(int low, int high) {
 
   int mid = low + (high-low)/2;
   printf("(%d, %d) -> (%d, %d), (%d, %d)\n", low, high, low, mid, mid+1, high);
-  int a, b;
+  volatile int a, b;
   if(spawn()) {
+    printf("A+\n");
     a = sum(low, mid);
+  } else {
+    printf("A-\n");
   }
+
   if(spawn()) {
+    printf("B+\n");
     b = sum(mid+1, high);
+  } else {
+    printf("B-\n");
   }
-  stall();
+  join();
 
   return a+b;
 }
@@ -66,9 +105,10 @@ int stick_core(int core_id) {
 
 void * thread_work(void *thread_ptr) {
   thread_t* me = (thread_t*)thread_ptr;
-
-  printf("[%ld] CPU %d initialized.\n", pthread_self(), me->cpu_id);
   stick_core(me->cpu_id);
+  cpu_id = me->cpu_id;
+
+  printf("[%ld] CPU initialized.\n", cpu_id);
 
   //stall();
   sleep(1);
@@ -77,13 +117,17 @@ void * thread_work(void *thread_ptr) {
 int main(void) {
   // Init N threads
   cpus = sysconf(_SC_NPROCESSORS_ONLN);
-  thread_t*  threads  = alloca(cpus*sizeof(thread_t));
+  threads  = alloca(cpus*sizeof(thread_t)); // when we return work is done and threads are dead, so this can go on the stack.
   pthread_t* pthreads = alloca(cpus*sizeof(pthread_t*));
+
+  // Init deques
+  for(size_t cpu=0;cpu<cpus;cpu++) {
+    threads[cpu].cpu_id = cpu;
+    deque_create(&threads[cpu].work);
+  }
 
   // We are thread 0.
   for(size_t cpu=1;cpu<cpus;cpu++) {
-    threads[cpu].cpu_id = cpu;
-    threads[cpu].others = threads;
     pthread_create(&pthreads[cpu], NULL, &thread_work, &threads[cpu]);
   }
   stick_core(0);

@@ -16,7 +16,6 @@ def baileys(values)
     a*=2
     b/=2
   end
-  a, b = [b, a] # works equally well
 
   # Example:
   # a = 8
@@ -326,9 +325,11 @@ def mul(a,b)
   c = fft_to_int(c)
 end
 
-a = 1234541623518273
-b = 1234557781293722
-c = mul(a,b)
+if false
+  a = 1234541623518273
+  b = 1234557781293722
+  c = mul(a,b)
+end
 
 if false
   a = [1, 5, 3, 6, 17, 4, 18, 22]
@@ -347,21 +348,26 @@ if false
   exit
 end
 
-if false
-  a = [1, 5, 3, 6, 17, 4, 18, 22, 9, 27, 2, 3, 5, 31, 41, 16, 17, 18, 19, 20, 21,
-       22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]
+if true
+  a = 1024.times.map{ rand(1000) }
+  original = a.dup
   b = a.dup
 
-  puts "FFT:"
+  #puts "FFT:"
   a = fft(a)
-  puts a
-  puts "Baileys:"
+  #puts a
+  puts " === Baileys === "
   b = baileys(b)
   puts b
   puts "inverse FFT:"
-  c = ibaileys(b)
+  c = ifft(b)
   c = c.map{|x| (x*(1.0/c.size)).real.round.to_i}
   puts c.to_s
+  if c == original
+    puts "GREAT SUCCESS"
+  else
+    puts "FAIL. #{c.to_s}"
+  end
 end
 
 if a*b == c

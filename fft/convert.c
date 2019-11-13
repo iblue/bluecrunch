@@ -47,9 +47,9 @@ size_t int_to_fft(complex double *V, size_t length, const uint32_t *A, size_t AL
 
   switch(bits_per_point) {
     //usually not used
-    //case 22: points_written = int_to_fft22(V, A, AL); break;
-    //case 21: points_written = int_to_fft21(V, A, AL); break;
-    //case 20: points_written = int_to_fft20(V, A, AL); break;
+    case 22: points_written = int_to_fft22(V, A, AL); break;
+    case 21: points_written = int_to_fft21(V, A, AL); break;
+    case 20: points_written = int_to_fft20(V, A, AL); break;
     case 19: points_written = int_to_fft19(V, A, AL); break;
     case 18: points_written = int_to_fft18(V, A, AL); break;
     case 17: points_written = int_to_fft17(V, A, AL); break;
@@ -64,7 +64,7 @@ size_t int_to_fft(complex double *V, size_t length, const uint32_t *A, size_t AL
     case 8:  points_written = int_to_fft8(V, A, AL);  break;
     case 7:  points_written = int_to_fft7(V, A, AL);  break;
     default:
-      fprintf(stderr, "Not implemented\n");
+      fprintf(stderr, "int_to_fft: FFT with %d bits: Not implemented\n", bits_per_point);
       abort();
     break;
   }
@@ -87,9 +87,9 @@ void fft_to_int(const complex double *T, size_t length, uint32_t *A, size_t AL, 
   //  Round and carry out.
   switch(bits_per_point) {
     //usually not used
-    //case 22: fft_to_int22(T, A, AL, scale); break;
-    //case 21: fft_to_int21(T, A, AL, scale); break;
-    //case 20: fft_to_int20(T, A, AL, scale); break;
+    case 22: fft_to_int22(T, A, AL, scale); break;
+    case 21: fft_to_int21(T, A, AL, scale); break;
+    case 20: fft_to_int20(T, A, AL, scale); break;
     case 19: fft_to_int19(T, A, AL, scale); break;
     case 18: fft_to_int18(T, A, AL, scale); break;
     case 17: fft_to_int17(T, A, AL, scale); break;
@@ -104,7 +104,7 @@ void fft_to_int(const complex double *T, size_t length, uint32_t *A, size_t AL, 
     case 8:  fft_to_int8(T, A, AL, scale);  break;
     case 7:  fft_to_int7(T, A, AL, scale);  break;
     default:
-      fprintf(stderr, "Not implemented\n");
+      fprintf(stderr, "fft_to_int: FFT with %d bits: Not implemented\n", bits_per_point);
       abort();
     break;
   }

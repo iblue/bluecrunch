@@ -1,0 +1,6 @@
+main {
+  reg1 = get(64) # 
+  reg2 = get(64)
+  ebx = eax + ebx
+  
+}
